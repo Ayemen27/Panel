@@ -45,7 +45,7 @@ function Router() {
       ) : (
         // المستخدم مسجل دخول - إظهار الصفحات المحمية
         <>
-          <Route path="/" exact>
+          <Route path="/">
             <MainLayout>
               <Dashboard />
             </MainLayout>
@@ -55,7 +55,7 @@ function Router() {
               <Dashboard />
             </MainLayout>
           </Route>
-          <Route path="/applications" exact>
+          <Route path="/applications">
             <MainLayout>
               <Applications />
             </MainLayout>
@@ -100,7 +100,6 @@ function Router() {
               <HealthCheck />
             </MainLayout>
           </Route>
-          <Route component={NotFound} />
         </>
       )}
     </Switch>

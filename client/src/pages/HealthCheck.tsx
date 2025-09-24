@@ -152,7 +152,8 @@ export default function HealthCheck() {
   // Install dependency mutation
   const installMutation = useMutation({
     mutationFn: async (dependencyName: string) => {
-      return await apiRequest('/api/system/install-dependency', 'POST', { dependencyName });
+      const response = await apiRequest('POST', '/api/system/install-dependency', { dependencyName });
+      return await response.json();
     },
     onSuccess: (data, dependencyName) => {
       if (data.success) {
