@@ -279,13 +279,18 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(systemLogs.applicationId, filters.applicationId));
     }
     
-    let query = db.select().from(systemLogs);
-    
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await db
+        .select()
+        .from(systemLogs)
+        .where(and(...conditions))
+        .orderBy(desc(systemLogs.timestamp))
+        .limit(filters?.limit || 100);
     }
     
-    return await query
+    return await db
+      .select()
+      .from(systemLogs)
       .orderBy(desc(systemLogs.timestamp))
       .limit(filters?.limit || 100);
   }

@@ -591,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // WebSocket server setup
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  const wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws) => {
     wsClients.add(ws);
@@ -612,5 +612,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }));
   });
 
-  return httpServer;
+  return server;
 }

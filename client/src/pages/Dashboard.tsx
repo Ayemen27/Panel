@@ -113,7 +113,7 @@ export default function Dashboard() {
           value={stats?.applications?.running || 0}
           total={stats?.applications?.total || 0}
           icon="cube"
-          trend={stats?.applications?.running > 0 ? "up" : "neutral"}
+          trend={(stats?.applications?.running || 0) > 0 ? "up" : "neutral"}
           loading={statsLoading}
           data-testid="stat-active-apps"
         />

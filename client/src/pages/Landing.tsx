@@ -85,6 +85,7 @@ export default function Landing() {
                 size="lg" 
                 className="text-lg px-8 py-6"
                 onClick={() => window.location.href = '/api/login'}
+                data-testid="button-login"
               >
                 تسجيل الدخول
                 <ArrowRight className="w-5 h-5 mr-2" />
