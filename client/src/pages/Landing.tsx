@@ -83,7 +83,8 @@ export default function Landing() {
         localStorage.setItem('customRefreshToken', data.tokens.refreshToken);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         toast({ title: "تم تسجيل الدخول بنجاح", description: `مرحباً ${data.user.firstName}!` });
-        navigate("/");
+        // إجبار reload للصفحة لتحديث auth state
+        window.location.href = "/dashboard";
       } else if (data.requireEmailVerification) {
         setActiveTab('verify');
         toast({ 

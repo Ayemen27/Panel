@@ -49,12 +49,12 @@ export function useAuth() {
   const { data: customAuthResult, isLoading: isCustomLoading, error: customError } = useQuery({
     queryKey: ["/api/custom-auth/me"],
     queryFn: async (): Promise<AuthResponse> => {
-      try {
-        const token = localStorage.getItem('customAuthToken');
-        if (!token) {
-          return { isAuthenticated: false, user: null };
-        }
+      const token = localStorage.getItem('customAuthToken');
+      if (!token) {
+        return { isAuthenticated: false, user: null };
+      }
 
+      try {
         const response = await fetch('/api/custom-auth/me', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -68,11 +68,7 @@ export function useAuth() {
           localStorage.removeItem('currentUser');
           setHasCustomToken(false);
           
-          if (response.status === 401) {
-            return { isAuthenticated: false, user: null, error: 'Token expired' };
-          }
-          
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          return { isAuthenticated: false, user: null, error: 'Token expired' };
         }
 
         const data = await response.json();
@@ -83,6 +79,12 @@ export function useAuth() {
         return { isAuthenticated: false, user: null, error: 'Invalid response format' };
       } catch (error) {
         console.error('Custom auth error:', error);
+        // تنظيف tokens في حالة الخطأ
+        localStorage.removeItem('customAuthToken');
+        localStorage.removeItem('customRefreshToken');
+        localStorage.removeItem('currentUser');
+        setHasCustomToken(false);
+        
         return { 
           isAuthenticated: false, 
           user: null, 
@@ -105,10 +107,7 @@ export function useAuth() {
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            return { isAuthenticated: false, user: null };
-          }
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          return { isAuthenticated: false, user: null };
         }
 
         const user = await response.json();
@@ -128,10 +127,10 @@ export function useAuth() {
   });
 
   // حساب النتائج النهائية
-  const authResult = customAuthResult || replitAuthResult;
-  const user = authResult?.user || null;
-  const isAuthenticated = authResult?.isAuthenticated || false;
-  const authError = customError || replitError || authResult?.error;
+  const authResult = customAuthResult || replitAuthResult || { isAuthenticated: false, user: null };
+  const user = authResult.user || null;
+  const isAuthenticated = authResult.isAuthenticated || false;
+  const authError = customError || replitError || authResult.error;
 
   // تحديث isLoading
   useEffect(() => {
@@ -144,14 +143,14 @@ export function useAuth() {
 
   // معالجة إعادة التوجيه بعد المصادقة الناجحة
   useEffect(() => {
-    if (isAuthenticated && user && !isLoading) {
+    if (isAuthenticated && user && !isLoading && hasCheckedTokens) {
       const currentPath = window.location.pathname;
       // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing
       if (currentPath === '/' || currentPath === '/login') {
         navigate('/dashboard');
       }
     }
-  }, [isAuthenticated, user, isLoading, navigate]);
+  }, [isAuthenticated, user, isLoading, navigate, hasCheckedTokens]);
 
   const logout = async () => {
     const customToken = localStorage.getItem('customAuthToken');
