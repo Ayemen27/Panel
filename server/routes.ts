@@ -739,7 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check route
   app.get('/api/health', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const healthStatus = await systemService.getHealthStatus();
+      const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
     } catch (error) {
       console.error("Error checking health:", error);
@@ -750,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // System health check route (for HealthCheck page)
   app.get('/api/system/health-check', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const healthStatus = await systemService.getHealthStatus();
+      const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
     } catch (error) {
       console.error("Error checking system health:", error);

@@ -331,7 +331,7 @@ export default function Logs() {
                   <SelectValue placeholder="اختر التطبيق" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع التطبيقات</SelectItem>
+                  <SelectItem value="all">جميع التطبيقات</SelectItem>
                   {applications?.map((app: any) => (
                     <SelectItem key={app.id} value={app.id}>
                       {app.name}
