@@ -25,66 +25,24 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for Replit Auth (existing)
+// User roles enum
+export const userRoleEnum = pgEnum('user_role', ['admin', 'user', 'moderator', 'viewer']);
+
+// User storage table for Replit Auth with roles and permissions
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Custom authentication system
-export const authUsers = pgTable("auth_users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique().notNull(),
-  password: varchar("password").notNull(),
-  firstName: varchar("first_name").notNull(),
-  lastName: varchar("last_name"),
-  role: varchar("role").default("user"),
+  role: userRoleEnum("role").default('user'),
   isActive: boolean("is_active").default(true),
-  emailVerifiedAt: timestamp("email_verified_at"),
+  permissions: text("permissions").array().default(sql`'{}'::text[]`),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const authUserSessions = pgTable("auth_user_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => authUsers.id).notNull(),
-  deviceId: varchar("device_id"),
-  sessionToken: varchar("session_token").unique().notNull(),
-  deviceFingerprint: varchar("device_fingerprint"),
-  userAgent: text("user_agent"),
-  ipAddress: varchar("ip_address"),
-  locationData: jsonb("location_data"),
-  deviceName: varchar("device_name"),
-  browserName: varchar("browser_name"),
-  browserVersion: varchar("browser_version"),
-  osName: varchar("os_name"),
-  osVersion: varchar("os_version"),
-  deviceType: varchar("device_type").default("web"),
-  loginMethod: varchar("login_method").default("password"),
-  accessTokenHash: varchar("access_token_hash"),
-  refreshTokenHash: varchar("refresh_token_hash"),
-  expiresAt: timestamp("expires_at").notNull(),
-  lastActivity: timestamp("last_activity").defaultNow(),
-  isRevoked: boolean("is_revoked").default(false),
-  revokedAt: timestamp("revoked_at"),
-  revokedReason: varchar("revoked_reason"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const emailVerificationTokens = pgTable("email_verification_tokens", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => authUsers.id).notNull(),
-  token: varchar("token").unique().notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
 
 // Application status enum
 export const appStatusEnum = pgEnum('app_status', ['running', 'stopped', 'error', 'starting']);

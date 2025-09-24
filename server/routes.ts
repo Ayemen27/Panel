@@ -3,8 +3,6 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import customAuthRoutes from "./routes/customAuth";
-import { authenticateCustom, AuthenticatedRequest } from "./middleware/customAuth";
 import { 
   insertApplicationSchema, 
   insertDomainSchema, 
@@ -22,23 +20,34 @@ import { logService } from "./services/logService";
 // WebSocket clients store
 const wsClients = new Set<WebSocket>();
 
-// Add CORS headers for WebSocket
-function setupWebSocketCORS(req: any, res: any, next: any) {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-}
+// Unified CORS configuration for both HTTP and WebSocket
 function setupCORS(app: Express) {
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://binarjoinanelytic.info');
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
+    const origin = req.headers.origin;
+    
+    // Determine allowed origins based on environment
+    const allowedOrigins = isDevelopment 
+      ? ['http://localhost:5000', 'https://replit.dev', 'http://127.0.0.1:5000']
+      : ['https://binarjoinanelytic.info'];
+    
+    // Allow origin if it's in the allowed list or if no origin (same-origin requests)
+    const allowOrigin = !origin || allowedOrigins.some(allowed => 
+      origin === allowed || (isDevelopment && (
+        origin.includes('localhost') || 
+        origin.includes('replit.dev') ||
+        origin.includes('127.0.0.1')
+      ))
+    );
+    
+    if (allowOrigin) {
+      res.header('Access-Control-Allow-Origin', origin || (isDevelopment ? 'http://localhost:5000' : 'https://binarjoinanelytic.info'));
+    }
+    
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, Set-Cookie');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE, PATCH');
+    
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
     } else {
@@ -46,6 +55,45 @@ function setupCORS(app: Express) {
     }
   });
 }
+
+// Enhanced authentication middleware for Replit OIDC with role-based access
+interface AuthenticatedRequest extends Express.Request {
+  user?: any; // Replit OIDC user session
+}
+
+const requireRole = (roles: string[]) => {
+  return async (req: AuthenticatedRequest, res: any, next: any) => {
+    if (!req.user || !req.user.claims) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    try {
+      // Get user from database to check role
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isActive) {
+        return res.status(401).json({ message: 'User not found or inactive' });
+      }
+
+      if (roles.length > 0 && !roles.includes(user.role || 'user')) {
+        return res.status(403).json({ message: 'Insufficient permissions' });
+      }
+
+      // Add user data to request for downstream use
+      req.user.dbUser = user;
+      next();
+    } catch (error) {
+      console.error('Role check error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+};
+
+// Helper function to get user ID from Replit OIDC
+const getUserId = (req: AuthenticatedRequest): string | null => {
+  return req.user?.claims?.sub || null;
+};
 
 // Broadcast function for real-time updates
 export function broadcast(message: any) {
@@ -63,29 +111,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS first
   setupCORS(app);
 
-  // Setup authentication
+  // Setup Replit authentication
   await setupAuth(app);
 
-  // Custom authentication routes
-  app.use('/api/custom-auth', customAuthRoutes);
-
-  // Custom Auth route for user info
-  app.get('/api/auth/user', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  // Auth routes for Replit OIDC
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      res.json({
-        success: true,
-        user: req.authUser
-      });
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json(user);
     } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      console.error('Error fetching user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Admin routes with role-based access
+  app.get('/api/admin/users', isAuthenticated, requireRole(['admin']), async (req: any, res) => {
+    try {
+      const users = await storage.getUsersByRole('user');
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.patch('/api/admin/users/:id/role', isAuthenticated, requireRole(['admin']), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      if (!['admin', 'user', 'moderator', 'viewer'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+
+      const user = await storage.updateUserRole(id, role);
+      res.json(user);
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
   // Dashboard stats route
-  app.get('/api/dashboard/stats', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/dashboard/stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.authUser!.id;
+      const userId = getUserId(req)!;
       const [appStats, sslStats, systemStats, unreadCount] = await Promise.all([
         storage.getApplicationStats(userId),
         storage.getSslStats(),
@@ -106,9 +183,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Application routes
-  app.get('/api/applications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/applications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.authUser!.id;
+      const userId = getUserId(req)!;
       const applications = await storage.getApplications(userId);
 
       // Get real-time status for each application
@@ -126,9 +203,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/applications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/applications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.authUser!.id;
+      const userId = getUserId(req)!;
       const appData = insertApplicationSchema.parse({
         ...req.body,
         userId
@@ -146,8 +223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createNotification({
             type: 'success',
             level: 'medium',
-            title: 'تم إنشاء التطبيق',
-            message: `تم إنشاء وتشغيل التطبيق ${application.name} بنجاح`,
+            title: 'Application Created',
+            message: `Application ${application.name} created and started successfully`,
             source: 'pm2',
             applicationId: application.id,
             userId
@@ -159,8 +236,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createNotification({
             type: 'error',
             level: 'high',
-            title: 'فشل في تشغيل التطبيق',
-            message: `فشل في تشغيل التطبيق ${application.name}: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`,
+            title: 'Application Start Failed',
+            message: `Failed to start application ${application.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
             source: 'pm2',
             applicationId: application.id,
             userId
@@ -181,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/applications/:id', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.patch('/api/applications/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -202,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update application
-  app.put("/api/applications/:id", authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.put("/api/applications/:id", isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -224,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete application
-  app.delete("/api/applications/:id", authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/applications/:id", isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -254,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Application control routes
-  app.post('/api/applications/:id/start', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/applications/:id/start', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -304,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/applications/:id/stop', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/applications/:id/stop', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -354,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/applications/:id/restart', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/applications/:id/restart', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -411,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Domain routes
-  app.get('/api/domains', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/domains', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const domains = await storage.getDomains();
       res.json(domains);
@@ -421,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/domains', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/domains', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const domainData = insertDomainSchema.parse(req.body);
       const domain = await storage.createDomain(domainData);
@@ -441,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/domains/:id/check-dns', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/domains/:id/check-dns', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const domains = await storage.getDomains();
@@ -462,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // SSL Certificate routes
-  app.get('/api/ssl-certificates', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/ssl-certificates', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const certificates = await storage.getSslCertificates();
       res.json(certificates);
@@ -472,9 +549,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ssl-certificates', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/ssl-certificates', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { domainId } = req.body;
+      const userId = getUserId(req)!;
       const domains = await storage.getDomains();
       const domain = domains.find(d => d.id === domainId);
 
@@ -501,10 +579,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createNotification({
         type: 'success',
         level: 'medium',
-        title: 'تم إصدار شهادة SSL',
-        message: `تم إصدار شهادة SSL لـ ${domain.domain} بنجاح`,
+        title: 'SSL Certificate Issued',
+        message: `SSL certificate issued successfully for ${domain.domain}`,
         source: 'ssl',
-        userId: req.authUser!.id
+        userId
       });
 
       res.status(201).json(sslCert);
@@ -515,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Nginx routes
-  app.get('/api/nginx/configs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/nginx/configs', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const configs = await storage.getNginxConfigs();
       res.json(configs);
@@ -525,23 +603,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/nginx/configs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/nginx/configs', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const configData = insertNginxConfigSchema.parse(req.body);
-
-      // Test the configuration
+      
+      // Test the configuration first
       const testResult = await nginxService.testConfig(configData.content);
-
+      
       const config = await storage.createNginxConfig({
         ...configData,
         lastTest: new Date(),
-        testResult: testResult.success ? 'passed' : testResult.error
+        testResult: testResult.message
       });
-
-      if (testResult.success && configData.enabled) {
-        await nginxService.writeConfig(config.configPath, configData.content);
-        await nginxService.reloadNginx();
-      }
 
       res.status(201).json(config);
     } catch (error) {
@@ -550,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/nginx/test', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/nginx/test', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { content } = req.body;
       const result = await nginxService.testConfig(content);
@@ -561,32 +634,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/nginx/reload', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/nginx/reload', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
     try {
-      await nginxService.reloadNginx();
-
-      // Create success notification
-      await storage.createNotification({
-        type: 'success',
-        level: 'low',
-        title: 'تم إعادة تحميل Nginx',
-        message: 'تم إعادة تحميل تكوين Nginx بنجاح',
-        source: 'nginx',
-        userId: req.authUser!.id
-      });
-
-      res.json({ message: "Nginx reloaded successfully" });
+      const result = await nginxService.reload();
+      res.json(result);
     } catch (error) {
       console.error("Error reloading nginx:", error);
       res.status(500).json({ message: "Failed to reload nginx" });
     }
   });
 
-  // Notifications routes
-  app.get('/api/notifications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  // Notification routes
+  app.get('/api/notifications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.authUser!.id;
-      const notifications = await storage.getNotifications(userId);
+      const userId = getUserId(req)!;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const notifications = await storage.getNotifications(userId, limit);
       res.json(notifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -594,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/notifications/:id/acknowledge', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.patch('/api/notifications/:id/acknowledge', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       await storage.acknowledgeNotification(id);
@@ -605,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/notifications/:id/resolve', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.patch('/api/notifications/:id/resolve', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       await storage.resolveNotification(id);
@@ -617,37 +680,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System logs routes
-  app.get('/api/logs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/logs', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { source, level, applicationId, limit } = req.query;
-      const logs = await storage.getSystemLogs({
+      const filters = {
         source: source as string,
         level: level as string,
         applicationId: applicationId as string,
-        limit: limit ? parseInt(limit as string) : undefined
-      });
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching logs:", error);
-      res.status(500).json({ message: "Failed to fetch logs" });
-    }
-  });
-
-  // Nginx logs route
-  app.get('/api/logs/nginx', authenticateCustom, async (req: AuthenticatedRequest, res) => {
-    try {
-      const logs = await logService.getNginxLogs('error');
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching nginx logs:", error);
-      res.status(500).json({ message: "Failed to fetch nginx logs" });
-    }
-  });
-
-  // System logs route
-  app.get('/api/logs/system', authenticateCustom, async (req: AuthenticatedRequest, res) => {
-    try {
-      const logs = await logService.getSystemLogs();
+        limit: parseInt(limit as string) || 100
+      };
+      
+      const logs = await storage.getSystemLogs(filters);
       res.json(logs);
     } catch (error) {
       console.error("Error fetching system logs:", error);
@@ -655,11 +698,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/applications/:id/logs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/applications/:id/logs', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
-
+      
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
       }
@@ -668,37 +711,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       console.error("Error fetching application logs:", error);
-
-      // Provide specific error messages based on error type
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
-        res.status(503).json({ 
-          message: "Process manager is unavailable", 
-          details: errorMessage,
-          solution: "Please ensure PM2 is installed or check log service status"
-        });
-      } else if (errorMessage.includes('not found') || errorMessage.includes('ENOENT')) {
-        res.status(404).json({ 
-          message: "Application or log file not found", 
-          details: errorMessage 
-        });
-      } else if (errorMessage.includes('fallback mode')) {
-        res.status(200).json({ 
-          message: "Logs retrieved from fallback mode", 
-          logs: ["Detailed logs not available in fallback mode"] 
-        });
-      } else {
-        res.status(500).json({ 
-          message: "Failed to fetch application logs", 
-          details: errorMessage 
-        });
-      }
+      res.status(500).json({ message: "Failed to fetch application logs" });
     }
   });
 
   // System info routes
-  app.get('/api/system/info', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/system/info', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const systemInfo = await systemService.getSystemInfo();
       res.json(systemInfo);
@@ -708,111 +726,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // System health check route for beginners
-  app.get('/api/system/health-check', authenticateCustom, async (req: AuthenticatedRequest, res) => {
-    try {
-      const healthCheck = await systemService.performHealthCheck();
-      res.json(healthCheck);
-    } catch (error) {
-      console.error("Error performing health check:", error);
-      res.status(500).json({ message: "Failed to perform health check" });
-    }
-  });
-
-  // Dependencies check route
-  app.get('/api/system/dependencies', authenticateCustom, async (req: AuthenticatedRequest, res) => {
-    try {
-      const dependencies = await systemService.checkDependencies();
-      res.json(dependencies);
-    } catch (error) {
-      console.error("Error checking dependencies:", error);
-      res.status(500).json({ message: "Failed to check dependencies" });
-    }
-  });
-
-  // Install dependency route with security validation
-  app.post('/api/system/install-dependency', authenticateCustom, async (req: AuthenticatedRequest, res) => {
-    try {
-      // Validate request body with Zod schema
-      const requestSchema = z.object({
-        dependencyName: z.string()
-          .min(1, "Dependency name cannot be empty")
-          .max(50, "Dependency name too long")
-          .regex(/^[a-zA-Z0-9\-_]+$/, "Invalid dependency name format")
-      });
-
-      const { dependencyName } = requestSchema.parse(req.body);
-
-      // Additional whitelist validation - only allow specific known dependencies
-      const allowedDependencies = [
-        'node', 'npm', 'pm2', 'nginx', 'certbot', 'git', 'curl', 'ufw', 'htop'
-      ];
-
-      if (!allowedDependencies.includes(dependencyName)) {
-        return res.status(400).json({ 
-          success: false,
-          message: `التبعية '${dependencyName}' غير مدعومة أو غير آمنة للتثبيت التلقائي`
-        });
-      }
-
-      const result = await systemService.installDependency(dependencyName);
-      res.json(result);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          success: false,
-          message: "بيانات الطلب غير صحيحة",
-          details: error.errors
-        });
-      }
-      console.error("Error installing dependency:", error);
-      res.status(500).json({ 
-        success: false,
-        message: "فشل في تثبيت التبعية" 
-      });
-    }
-  });
-
-  app.get('/api/system/processes', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/system/processes', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const processes = await pm2Service.listProcesses();
       res.json(processes);
     } catch (error) {
       console.error("Error fetching processes:", error);
-
-      // Provide specific error messages based on error type
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
-        res.status(503).json({ 
-          message: "Process manager is unavailable", 
-          details: errorMessage,
-          solution: "Please ensure PM2 is installed or check process manager status"
-        });
-      } else if (errorMessage.includes('command not found')) {
-        res.status(404).json({ 
-          message: "PM2 command not found", 
-          details: errorMessage,
-          solution: "Please install PM2 using npm install -g pm2"
-        });
-      } else {
-        res.status(500).json({ 
-          message: "Failed to fetch processes", 
-          details: errorMessage 
-        });
-      }
+      res.status(500).json({ message: "Failed to fetch processes" });
     }
   });
 
-  // Terminal routes
-  app.post('/api/terminal/execute', authenticateCustom, async (req: AuthenticatedRequest, res) => {
+  // Health check route
+  app.get('/api/health', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const healthStatus = await systemService.getHealthStatus();
+      res.json(healthStatus);
+    } catch (error) {
+      console.error("Error checking health:", error);
+      res.status(500).json({ message: "Failed to check health status" });
+    }
+  });
+
+  // Database connection test
+  app.get('/api/db/test', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      await storage.testConnection();
+      res.json({ status: 'connected', message: 'Database connection successful' });
+    } catch (error) {
+      console.error("Database connection test failed:", error);
+      res.status(500).json({ 
+        status: 'error', 
+        message: error instanceof Error ? error.message : 'Database connection failed' 
+      });
+    }
+  });
+
+  // Terminal commands (restricted)
+  app.post('/api/terminal/execute', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
     try {
       const { command } = req.body;
 
       // Security: Only allow specific safe commands
       const allowedCommands = [
-        'nginx -t',
-        'systemctl reload nginx',
         'systemctl status nginx',
         'pm2 list',
         'pm2 status',
@@ -834,7 +789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // WebSocket server setup
+  // WebSocket server setup with CORS inheritance
   const wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws) => {
