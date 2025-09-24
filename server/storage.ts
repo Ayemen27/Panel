@@ -21,7 +21,7 @@ import {
   type SystemLog,
   type InsertSystemLog,
 } from "@shared/schema";
-import { db, sql } from "./db";
+import { db } from "./db";
 import { eq, desc, and, or, count, gte } from "drizzle-orm";
 
 export interface IStorage {
@@ -392,11 +392,9 @@ export class DatabaseStorage implements IStorage {
   // Test database connection
   async testConnection(): Promise<void> {
     try {
-      const result = await sql`SELECT 1 as test, NOW() as timestamp`;
-      if (!result || result.length === 0) {
-        throw new Error('Database query returned no results');
-      }
-      console.log('✅ Database connection successful:', result[0]);
+      // Use a simple select operation to test connection
+      const result = await db.select().from(users).limit(1);
+      console.log('✅ Database connection successful');
     } catch (error) {
       console.error('❌ Database connection failed:', error);
       throw new Error(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

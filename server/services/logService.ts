@@ -258,26 +258,29 @@ export class LogService {
             return;
           }
         
-        try {
-          const process = exec(command, { signal: controller.signal });
-          
-          if (process.stdout) {
-            for await (const chunk of process.stdout) {
-              const lines = chunk.toString().split('\n');
-              for (const line of lines) {
-                if (line.trim()) {
-                  yield {
-                    timestamp: new Date().toISOString(),
-                    level: 'info',
-                    message: line.trim(),
-                    source: validatedSource
-                  };
+          try {
+            const process = exec(command, { signal: controller.signal });
+            
+            if (process.stdout) {
+              for await (const chunk of process.stdout) {
+                const lines = chunk.toString().split('\n');
+                for (const line of lines) {
+                  if (line.trim()) {
+                    yield {
+                      timestamp: new Date().toISOString(),
+                      level: 'info',
+                      message: line.trim(),
+                      source: validatedSource
+                    };
+                  }
                 }
               }
             }
+          } catch (error) {
+            // Handle process termination
           }
         } catch (error) {
-          // Handle process termination
+          console.warn('Failed to setup log tailing:', error);
         }
       }
     };
