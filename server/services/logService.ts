@@ -238,21 +238,25 @@ export class LogService {
       [Symbol.asyncIterator]: async function* () {
         let command = '';
         
-        // Validate source parameter
-        const validatedSource = SecurityUtils.validateLogSource(source);
-        
-        if (validatedSource === 'nginx') {
-          command = 'sudo tail -f /var/log/nginx/error.log';
-        } else if (validatedSource === 'system') {
-          command = 'journalctl -f --no-pager';
-        } else if (validatedSource === 'pm2' && appName) {
-          // Validate and escape appName to prevent injection
-          const validatedAppName = SecurityUtils.validateAppName(appName);
-          const escapedAppName = SecurityUtils.escapeShellArg(validatedAppName);
-          command = `pm2 logs ${escapedAppName} --raw --lines 0`;
-        }
-        
-        if (!command) return;
+        try {
+          // Validate source parameter
+          const validatedSource = SecurityUtils.validateLogSource(source);
+          
+          if (validatedSource === 'nginx') {
+            command = 'sudo tail -f /var/log/nginx/error.log';
+          } else if (validatedSource === 'system') {
+            command = 'journalctl -f --no-pager';
+          } else if (validatedSource === 'pm2' && appName) {
+            // Validate and escape appName to prevent injection
+            const validatedAppName = SecurityUtils.validateAppName(appName);
+            const escapedAppName = SecurityUtils.escapeShellArg(validatedAppName);
+            command = `pm2 logs ${escapedAppName} --raw --lines 0`;
+          }
+          
+          if (!command) {
+            console.warn('Invalid log source or missing app name for PM2 logs');
+            return;
+          }
         
         try {
           const process = exec(command, { signal: controller.signal });

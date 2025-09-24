@@ -48,29 +48,46 @@ export class PM2Service {
         '/usr/local/bin/pm2',
         '/usr/bin/pm2',
         process.env.HOME + '/.npm/bin/pm2',
-        '/home/runner/.config/npm/node_global/bin/pm2'
+        '/home/runner/.config/npm/node_global/bin/pm2',
+        'npx pm2'
       ];
 
       let pm2Found = false;
+      let workingPath = '';
+      
       for (const path of possiblePaths) {
         try {
-          await execAsync(`${path} --version`);
-          pm2Found = true;
-          break;
-        } catch {
+          const { stdout } = await execAsync(`${path} --version`);
+          if (stdout && stdout.trim()) {
+            pm2Found = true;
+            workingPath = path;
+            console.log(`✅ PM2 found at: ${path}, version: ${stdout.trim()}`);
+            break;
+          }
+        } catch (error) {
           continue;
         }
       }
 
       if (pm2Found) {
         this.pm2Available = true;
-        console.log('✅ PM2 is available');
+        console.log('✅ PM2 is available and working');
+        
+        // Try to save and resurrect any existing processes
+        try {
+          await execAsync(`${workingPath} resurrect`);
+          console.log('✅ PM2 processes resurrected');
+        } catch (error) {
+          console.log('ℹ️ No PM2 processes to resurrect');
+        }
+        
         return true;
       } else {
         throw new Error('PM2 not found in any expected location');
       }
     } catch (error) {
-      console.warn('PM2 is not available, using fallback process management');
+      console.warn('⚠️ PM2 is not available, using fallback process management');
+      console.warn('💡 Consider installing PM2: npm install -g pm2');
       this.pm2Available = false;
       return false;
     }

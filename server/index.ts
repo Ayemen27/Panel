@@ -67,6 +67,37 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  
+  // Check if port is available
+  const net = await import('net');
+  const checkPort = (port: number): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const tester = net.createServer()
+        .once('error', () => resolve(false))
+        .once('listening', () => {
+          tester.close();
+          resolve(true);
+        })
+        .listen(port, '0.0.0.0');
+    });
+  };
+
+  const isPortAvailable = await checkPort(port);
+  if (!isPortAvailable) {
+    log(`⚠️ Port ${port} is already in use. Attempting to kill existing process...`);
+    try {
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      await execAsync(`pkill -f "node.*${port}"`);
+      log(`✅ Killed existing process on port ${port}`);
+      // Wait a moment for the port to be freed
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      log(`❌ Failed to kill existing process: ${error}`);
+    }
+  }
+
   server.listen(port, "0.0.0.0", () => {
     log(`Server listening on all interfaces at port ${port}`);
     log(`WebSocket server available at ws://localhost:${port}/ws`);

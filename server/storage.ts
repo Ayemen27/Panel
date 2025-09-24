@@ -21,7 +21,7 @@ import {
   type SystemLog,
   type InsertSystemLog,
 } from "@shared/schema";
-import { db } from "./db";
+import { db, sql } from "./db";
 import { eq, desc, and, or, count, gte } from "drizzle-orm";
 
 export interface IStorage {
@@ -392,9 +392,13 @@ export class DatabaseStorage implements IStorage {
   // Test database connection
   async testConnection(): Promise<void> {
     try {
-      // Use proper Drizzle query instead of raw execute
-      await db.select().from(users).limit(1);
+      const result = await sql`SELECT 1 as test, NOW() as timestamp`;
+      if (!result || result.length === 0) {
+        throw new Error('Database query returned no results');
+      }
+      console.log('✅ Database connection successful:', result[0]);
     } catch (error) {
+      console.error('❌ Database connection failed:', error);
       throw new Error(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
