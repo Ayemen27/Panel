@@ -1,0 +1,875 @@
+محادثات الوكيل رقم 1
+
+ بناء التطبيق لوحة التحكم احترافية مع تصميم وجهات uxui تدعم جميع شاشات الهواتف
+
+تمام، فهمت طلبك. تريد لوحة تحكم متقدمة لإدارة سيرفر Nginx والتطبيقات بطريقة مرئية، مع إشعارات وميزات كاملة. سأرسم لك خطة شاملة مع المكونات التي تحتاجها، وكيفية تنفيذها على سيرفرك الحالي.
+
+1️⃣ مميزات لوحة التحكم المقترحة
+
+إدارة التطبيقات
+إضافة/حذف التطبيقات بسهولة.
+
+ربط دومين لكل تطبيق تلقائيًا.
+
+تعديل المنافذ ومسارات الجذر (root).
+
+إدارة Nginx
+إنشاء وتعديل ملفات التكوين لكل تطبيق.
+
+تفعيل/تعطيل أي موقع بسهولة.
+
+إعادة تحميل Nginx بضغطة زر.
+
+التحقق من صحة التكوين قبل التطبيق (nginx -t).
+
+إدارة SSL
+إنشاء وتجديد شهادات SSL تلقائيًا عبر Let's Encrypt.
+
+عرض حالة الشهادات وتنبيه قبل انتهاء صلاحيتها.
+
+دعم HTTPS لجميع التطبيقات.
+
+إدارة السيرفر
+مراقبة العمليات (المنافذ المستخدمة، التطبيقات قيد التشغيل).
+
+تشغيل/إيقاف أي تطبيق Node.js أو أي خدمة على السيرفر.
+
+لوحة إشعارات
+عرض الأخطاء فورًا (مثلاً: أخطاء Nginx، شهادات منتهية، تطبيق لا يعمل).
+
+سجل الأحداث والتغييرات لكل تطبيق.
+
+واجهة متقدمة
+تصميم حديث باستخدام React أو Vue.
+
+إمكانية الدخول بأدوار (Admin، Operator، إلخ).
+
+عرض الإحصائيات: عدد التطبيقات، الحالة، SSL، استخدام الموارد.
+
+2️⃣ المكونات التقنية المقترحة
+
+المكون الغرض
+
+Frontend React.js + TailwindCSS لواجهة سريعة وجذابة
+Backend Node.js أو Python (FastAPI/Express) لإدارة السيرفر والتطبيقات
+Database SQLite أو PostgreSQL لحفظ معلومات التطبيقات، الإشعارات، المستخدمين
+Nginx يبقى كما هو كخادم ويب، لوحة التحكم تدير التكوينات والملفات
+Certbot لتجديد شهادات SSL تلقائيًا من الواجهة
+Socket.io / WebSocket إشعارات فورية على لوحة التحكم
+
+3️⃣ آلية عمل النظام
+
+إدارة التطبيقات
+عند إضافة تطبيق جديد:
+
+اللوحة تنشئ ملف تكوين Nginx تلقائيًا.
+
+تحدد proxy_pass إلى المنفذ المطلوب.
+
+تتيح إصدار شهادة SSL عبر Certbot.
+
+عند حذف تطبيق: حذف ملفات التكوين وإيقاف التطبيق.
+
+مراقبة الأخطاء
+قراءة ملفات سجل Nginx و Node.js.
+
+إرسال إشعارات فورية للوحة التحكم عند أي خطأ.
+
+التحديثات
+لوحة التحكم قادرة على تشغيل أي أمر على السيرفر:
+
+nginx -t
+
+systemctl reload nginx
+
+npm start أو pm2 start app
+
+4️⃣ التقنيات المساعدة لتسهيل العمل
+
+PM2: لإدارة جميع تطبيقات Node.js، تشغيلها، إعادة تشغيلها تلقائيًا عند توقفها.
+
+Docker (اختياري): فصل كل تطبيق في حاوية مستقلة، مما يجعل إدارة المنافذ أسهل.
+
+Web Terminal داخل اللوحة: لتشغيل أي أمر من الواجهة مباشرة.
+
+5️⃣ خطوات التنفيذ
+
+إنشاء مشروع Backend (Node.js + Express أو FastAPI)
+
+ربطه بـ Database لتخزين التطبيقات والمستخدمين
+
+تطوير واجهة Frontend بـ React.js + Tailwind
+
+بناء واجهة مراقبة وإشعارات باستخدام WebSocket
+
+تكامل مع:
+
+Nginx (إنشاء/تعديل ملفات المواقع)
+
+Certbot (إدارة SSL)
+
+PM2 (تشغيل التطبيقات)
+
+إضافة صلاحيات لكل مستخدم للوصول للوحة والتحكم في التطبيقات.
+جميل — سأعطيك تفصيلًا منظّمًا قابلًا للتنفيذ: قوائم الأزرار، تبويبات واجهة المستخدم، سلوك كل زر، السيناريوهات (قصص الاستخدام) خطوة-بـ-خطوة، والأوامر/نهايات الـ API التي يجب تنفيذها في الخلفية. كل شيء مكتوب بالعربي ومهيأ كي تبدأ التصميم أو التطوير مباشرة.
+
+واجهة رئيسية — شريط تنقّل علوي
+
+الأزرار الأساسية (global):
+
+Dashboard
+
+Apps
+
+Domains / DNS
+
+Nginx
+
+SSL (Certificates)
+
+Processes / Services
+
+Logs
+
+Notifications (جرس) ← عدد التنبيهات غير المقروءة
+
+Users (صلاحيات)
+
+Terminal
+
+Settings
+
+تبويبات (Pages) مفصّلة مع أزرار وسلوك
+
+Dashboard
+يعرض لمحة سريعة: عدد التطبيقات، حالات التطبيقات (UP/DOWN)، عدد الشهادات المنتهية خلال 30 يومًا، أخطاء Nginx الأخيرة، استخدام CPU/RAM. أزرار/عناصر:
+
+Refresh (تحديث لوحة)
+
+Quick actions: Add app، Issue cert، Reload Nginx
+
+KPI cards (clickable) → تنقل لتبويب تفصيلي
+
+إشعارات محتملة على الـ Dashboard:
+
+"تطبيق XYZ متوقف — اضغط لاستعادة" (زر: Restart)
+
+"شهادة binarjoin... تنتهي خلال 7 أيام — تجديد الآن"
+
+Apps — إدارة التطبيقات (الصفحة الأساسية لإدارة كل تطبيق)
+قائمة تطبيقات (جدول): اسم، دومين، منفذ محلي، حالة (UP/DOWN)، CPU، RAM، PM2 status، SSL status، أزرار سريعة. أزرار داخل كل صف:
+
+Start / Stop / Restart
+
+View Logs
+
+Edit (تعديل الإعدادات: port, root, env)
+
+Link Domain
+
+Create Nginx Config
+
+Remove App
+
+أزرار أعلى الجدول:
+
+Add New App (modal)
+
+Bulk Start/Stop
+
+Import from file (JSON)
+
+نموذج Add New App (modal):
+
+App name
+
+Run command (مثال: npm start أو pm2 start app.js --name "app2")
+
+Port (مثلاً 3001)
+
+Root path (مثلاً /home/administrator/app2)
+
+Use PM2 toggle
+
+Domain(s) (اختياري)
+
+Proxy type: http / websocket
+
+Env variables (key/value)
+
+Buttons: Create (يُنفذ backend: create app record + optionally start via PM2) ، Cancel
+
+Backend actions mapped:
+
+Create app → save DB record, optionally pm2 start, create systemd service if required
+
+Start → pm2 start <name> أو systemctl start <service>
+
+Stop → pm2 stop <name>
+
+Restart → pm2 restart <name>
+
+View Logs → tail ~/.pm2/logs/<name>-out.log أو قراءة ملف log path
+
+Domains / DNS
+صفحة لإدارة ربط الدومينات بالسرفر (ملاحظات: لا تغيّر سجلات مزود DNS من هنا إلا إذا استخدمت API لمزود DNS). عناصر:
+
+Add Domain (input domain, choose app to map)
+
+Show required DNS record(s) (A / CNAME) مع نسخ بنقرة
+
+DNS Check button → يفحص A/AAAA وتقرير نشر (مثال: uses dig or online check)
+
+Button: "Set up Nginx + Issue SSL" (يفعل سلسلة من الأوامر: create nginx config, reload nginx, certbot issue)
+
+Outputs:
+
+DNS status: OK / NXDOMAIN / Not pointed
+
+Tooltip: "إذا كنت تستخدم Cloudflare — ضع proxied OFF أثناء إصدار الشهادات"
+
+Nginx (إدارة ملفات التكوين)
+قائمة المواقع المفعّلة مع أزرار:
+
+Edit config (editor in UI)
+
+Test config (nginx -t)
+
+Reload (systemctl reload nginx)
+
+Enable/Disable site (creates/removes symlink in sites-enabled)
+
+View effective config
+
+Download config
+
+Editor features:
+
+Syntax highlight
+
+Diff before/after التعديل
+
+Preview server blocks and active listening ports
+
+Auto-generate block wizard (form) — يملأ root/proxy_pass/ssl entries
+
+Backend mapping:
+
+Save config → write /etc/nginx/sites-available/<name>, optionally ln -s to sites-enabled
+
+Test → sudo nginx -t (capture output)
+
+Reload → sudo systemctl reload nginx (on success → notification)
+
+خطأ شائع ويجب التنبيه له:
+
+If nginx -t fails → show error excerpt and "revert" option to restore previous config.
+
+SSL (Certificates)
+قائمة الشهادات لكل دومين: issuer, expiry date, path, status. أزرار:
+
+Issue certificate (calls certbot --nginx -d ...)
+
+Renew now (certbot renew --cert-name ... or certbot certonly)
+
+Auto-renew config (on/off)
+
+View fullchain / download pem
+
+Remove cert (revoke?)
+
+إشعارات:
+
+هش: "شهادة تنتهي خلال X يوم — جدولة تجديد تلقائي"
+
+تعرض log نتائج certbot وتفاصيل الأخطاء (ex: NXDOMAIN أو failed challenge)
+
+Processes / Services
+عرض العمليات: pm2 list + systemd services. أزرار:
+
+Start / Stop / Restart / View logs
+
+Enable on boot
+
+Auto-restart policy (for pm2)
+
+Logs
+واجهة بحث/فلتر للسجلات:
+
+مصادر: nginx error/access, app logs (pm2), system logs (journalctl)
+
+بحث بنمط، فلترة بالـ date, level (error/warn/info)
+
+Tail live (WebSocket) + download logs
+
+إنشاء قواعد تنبيه (مثلاً: إذا ظهر "directory index ... forbidden" ثلاث مرات خلال 5 دقائق → إشعار)
+
+Notifications (لوحة اشعارات)
+قائمة مرتبة: نوع (error/warn/info), مصدر، وقت، الحالة (opened/acknowledged/resolved) أزرار لكل إشعار:
+
+Acknowledge
+
+Resolve
+
+Run suggested fix (مثال: for nginx syntax error → revert config or run nginx -t)
+
+سياسة تنبيهات مثال:
+
+Error (Immediate push)
+
+Warning (Dashboard & email)
+
+Info (Dashboard)
+
+Terminal (Web Shell)
+Terminal مدمج (websocket to backend) لتنفيذ أوامر محددة. -حقن حماية: sudoers يسمح بتنفيذ مجموعة أوامر محددة فقط (مثل nginx reload, certbot, pm2) دون كلمة مرور للبك إند.
+
+Buttons: Run common commands (nginx -t, systemctl reload nginx, certbot renew --dry-run)
+
+Users & Permissions
+أدوار مقترحة:
+
+Admin (كل الصلاحيات)
+
+Operator (control apps, logs, restart)
+
+Viewer (قراءة فقط)
+
+Dev (start/stop apps, view logs, not change nginx)
+
+تسجل دخول عبر JWT/Session + 2FA اختياري.
+
+سيناريوهات / قصص استخدام (Walkthroughs)
+
+سيناريو 1 — إضافة تطبيق جديد وربطه بدومين وإصدار SSL
+
+في تبويب Apps → اضغط "Add New App".
+
+املأ: Name=app3, Port=4000, Root=/home/administrator/app3, Use PM2=on.
+
+اضغط Create → backend:
+
+يحفظ السجل في DB.
+
+يشغّل: pm2 start /home/administrator/app3/index.js --name app3
+
+تظهر البطاقة App3 في قائمة Apps بحالة UP.
+
+اذهب إلى Domains → Add Domain: app3.binarjoinanelytic.info → اختر App3.
+
+اضغط "Show DNS record" → انسخ سجل A → وجه الدومين عند مزود DNS إلى 93.127.142.144.
+
+بعد التأكد من DNS (DNS Check → OK) اضغط "Set up Nginx + Issue SSL" → backend:
+
+ينشئ ملف /etc/nginx/sites-available/app3.binarjoinanelytic.info مع proxy_pass 127.0.0.1:4000.
+
+ينشئ symlink في sites-enabled.
+
+يشغّل sudo nginx -t → إذا OK → sudo systemctl reload nginx.
+
+يشغّل sudo certbot --nginx -d app3.binarjoinanelytic.info -d www.app3...
+
+إشعار نجاح: "تم إعداد app3 وعنوان https://app3.binarjoinanelytic.info بنجاح".
+شعارات/خطأ متوقع:
+
+إذا DNS لم يُنشَر: إشعار "DNS لم يُوجَّه — لا يمكن إصدار الشهادة".
+
+إذا nginx -t فشل: إشعار error مع مقتطف من اللوج وخيار إرجاع التكوين السابق.
+
+سيناريو 2 — تطبيق متوقف تلقائياً/إعادة تشغيله
+
+سيستقبل النظام webhook/pm2 event أو يراقب الحالة دوريًا.
+
+عند اكتشاف أن app2 DOWN → إشعار فوري "app2 متوقف".
+
+لوحة الإشعارات تعرض زر "Restart".
+
+عند الضغط: backend ينفذ pm2 restart app2، ويعرض نتيجة الأمر/log.
+
+إذا فشل restart مرتين → يعرض "attempt failed" ويقترح عرض logs أو تشغيل أمر npm install أو فحص الـ env.
+
+سيناريو 3 — شهادة تنتهي خلال 7 أيام
+
+صفحة SSL تظهر إشعار أصفر.
+
+تنبيه يُرسل (email / in-app).
+
+زر "Renew Now" ينفّذ certbot renew --cert-name binarjoinanelytic.info أو certbot --nginx -d ...
+
+بعد نجاح التجديد → إشعار أخضر: "تم التجديد".
+
+سيناريو 4 — خطأ تكوين Nginx (مثل duplicate server_name)
+
+كاتب جديد للتكوين يضغط Save.
+
+النظام يكتب الملف مؤقتًا، ثم ينفّذ nginx -t.
+
+لو النتيجة failed → يظهر error modal مع نص الخطأ الكامل (مثال: duplicate server name) + زران:
+
+Revert to previous config
+
+Open editor (highlight line)
+
+خيار: auto-fix suggestion (إذا كان واضحًا) أو الرجوع للتكوين السابق بنقرة.
+سيناريو 5 — رابط نطاق يقدم شهادة خاطئة (مثلاً شهادة app2 على binarjoinanelytic.info)
+
+النظام يكتشف mismatch عبر فحص SSL (TLS SNI) أو وقت اتصال المستخدم: certificate CN != requested host.
+
+إشعار فوري يوضح: "المجال binarjoin... يستخدم شهادة app2.binar... — تحقق من إعدادات Nginx".
+
+زر "Fix" يقترح: فتح تبويب Nginx → عرض server blocks المرتبطة بالمجال ومكان وجود ssl_certificate الخاطئ → عرض زر لتعيين الشهادة الصحيح (تعديل مسارات ssl_certificate و ssl_certificate_key) → ثم nginx -t → reload.
+
+الرسائل والإشعارات النصية (نصوص جاهزة)
+
+نجاح:
+
+✅ تم إنشاء التطبيق <name> وتشغيله على المنفذ <port>.
+
+✅ تم إصدار الشهادة بنجاح: https://<domain>.
+
+تحذير:
+
+⚠️ شهادة <domain> تنتهي خلال <days> يومًا — رجاءًا جدّدها.
+
+⚠️ DNS الخاص بـ <domain> لا يشير إلى IP الخادم (NXDOMAIN).
+
+خطأ:
+
+❌ فشل اختبار Nginx: <error snippet> — انقر لعرض السجل.
+
+❌ فشل إصدار الشهادة: NXDOMAIN looking up A for <domain>.
+
+نهاية الخلفية — أوامر شائعة التي ستنادى من الواجهة
+
+إنشاء config وenable:
+
+sudo tee /etc/nginx/sites-available/<name>.conf <<'EOF' ... EOF
+
+sudo ln -s /etc/nginx/sites-available/<name>.conf /etc/nginx/sites-enabled/
+
+sudo nginx -t
+
+sudo systemctl reload nginx
+
+Certbot:
+
+إصدار: sudo certbot --nginx -d domain -d www.domain
+
+تجديد: sudo certbot renew --dry-run
+
+PM2:
+
+Start: pm2 start /path/to/app --name <name>
+
+Stop: pm2 stop <name>
+
+Restart: pm2 restart <name>
+
+Logs: pm2 logs <name> --lines 200
+
+صلاحيات الملفات:
+
+sudo chown -R www-data:www-data /home/administrator/app2
+
+sudo chmod -R 755 /home/administrator/app2
+
+بنية قاعدة بيانات مقترحة (مبسطة)
+
+جدول apps:
+
+id, name, path, start_command, port, use_pm2 (bool), owner_user_id, created_at
+
+جدول domains:
+
+id, domain, app_id, dns_status, ssl_status, cert_expiry_date
+
+جدول nginx_configs:
+
+id, app_id, path, enabled(bool), last_modified
+
+جدول notifications:
+
+id, type, level, message, app_id, resolved, created_at
+
+أمن وتنفيذ (نقاط هامة)
+
+لا تُشغّل واجهة الويب كـ root. استخدم مستخدم محدود يتصل بعميل خلفي (backend) يملك حق تنفيذ مجموعة أوامر محددة عبر sudoers (مثال: /etc/sudoers.d/webpanel يسمح لـ webpanel-user تنفيذ /usr/sbin/nginx و/usr/bin/certbot و/usr/bin/pm2 بدون كلمة مرور).
+
+خزّن مفاتيح الشهادة وبيانات الاعتماد مشفرة في DB أو Vault.
+
+واجهة الوصول محمية: HTTPS + JWT + 2FA.
+
+سجّل كل الأوامر التي ينفذها المستخدم (audit log).
+
+إذا رغبت، أقدّم لك الآن أيًّا مما يلي فورًا (اختر ما تريد ولا تسألني شيء آخر — سأنفذه هنا في الشرح):
+
+نسخة جاهزة لواجهة Add App (JSON spec + backend endpoints) — جاهزة للـ frontend dev.
+
+ملف Nginx generator script (bash) يقوم بإنشاء ملف config تلقائيًا من مدخلات (domain, port, root) ويعيد اختبار وreload.
+
+قالب DB schema (SQL) لجداول apps/domains/notifications.
+
+قائمة كاملة للـ sudoers entries المقترحة وملفات systemd/pm2 templates.
+
+أخبرني أي خيار من الأربعة تريد الآن وسأعطيك المحتوى الكامل فورًا.
+
+28 minutes ago
+أفهم طلبك لبناء لوحة تحكم احترافية لإدارة خادم Nginx والتطبيقات. سأقوم ببناء نظام شامل مع واجهة مستخدم متجاوبة وميزات إدارية متقدمة.
+
+
+Searched Replit's integrations for "authentication"
+App type
+Integrations
+لوحة تحكم احترافية شاملة لإدارة خادم Nginx والتطبيقات مع واجهة عربية متجاوبة
+I'll include the following features:
+
+لوحة تحكم رئيسية تعرض إحصائيات النظام والتطبيقات مع تصميم متجاوب
+إدارة التطبيقات: إضافة/تعديل/حذف تطبيقات Node.js مع PM2
+إدارة Nginx: إنشاء وتعديل ملفات التكوين وإعادة تحميل الخدمة
+إدارة الدومينات: ربط الدومينات بالتطبيقات وفحص DNS
+إدارة شهادات SSL: إصدار وتجديد شهادات Let's Encrypt
+مراقبة العمليات والخدمات مع إمكانية التشغيل/الإيقاف
+نظام إشعارات فوري باستخدام WebSockets للأخطاء والتحديثات
+عارض السجلات المباشر لـ Nginx وتطبيقات PM2
+طرفية ويب لتنفيذ الأوامر الأساسية بأمان
+واجهة مستخدم عربية مع تصميم مظلم/فاتح وتوافق الجوال
+
+Show less
+Start building
+27 minutes ago
+Generated design guidelines
+
+Created server/db.ts
+
+Created server/replitAuth.ts
+
+Created client/src/hooks/useAuth.ts
+
+Created client/src/lib/authUtils.ts
+
+Created shared/schema.ts
+
+Created server/storage.ts
+
+Created server/routes.ts
+
+Created server/services/nginxService.ts
+
+Created server/services/pm2Service.ts
+
+Created server/services/sslService.ts
+
+Created server/services/systemService.ts
+
+Created server/services/logService.ts
+
+Created client/src/hooks/useWebSocket.ts
+
+Created client/src/contexts/NotificationContext.tsx
+
+Created client/src/pages/Landing.tsx
+
+Created client/src/pages/Dashboard.tsx
+
+Created client/src/pages/Applications.tsx
+
+Created client/src/pages/Domains.tsx
+
+Created ``
+
+Created ``
+
+Created ``
+
+Created client/src/index.css
+
+Created tailwind.config.ts
+
+Created client/src/App.tsx
+
+Created client/src/components/Layout/MainLayout.tsx
+
+Created client/src/components/Layout/Header.tsx
+
+Created client/src/components/Layout/Sidebar.tsx
+
+Created client/src/components/Common/StatusBadge.tsx
+
+Created client/src/components/Dashboard/StatsCard.tsx
+
+Created client/src/components/Dashboard/QuickActions.tsx
+
+Created client/src/components/Dashboard/ApplicationsList.tsx
+
+Created client/src/components/Dashboard/NotificationsList.tsx
+
+Created client/src/components/Dashboard/SystemResources.tsx
+
+Created client/src/components/Applications/AddAppModal.tsx
+
+Created client/src/components/Applications/ApplicationTable.tsx
+
+Created client/src/pages/SSL.tsx
+
+Created client/src/pages/Nginx.tsx
+
+Created client/src/pages/Processes.tsx
+
+Created client/src/pages/Logs.tsx
+
+Created client/src/pages/Terminal.tsx
+
+Installed dependencies
+Integrating with Replit Auth, PostgreSQL database, Real-time communication (WebSockets)
+
+Installed openid-client, memoizee, @types/memoizee
+
+Created PostgreSQL database
+
+Installed passport, passport-local, nanoid
+
+Executed [[ -z "$DATABASE_URL" ]] || npm run db:push
+
+Configured Start application to run npm run dev
+Optimized Agent memory
+
+Analyzed diagnostic issues and planned
+Let me understand the current state:
+
+This is an Arabic dashboard for managing Nginx server and applications
+The initial build is complete with all major components
+There are 62 LSP errors across multiple files that need to be fixed
+The system is running on port 5000
+I need to propose a task list to test MVP features efficiently
+First, I should check the logs and LSP diagnostics to understand what issues exist, then create a task list for testing the MVP features while fixing any critical issues.
+
+Let me start by checking the logs and diagnostics to understand the current state.
+
+أرى أن المشروع مبني بالكامل ولكن هناك بعض الأخطاء التي تحتاج إلى إصلاح. دعني أولاً أتحقق من السجلات والأخطاء الحالية ثم أقترح قائمة مهام لاختبار المميزات الأساسية.
+
+Checked console and system logs
+
+"Decided on error analysis priority"
+الآن أرى أن:
+
+الخادم يعمل على المنفذ 5000
+هناك أخطاء في التفويض (401 Unauthorized)
+يوجد 62 خطأ في LSP عبر 15 ملف
+WebSocket متصل
+دعني أتحقق من الأخطاء التفصيلية أولاً ثم أنشئ قائمة مهام للاختبار.
+
+Checked code issues
+
+Planned core issue resolution (5 seconds)
+أرى الآن الأخطاء الأساسية:
+
+ملفات الخدمات مفقودة: pm2Service، sslService، systemService، logService
+مشاكل في الأنواع: البيانات المستلمة من API تُعرَّف كـ {} بدلاً من الأنواع الصحيحة
+مشاكل في null/undefined: بعض الحقول لا تتعامل مع null بشكل صحيح
+يجب أن أنشئ قائمة مهام لإصلاح هذه المشاكل أولاً ثم اختبار المميزات الأساسية. دعني أنشئ خطة عمل شاملة.
+
+بناءً على تحليل الأخطاء الحالية، أحتاج إلى إنشاء خطة شاملة لإصلاح المشاكل واختبار المميزات الأساسية. دعني أضع قائمة مهام منظمة:
+
+
+Decided on service file structure
+الآن بدأت بالمهمة الأولى وهي إنشاء ملفات الخدمات المفقودة. دعني أولاً أتحقق من الملفات الموجودة لفهم البنية المطلوبة.
+
+سأبدأ بإصلاح ملفات الخدمات المفقودة أولاً. دعني أتحقق من الملفات الموجودة لفهم البنية المطلوبة:
+
+Opened server/services directory
+
+"Investigated file existence"
+الملفات موجودة فعلاً! يبدو أن المشكلة ليست في عدم وجود الملفات. دعني أتحقق من محتوى server/routes.ts لأرى ما هي المشكلة بالضبط.
+
+الملفات موجودة فعلاً! دعني أتحقق من المشكلة في server/routes.ts:
+
+
+Opened server/routes.ts
+
+Determined pm2Service.ts content issues
+المشكلة واضحة - إن ملفات الخدمات موجودة ولكن قد تكون فارغة أو لا تُصدِّر الكائنات المطلوبة. دعني أتحقق من محتوى ملف pm2Service.ts لأرى ما المشكلة:
+
+دعني أتحقق من محتوى ملفات الخدمات لأرى ما المشكلة:
+
+
+Opened server/services/pm2Service.ts
+
+Opened server/services/sslService.ts
+
+Opened server/services/systemService.ts
+
+Opened server/services/logService.ts
+
+Decided on service file diagnostics (4 seconds)
+الآن أرى أن ملفات الخدمات كلها موجودة ومُصدَّرة بشكل صحيح. المشكلة قد تكون في مسارات الاستيراد. دعني أتحقق من خطأ nginxService أولاً، ثم أنتقل إلى المشاكل الأخرى.
+
+بما أن الملفات موجودة والـ exports صحيحة، فالمشكلة قد تكون في TypeScript configuration أو في إعادة تشغيل الخادم. دعني أسرِّع في إصلاح المشاكل الأساسية.
+
+أولاً سأتحقق من خطأ nginxService.ts:
+
+الآن أرى أن ملفات الخدمات موجودة بالفعل. المشكلة يبدو أنها في TypeScript. دعني أصلح مشكلة nginxService أولاً ثم أنتقل إلى المشاكل الأخرى:
+
+
+Opened server/services/nginxService.ts
+
+Resolved execAsync input issue
+أجد المشكلة في السطر 54. المشكلة هي أن execAsync لا يدعم خاصية input مباشرة. دعني أصلح هذا:
+
+
+Edited server/services/nginxService.ts
+
+Diagnosed server/storage.ts error
+ممتاز! خطأ nginxService اختفى. الآن دعني أصلح خطأ server/storage.ts. أولاً أحتاج لرؤية المشكلة بوضوح:
+
+ممتاز! الآن دعني أصلح المشكلة التالية في server/storage.ts:
+
+
+Opened server/storage.ts
+
+Decided on query data type fix
+أرى المشكلة في السطر 285. يبدو أن هناك مشكلة في نوع البيانات المرجعة من query. دعني أرى السطر الكامل وأصلحه. المشكلة يبدو أنها تتعلق بـ .where() method على query object.
+
+دعني أفهم المشكلة أكثر وأصلح هذا الخطأ:
+
+
+Opened server/storage.ts
+
+Decided on query variable typing
+المشكلة في تعيين query variable. المشكلة هي أن TypeScript لا يمكنه استنتاج النوع الصحيح عندما نعيد تعيين query. دعني أصلح هذا باستخدام طريقة أفضل:
+
+
+Edited server/storage.ts
+
+Identified server route errors
+ممتاز! خطأ storage.ts اختفى أيضاً. الآن دعني أتحقق من أخطاء server/routes.ts:
+
+ممتاز! الآن دعني أصلح أخطاء server/routes.ts. أولاً دعني أتحقق من طبيعة هذه الأخطاء:
+
+Checked code issues
+
+Diagnosed TypeScript loading issue
+يبدو أن هناك مشكلة في تحديث أو إعادة تحميل TypeScript. الملفات موجودة ولكن TypeScript لا يراها. دعني أعيد تشغيل النظام وأحاول إصلاح هذا:
+
+يبدو أن هناك مشكلة في cache TypeScript. دعني أعيد تشغيل النظام أولاً:
+
+
+Restarted Start application
+
+Decided database update order
+أحتاج لتحديث قاعدة البيانات أولاً ثم إصلاح المشاكل. دعني أولاً أتحقق من السجلات الجديدة ثم أقوم بإعداد قاعدة البيانات بشكل صحيح.
+
+دعني أتحقق من السجلات الجديدة وأقوم بإعداد قاعدة البيانات:
+
+Checked console and system logs
+
+Planned database integration approach
+الخادم يعمل ولكن لا يزال هناك مشاكل في التفويض. أحتاج إلى إعداد قاعدة البيانات وإصلاح المشاكل. دعني أولاً أبحث عن integration قاعدة البيانات وأستخدمها:
+
+دعني أولاً أقوم بإعداد قاعدة البيانات بشكل صحيح وأستخدم integration المناسبة:
+
+
+Searched Replit's integrations for "database"
+
+Evaluated database integration setup
+integration قاعدة البيانات موجود بالفعل. دعني أتحقق من محتواه أولاً لأرى كيف يجب إعداد قاعدة البيانات بشكل صحيح:
+
+قاعدة البيانات موجودة بالفعل. دعني أتحقق من إعدادها:
+
+
+Viewed PostgreSQL database integration
+
+Checked database schema status
+أحتاج أولاً للتحقق من حالة قاعدة البيانات الحالية وملف schema.ts لأرى إن كانت قاعدة البيانات تحتاج لإعداد أم لا. بالفعل يجب أن أتحقق من ملف db.ts أيضاً:
+
+دعني أتحقق من الملفات الحالية لقاعدة البيانات أولاً:
+
+
+Opened server/db.ts
+
+Opened shared/schema.ts
+
+Established database table structures
+ممتاز! قاعدة البيانات جاهزة والـ schema موجود بالفعل. دعني أقوم بإنشاء الجداول في قاعدة البيانات:
+
+ممتاز! قاعدة البيانات جاهزة والـ schema موجود. دعني أقوم بإنشاء الجداول في قاعدة البيانات:
+
+
+Executed npm run db:push
+$ npm run db:push
+
+"Planned import error resolution"
+ممتاز! تم إنشاء الجداول بنجاح. الآن دعني أرى إن كانت هناك مشاكل LSP جديدة وأصلح الأخطاء الباقية. لاحظت أن مشكلة storage.ts عادت، دعني أتحقق من ذلك. أولاً دعني أنهي إصلاح مشكلة imports في server/routes.ts بأخطاء أقل تعقيداً:
+
+ممتاز! تم إنشاء قاعدة البيانات بنجاح. الآن دعني أحدث task list وأبدأ في إصلاح المشاكل الأساسية:
+
+
+Add missing files to fix errors
+
+Fix data storage type problems
+
+Set up database and tables
+
+Fixed Dashboard component types
+الآن أحتاج لإصلاح مشاكل الأنواع في المكونات الأمامية. أكبر مشكلة هي أن استعلامات البيانات تُعرَّف كـ {} بدلاً من الأنواع الصحيحة. دعني أبدأ بإصلاح Dashboard.tsx أولاً والذي يحتوي على أكبر عدد من الأخطاء:
+
+الآن دعني أبدأ بإصلاح مشاكل الأنواع في المكونات الأمامية. سأبدأ بصفحة Dashboard التي تحتوي على أكبر عدد من الأخطاء:
+
+
+Opened client/src/pages/Dashboard.tsx
+
+Determined type definitions for queries
+أرى المشكلة الآن. الـ useQuery يُعرِّف النوع كـ {} بدلاً من الأنواع الصحيحة. أحتاج لإضافة الأنواع المناسبة لكل استعلام. دعني أولاً أتحقق من schema.ts لأعرف الأنواع المطلوبة، ثم أصلح هذه المشاكل:
+
+أرى المشكلة الآن. الاستعلامات لا تحتوي على أنواع صحيحة. دعني أصلح هذا بإضافة الأنواع المناسبة. أولاً دعني أقرأ باقي ملف Dashboard والملفات ذات الصلة:
+
+
+Opened client/src/pages/Dashboard.tsx
+
+Opened shared/schema.ts
+
+Defined TypeScript data types
+الآن أحتاج لإنشاء أنواع TypeScript للبيانات المرجعة من API endpoints. دعني أنشئ ملف للأنواع أولاً، ثم أصلح Dashboard.tsx:
+
+الآن أحتاج لإنشاء أنواع TypeScript للبيانات المرجعة من API. دعني أصلح Dashboard.tsx بإضافة الأنواع المناسبة:
+
+
+Edited client/src/pages/Dashboard.tsx
+
+Fixed useQuery type calls
+ممتاز! قلل عدد الأخطاء من 16 إلى 0 في Dashboard.tsx. الآن دعني أصلح useQuery calls لتستخدم الأنواع الصحيحة:
+
+ممتاز! الأخطاء في Dashboard.tsx انخفضت كثيراً. الآن دعني أصلح useQuery calls لتستخدم الأنواع الصحيحة:
+
+
+Edited client/src/pages/Dashboard.tsx
+
+Decided on next component focus
+ممتاز! الآن Dashboard.tsx لا يحتوي على أخطاء LSP. دعني أنتقل إلى الصفحة التالية وأصلح Applications.tsx، ثم أصلح باقي المكونات. سأركز على أسرع الإصلاحات أولاً:
+
+ممتاز! الآن دعني أصلح صفحة Applications.tsx:
+
+
+Opened client/src/pages/Applications.tsx
+
+Decided on application error resolution
+أرى أن هناك سطرين جديدين من الأخطاء في Dashboard.tsx ظهروا. دعني أولاً أصلح التطبيقات، ثم أرجع لـ Dashboard. أرى المشكلة في السطر 195 - نفس مشكلة النوع.
+
+دعني أتحقق من Applications.tsx وأصلحه:
+
+دعني أصلح مشكلة النوع في Applications.tsx:
+
+
+Opened client/src/pages/Applications.tsx
+
+Decided on Applications.tsx type
+دعني أصلح Applications.tsx بإضافة النوع المناسب:
+
+
+Edited client/src/pages/Applications.tsx
+
+1 minute ago
+just now
+Add detailed system and application statistics to the dashboard view
+1 minute of work
+
+Scroll to
