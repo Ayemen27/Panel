@@ -24,7 +24,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const response = await fetch('/api/notifications', {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);
@@ -41,7 +41,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         method: 'PATCH',
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         setNotifications(prev => 
           prev.map(n => n.id === id ? { ...n, acknowledged: true } : n)
@@ -59,7 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         method: 'PATCH',
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         setNotifications(prev => 
           prev.map(n => n.id === id ? { ...n, resolved: true } : n)
@@ -79,7 +79,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const newNotification = lastMessage.data as Notification;
         setNotifications(prev => [newNotification, ...prev]);
         setUnreadCount(prev => prev + 1);
-        
+
         // Show toast notification
         toast({
           title: newNotification.title,
@@ -87,7 +87,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           variant: newNotification.type === 'error' ? 'destructive' : 'default',
         });
         break;
-        
+
       case 'APPLICATION_STATUS_CHANGED':
       case 'APPLICATION_CREATED':
       case 'APPLICATION_UPDATED':
@@ -102,6 +102,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     refreshNotifications();
   }, []);
+
+  // حفظ الإشعارات في localStorage مع معالجة الأخطاء
+  useEffect(() => {
+    try {
+      // احتفظ بآخر 50 إشعار فقط لتوفير المساحة
+      const notificationsToSave = notifications.slice(0, 50);
+      localStorage.setItem('notifications', JSON.stringify(notificationsToSave));
+    } catch (error) {
+      console.warn('Failed to save notifications to localStorage:', error);
+
+      // في حالة امتلاء localStorage، احذف البيانات القديمة
+      try {
+        localStorage.removeItem('notifications');
+        const essentialNotifications = notifications.slice(0, 20);
+        localStorage.setItem('notifications', JSON.stringify(essentialNotifications));
+      } catch (fallbackError) {
+        console.error('Failed to save even essential notifications:', fallbackError);
+      }
+    }
+  }, [notifications]);
 
   const value: NotificationContextType = {
     notifications,

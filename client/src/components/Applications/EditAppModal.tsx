@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -62,7 +61,7 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
       setValue("command", application.command);
       setValue("description", application.description || "");
       setValue("usePm2", application.usePm2);
-      
+
       // Convert env vars object to text
       if (application.envVars && typeof application.envVars === 'object') {
         const envText = Object.entries(application.envVars)
@@ -76,7 +75,7 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
   const updateAppMutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (!applicationId) return;
-      
+
       // Parse environment variables
       let envVars = {};
       if (envVarsText.trim()) {
@@ -145,8 +144,14 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} data-testid="edit-app-modal">
-      <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+      <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-auto" aria-describedby="edit-dialog-description">
         <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">
+            تعديل التطبيق
+          </DialogTitle>
+          <div id="edit-dialog-description" className="sr-only">
+            نموذج لتعديل بيانات التطبيق الموجود
+          </div>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold">
               تعديل التطبيق

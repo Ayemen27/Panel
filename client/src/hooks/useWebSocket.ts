@@ -1,104 +1,135 @@
-import { useEffect, useRef, useState } from 'react';
 
-export interface WebSocketMessage {
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+interface WebSocketMessage {
   type: string;
-  data?: any;
-  message?: string;
+  data: any;
 }
 
-export function useWebSocket(url?: string) {
+export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const reconnectInterval = 3000;
 
-  const setupWebSocketHandlers = (ws: WebSocket) => {
-    ws.onopen = () => {
-      setIsConnected(true);
-      setError(null);
-      console.log('WebSocket connected');
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message: WebSocketMessage = JSON.parse(event.data);
-        setLastMessage(message);
-      } catch (err) {
-        console.error('Failed to parse WebSocket message:', err);
-      }
-    };
-
-    ws.onclose = () => {
-      setIsConnected(false);
-      console.log('WebSocket disconnected');
-
-      // Attempt to reconnect after 3 seconds
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connect();
-      }, 3000);
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setError('WebSocket connection error');
-    };
-  };
-
-  const connect = () => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+  const connect = useCallback(() => {
+    // منع الاتصالات المتعددة
+    if (wsRef.current?.readyState === WebSocket.CONNECTING || 
+        wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
 
-    // Always use the same host as the current page for WebSocket
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsHost = window.location.host;
-    const wsUrl = url || `${protocol}//${wsHost}/ws`;
-
     try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      
       console.log('Connecting to WebSocket:', wsUrl);
+      
       wsRef.current = new WebSocket(wsUrl);
-      setupWebSocketHandlers(wsRef.current);
-    } catch (err) {
-      setError('Failed to create WebSocket connection');
-      console.error('WebSocket creation error:', err);
+      
+      wsRef.current.onopen = () => {
+        console.log('WebSocket connected');
+        setIsConnected(true);
+        reconnectAttemptsRef.current = 0;
+        
+        // مسح أي timeout لإعادة الاتصال
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+      };
+      
+      wsRef.current.onmessage = (event) => {
+        try {
+          const message: WebSocketMessage = JSON.parse(event.data);
+          setLastMessage(message);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+      
+      wsRef.current.onclose = (event) => {
+        console.log('WebSocket disconnected', event.code, event.reason);
+        setIsConnected(false);
+        wsRef.current = null;
+        
+        // إعادة الاتصال التلقائي مع حد أقصى للمحاولات
+        if (reconnectAttemptsRef.current < maxReconnectAttempts && 
+            event.code !== 1000) { // 1000 = إغلاق طبيعي
+          
+          reconnectAttemptsRef.current++;
+          const delay = reconnectInterval * Math.pow(1.5, reconnectAttemptsRef.current - 1);
+          
+          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, delay);
+        }
+      };
+      
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setIsConnected(false);
+      };
+      
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error);
+      setIsConnected(false);
     }
-  };
+  }, []);
 
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-
+    
     if (wsRef.current) {
-      wsRef.current.close();
+      wsRef.current.close(1000, 'Manual disconnect');
       wsRef.current = null;
     }
-  };
+    
+    setIsConnected(false);
+    reconnectAttemptsRef.current = maxReconnectAttempts; // منع إعادة الاتصال
+  }, []);
 
-  const sendMessage = (message: WebSocketMessage) => {
+  const sendMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
-    } else {
-      console.warn('WebSocket is not connected');
+      return true;
     }
-  };
+    return false;
+  }, []);
 
   useEffect(() => {
     connect();
-
+    
     return () => {
       disconnect();
     };
-  }, [url]);
+  }, [connect, disconnect]);
+
+  // إعادة الاتصال عند استعادة التركيز على النافذة
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!isConnected && reconnectAttemptsRef.current < maxReconnectAttempts) {
+        connect();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isConnected, connect]);
 
   return {
     isConnected,
     lastMessage,
-    error,
     sendMessage,
-    connect,
+    reconnect: connect,
     disconnect
   };
 }

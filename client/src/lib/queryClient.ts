@@ -12,21 +12,49 @@ async function throwIfResNotOk(res: Response) {
 
 export async function apiRequest(
   method: string,
-  url: string,
-  data?: unknown | undefined,
+  endpoint: string,
+  data?: any
 ): Promise<Response> {
-  // Ensure we use the correct domain
-  const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
-
-  const res = await fetch(fullUrl, {
+  const options: RequestInit = {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  };
 
-  await throwIfResNotOk(res);
-  return res;
+  if (data) {
+    options.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(endpoint, options);
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+      // محاولة الحصول على رسالة خطأ من الخادم
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch {
+        // تجاهل أخطاء تحليل JSON
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    return response;
+  } catch (error) {
+    // معالجة أخطاء الشبكة
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('فشل في الاتصال بالخادم. تحقق من اتصال الإنترنت.');
+    }
+
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

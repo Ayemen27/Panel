@@ -106,8 +106,14 @@ export function AddAppModal({ open, onOpenChange }: AddAppModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} data-testid="add-app-modal">
-      <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+      <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-auto" aria-describedby="dialog-description">
         <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">
+              إضافة تطبيق جديد
+            </DialogTitle>
+            <div id="dialog-description" className="sr-only">
+              نموذج لإضافة تطبيق جديد إلى النظام
+            </div>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold">
               إضافة تطبيق جديد
