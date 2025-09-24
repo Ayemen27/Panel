@@ -48,9 +48,9 @@ export function ApplicationsList({ applications, loading }: ApplicationsListProp
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">التطبيقات</CardTitle>
           <Link href="/applications">
-            <a className="text-primary hover:text-primary/80 text-sm" data-testid="link-view-all-apps">
+            <span className="text-primary hover:text-primary/80 text-sm cursor-pointer" data-testid="link-view-all-apps">
               عرض الكل
-            </a>
+            </span>
           </Link>
         </div>
       </CardHeader>
@@ -83,7 +83,7 @@ export function ApplicationsList({ applications, loading }: ApplicationsListProp
                   </div>
                 </div>
                 <StatusBadge 
-                  status={app.status} 
+                  status={app.status || 'stopped'} 
                   data-testid={`app-status-${app.id}`}
                 />
               </div>
