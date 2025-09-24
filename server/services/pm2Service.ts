@@ -42,10 +42,33 @@ export class PM2Service {
     }
 
     try {
-      await execAsync('which pm2');
-      await execAsync('pm2 --version');
-      this.pm2Available = true;
-      return true;
+      // Try multiple paths for PM2
+      const possiblePaths = [
+        'pm2',
+        '/usr/local/bin/pm2',
+        '/usr/bin/pm2',
+        process.env.HOME + '/.npm/bin/pm2',
+        '/home/runner/.config/npm/node_global/bin/pm2'
+      ];
+
+      let pm2Found = false;
+      for (const path of possiblePaths) {
+        try {
+          await execAsync(`${path} --version`);
+          pm2Found = true;
+          break;
+        } catch {
+          continue;
+        }
+      }
+
+      if (pm2Found) {
+        this.pm2Available = true;
+        console.log('✅ PM2 is available');
+        return true;
+      } else {
+        throw new Error('PM2 not found in any expected location');
+      }
     } catch (error) {
       console.warn('PM2 is not available, using fallback process management');
       this.pm2Available = false;
@@ -56,16 +79,28 @@ export class PM2Service {
   // Fallback method to start application without PM2
   async startApplicationFallback(application: Application): Promise<void> {
     try {
+      // Ensure the directory exists and is accessible
+      const fs = await import('fs').then(m => m.promises);
+      try {
+        await fs.access(application.path);
+      } catch {
+        throw new Error(`Application path does not exist: ${application.path}`);
+      }
+
       const child = spawn('sh', ['-c', application.command], {
         cwd: application.path,
         detached: true,
-        stdio: 'ignore'
+        stdio: 'pipe' // Change to pipe to capture errors
       });
+
+      if (!child.pid) {
+        throw new Error('Failed to spawn process');
+      }
 
       child.unref();
 
       this.fallbackProcesses.set(application.name, {
-        pid: child.pid!,
+        pid: child.pid,
         name: application.name,
         startTime: new Date(),
         status: 'running',
@@ -75,13 +110,25 @@ export class PM2Service {
 
       // Check if process started successfully
       await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (child.killed) {
-            reject(new Error('Process failed to start'));
+        const timeout = setTimeout(() => {
+          if (child.killed || child.exitCode !== null) {
+            reject(new Error('Process failed to start or exited immediately'));
           } else {
             resolve(void 0);
           }
-        }, 1000);
+        }, 2000);
+
+        child.on('error', (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+
+        child.on('exit', (code) => {
+          if (code !== null && code !== 0) {
+            clearTimeout(timeout);
+            reject(new Error(`Process exited with code ${code}`));
+          }
+        });
       });
     } catch (error) {
       throw new Error(`Failed to start application using fallback: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -109,7 +156,7 @@ export class PM2Service {
     
     if (pm2Available) {
       try {
-        const command = `cd ${application.path} && pm2 start ${application.command} --name ${application.name}`;
+        const command = `cd ${application.path} && pm2 start "${application.command}" --name "${application.name}"`;
         await execAsync(command);
       } catch (error) {
         throw new Error(`Failed to start application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
