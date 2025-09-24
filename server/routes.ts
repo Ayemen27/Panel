@@ -747,6 +747,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // System health check route (for HealthCheck page)
+  app.get('/api/system/health-check', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const healthStatus = await systemService.getHealthStatus();
+      res.json(healthStatus);
+    } catch (error) {
+      console.error("Error checking system health:", error);
+      res.status(500).json({ message: "Failed to check system health status" });
+    }
+  });
+
+  // System dependencies route
+  app.get('/api/system/dependencies', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      // إرجاع قائمة بالتبعيات المطلوبة
+      const dependencies = [
+        {
+          name: 'nodejs',
+          displayName: 'Node.js',
+          description: 'JavaScript runtime environment',
+          category: 'critical',
+          installed: true,
+          version: process.version,
+          checkCommand: 'node --version',
+          icon: '🟢',
+          purpose: 'Required for running the application',
+          installable: false
+        },
+        {
+          name: 'pm2',
+          displayName: 'PM2',
+          description: 'Process manager for Node.js applications',
+          category: 'critical',
+          installed: true,
+          checkCommand: 'pm2 --version',
+          icon: '🔧',
+          purpose: 'Managing application processes',
+          installable: true
+        },
+        {
+          name: 'postgresql',
+          displayName: 'PostgreSQL',
+          description: 'Database system',
+          category: 'critical',
+          installed: true,
+          checkCommand: 'psql --version',
+          icon: '🗄️',
+          purpose: 'Data storage and management',
+          installable: false
+        }
+      ];
+      res.json(dependencies);
+    } catch (error) {
+      console.error("Error fetching system dependencies:", error);
+      res.status(500).json({ message: "Failed to fetch system dependencies" });
+    }
+  });
+
   // Database connection test
   app.get('/api/db/test', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
     try {
