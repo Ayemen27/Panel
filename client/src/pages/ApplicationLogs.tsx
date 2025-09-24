@@ -11,7 +11,7 @@ export default function ApplicationLogs() {
 
   const navigate = (delta: number) => {
     if (delta === -1) {
-      window.history.back();
+      setLocation("/applications");
     }
   };
 
