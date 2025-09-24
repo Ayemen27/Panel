@@ -95,7 +95,7 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
             
             return (
               <Link key={item.href} href={item.href}>
-                <a
+                <div
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full",
                     isActive 
@@ -118,7 +118,7 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                       4
                     </span>
                   )}
-                </a>
+                </div>
               </Link>
             );
           })}
