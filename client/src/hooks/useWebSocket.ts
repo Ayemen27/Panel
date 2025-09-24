@@ -13,6 +13,61 @@ export function useWebSocket(url?: string) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const setupWebSocketHandlers = (ws: WebSocket) => {
+    ws.onopen = () => {
+      setIsConnected(true);
+      setError(null);
+      console.log('WebSocket connected');
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message: WebSocketMessage = JSON.parse(event.data);
+        setLastMessage(message);
+      } catch (err) {
+        console.error('Failed to parse WebSocket message:', err);
+      }
+    };
+
+    ws.onclose = () => {
+      setIsConnected(false);
+      console.log('WebSocket disconnected');
+
+      // Attempt to reconnect after 3 seconds
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connect();
+      }, 3000);
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      
+      // Handle SSL certificate errors specifically
+      if (error.toString().includes('certificate') || error.toString().includes('TLS')) {
+        setError('SSL Certificate Error - Using fallback connection');
+        
+        // Attempt to reconnect with HTTP if HTTPS fails
+        if (url && url.startsWith('wss://')) {
+          const httpUrl = url.replace('wss://', 'ws://');
+          console.log('Attempting HTTP fallback:', httpUrl);
+          setTimeout(() => {
+            if (wsRef.current?.readyState !== WebSocket.OPEN) {
+              try {
+                wsRef.current = new WebSocket(httpUrl);
+                setupWebSocketHandlers(wsRef.current);
+              } catch (fallbackError) {
+                console.error('HTTP fallback failed:', fallbackError);
+                setError('WebSocket connection failed completely');
+              }
+            }
+          }, 1000);
+        }
+      } else {
+        setError('WebSocket connection error');
+      }
+    };
+  };
+
   const connect = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
@@ -24,36 +79,7 @@ export function useWebSocket(url?: string) {
 
     try {
       wsRef.current = new WebSocket(wsUrl);
-
-      wsRef.current.onopen = () => {
-        setIsConnected(true);
-        setError(null);
-        console.log('WebSocket connected');
-      };
-
-      wsRef.current.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          setLastMessage(message);
-        } catch (err) {
-          console.error('Failed to parse WebSocket message:', err);
-        }
-      };
-
-      wsRef.current.onclose = () => {
-        setIsConnected(false);
-        console.log('WebSocket disconnected');
-
-        // Attempt to reconnect after 3 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
-        }, 3000);
-      };
-
-      wsRef.current.onerror = (error) => {
-        setError('WebSocket connection error');
-        console.error('WebSocket error:', error);
-      };
+      setupWebSocketHandlers(wsRef.current);
     } catch (err) {
       setError('Failed to create WebSocket connection');
       console.error('WebSocket creation error:', err);
