@@ -33,10 +33,12 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
   const queryClient = useQueryClient();
   const [envVarsText, setEnvVarsText] = useState("");
 
-  const { data: application, isLoading: isLoadingApp } = useQuery({
-    queryKey: [`/api/applications/${applicationId}`],
+  const { data: applications } = useQuery({
+    queryKey: ["/api/applications"],
     enabled: !!applicationId && open,
   });
+
+  const application = applications?.find((app: any) => app.id === applicationId);
 
   const {
     register,
@@ -128,7 +130,7 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
     onOpenChange(false);
   };
 
-  if (isLoadingApp) {
+  if (!application && open) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-full max-w-2xl">

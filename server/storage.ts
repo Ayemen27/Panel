@@ -142,7 +142,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(domains).where(eq(domains.applicationId, id));
     
     // Delete related nginx configs if any
-    await db.delete(nginxConfigs).where(eq(nginxConfigs.applicationId, applicationId));
+    await db.delete(nginxConfigs).where(eq(nginxConfigs.applicationId, id));
     
     // Delete related system logs if any
     await db.delete(systemLogs).where(eq(systemLogs.applicationId, id));

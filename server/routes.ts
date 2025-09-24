@@ -196,11 +196,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update application
-  app.put("/api/applications/:id", async (req, res) => {
+  app.put("/api/applications/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
       const updatedApp = await storage.updateApplication(id, updates);
+
+      // Broadcast update
+      broadcast({
+        type: 'APPLICATION_UPDATED',
+        data: updatedApp
+      });
+
       res.json(updatedApp);
     } catch (error) {
       console.error("Error updating application:", error);
@@ -211,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete application
-  app.delete("/api/applications/:id", async (req, res) => {
+  app.delete("/api/applications/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
