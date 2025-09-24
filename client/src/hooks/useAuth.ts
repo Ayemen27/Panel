@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 interface User {
   id: string;
@@ -11,61 +12,146 @@ interface User {
   profileImageUrl?: string;
 }
 
+interface AuthResponse {
+  isAuthenticated: boolean;
+  user: User | null;
+  error?: string;
+}
+
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  
+  // إدارة state للـ tokens للتحكم في enabled condition
+  const [hasCustomToken, setHasCustomToken] = useState(() => {
+    return !!localStorage.getItem('customAuthToken');
+  });
+
+  const [hasCheckedTokens, setHasCheckedTokens] = useState(false);
+
+  // التحقق من التحديث في localStorage
+  useEffect(() => {
+    const checkTokens = () => {
+      const customToken = localStorage.getItem('customAuthToken');
+      setHasCustomToken(!!customToken);
+      setHasCheckedTokens(true);
+    };
+
+    checkTokens();
+    
+    // إضافة listener للتحديثات في localStorage
+    window.addEventListener('storage', checkTokens);
+    return () => window.removeEventListener('storage', checkTokens);
+  }, []);
 
   // التحقق من المصادقة المخصصة
-  const { data: customUser, isLoading: isCustomLoading } = useQuery({
+  const { data: customAuthResult, isLoading: isCustomLoading, error: customError } = useQuery({
     queryKey: ["/api/custom-auth/me"],
-    queryFn: async () => {
-      const token = localStorage.getItem('customAuthToken');
-      if (!token) return null;
+    queryFn: async (): Promise<AuthResponse> => {
+      try {
+        const token = localStorage.getItem('customAuthToken');
+        if (!token) {
+          return { isAuthenticated: false, user: null };
+        }
 
-      const response = await fetch('/api/custom-auth/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+        const response = await fetch('/api/custom-auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-      if (!response.ok) {
-        localStorage.removeItem('customAuthToken');
-        localStorage.removeItem('customRefreshToken');
-        localStorage.removeItem('currentUser');
-        return null;
+        if (!response.ok) {
+          // تنظيف tokens غير الصالحة
+          localStorage.removeItem('customAuthToken');
+          localStorage.removeItem('customRefreshToken');
+          localStorage.removeItem('currentUser');
+          setHasCustomToken(false);
+          
+          if (response.status === 401) {
+            return { isAuthenticated: false, user: null, error: 'Token expired' };
+          }
+          
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (data.success && data.user) {
+          return { isAuthenticated: true, user: data.user };
+        }
+        
+        return { isAuthenticated: false, user: null, error: 'Invalid response format' };
+      } catch (error) {
+        console.error('Custom auth error:', error);
+        return { 
+          isAuthenticated: false, 
+          user: null, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        };
       }
-
-      const data = await response.json();
-      return data.success ? data.user : null;
     },
-    enabled: !!localStorage.getItem('customAuthToken'),
+    enabled: hasCustomToken && hasCheckedTokens,
     retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // التحقق من مصادقة Replit
-  const { data: replitUser, isLoading: isReplitLoading } = useQuery({
+  const { data: replitAuthResult, isLoading: isReplitLoading, error: replitError } = useQuery({
     queryKey: ["/api/auth/user"],
-    queryFn: async () => {
-      const response = await fetch("/api/auth/user", {
-        credentials: "include",
-      });
+    queryFn: async (): Promise<AuthResponse> => {
+      try {
+        const response = await fetch("/api/auth/user", {
+          credentials: "include",
+        });
 
-      if (!response.ok) {
-        return null;
+        if (!response.ok) {
+          if (response.status === 401) {
+            return { isAuthenticated: false, user: null };
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const user = await response.json();
+        return { isAuthenticated: true, user };
+      } catch (error) {
+        console.error('Replit auth error:', error);
+        return { 
+          isAuthenticated: false, 
+          user: null, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        };
       }
-
-      return response.json();
     },
-    enabled: !localStorage.getItem('customAuthToken'),
+    enabled: !hasCustomToken && hasCheckedTokens,
     retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  useEffect(() => {
-    setIsLoading(isCustomLoading || isReplitLoading);
-  }, [isCustomLoading, isReplitLoading]);
+  // حساب النتائج النهائية
+  const authResult = customAuthResult || replitAuthResult;
+  const user = authResult?.user || null;
+  const isAuthenticated = authResult?.isAuthenticated || false;
+  const authError = customError || replitError || authResult?.error;
 
-  const user = customUser || replitUser;
-  const isAuthenticated = !!user;
+  // تحديث isLoading
+  useEffect(() => {
+    if (!hasCheckedTokens) {
+      setIsLoading(true);
+    } else {
+      setIsLoading(isCustomLoading || isReplitLoading);
+    }
+  }, [hasCheckedTokens, isCustomLoading, isReplitLoading]);
+
+  // معالجة إعادة التوجيه بعد المصادقة الناجحة
+  useEffect(() => {
+    if (isAuthenticated && user && !isLoading) {
+      const currentPath = window.location.pathname;
+      // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing
+      if (currentPath === '/' || currentPath === '/login') {
+        navigate('/');
+      }
+    }
+  }, [isAuthenticated, user, isLoading, navigate]);
 
   const logout = async () => {
     const customToken = localStorage.getItem('customAuthToken');
@@ -86,6 +172,7 @@ export function useAuth() {
       localStorage.removeItem('customAuthToken');
       localStorage.removeItem('customRefreshToken');
       localStorage.removeItem('currentUser');
+      setHasCustomToken(false);
     } else {
       // تسجيل خروج Replit
       window.location.href = "/api/logout";
@@ -93,7 +180,7 @@ export function useAuth() {
     }
 
     queryClient.clear();
-    window.location.href = "/";
+    navigate('/');
   };
 
   return {
@@ -101,5 +188,6 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     logout,
+    error: authError,
   };
 }
