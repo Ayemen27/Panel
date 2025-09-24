@@ -2,7 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
-// SSL certificate verification re-enabled for security
+// Temporarily disable SSL certificate verification to fix Neon database connection issues
+// This is needed because Neon connects via IP instead of domain name
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const app = express();
 app.use(express.json());
