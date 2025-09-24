@@ -17,7 +17,22 @@ import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
 
 // WebSocket clients store
-const wsClients = new Set<WebSocket>();
+const wsClients = new Map<string, WebSocket>();
+
+// Add CORS headers for WebSocket
+function setupCors(app: Express) {
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://binarjoinanelytic.info');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+}
 
 // Broadcast function for real-time updates
 export function broadcast(message: any) {
@@ -73,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const applications = await storage.getApplications(userId);
-      
+
       // Get real-time status for each application
       const appsWithStatus = await Promise.all(
         applications.map(async (app) => {
@@ -81,7 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return { ...app, status };
         })
       );
-      
+
       res.json(appsWithStatus);
     } catch (error) {
       console.error("Error fetching applications:", error);
@@ -104,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await pm2Service.startApplication(application);
           await storage.updateApplication(application.id, { status: 'running' });
-          
+
           // Create success notification
           await storage.createNotification({
             type: 'success',
@@ -117,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         } catch (error) {
           await storage.updateApplication(application.id, { status: 'error' });
-          
+
           // Create error notification
           await storage.createNotification({
             type: 'error',
@@ -150,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
 
       const application = await storage.updateApplication(id, updates);
-      
+
       // Broadcast update
       broadcast({
         type: 'APPLICATION_UPDATED',
@@ -168,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
-      
+
       if (application) {
         // Stop the application first
         try {
@@ -178,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         await storage.deleteApplication(id);
-        
+
         // Broadcast update
         broadcast({
           type: 'APPLICATION_DELETED',
@@ -198,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
-      
+
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
       }
@@ -223,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
-      
+
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
       }
@@ -248,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
-      
+
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
       }
@@ -284,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const domainData = insertDomainSchema.parse(req.body);
       const domain = await storage.createDomain(domainData);
-      
+
       // Check DNS status
       try {
         const dnsStatus = await systemService.checkDns(domain.domain);
@@ -303,9 +318,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/domains/:id/check-dns', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
-      const domain = await storage.getDomains();
-      const targetDomain = domain.find(d => d.id === id);
-      
+      const domains = await storage.getDomains();
+      const targetDomain = domains.find(d => d.id === id);
+
       if (!targetDomain) {
         return res.status(404).json({ message: "Domain not found" });
       }
@@ -336,13 +351,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { domainId } = req.body;
       const domains = await storage.getDomains();
       const domain = domains.find(d => d.id === domainId);
-      
+
       if (!domain) {
         return res.status(404).json({ message: "Domain not found" });
       }
 
       const certificate = await sslService.issueCertificate(domain.domain);
-      
+
       const sslCert = await storage.createSslCertificate({
         domainId,
         issuer: 'letsencrypt',
@@ -387,10 +402,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/nginx/configs', isAuthenticated, async (req: any, res) => {
     try {
       const configData = insertNginxConfigSchema.parse(req.body);
-      
+
       // Test the configuration
       const testResult = await nginxService.testConfig(configData.content);
-      
+
       const config = await storage.createNginxConfig({
         ...configData,
         lastTest: new Date(),
@@ -423,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/nginx/reload', isAuthenticated, async (req: any, res) => {
     try {
       await nginxService.reloadNginx();
-      
+
       // Create success notification
       await storage.createNotification({
         type: 'success',
@@ -496,7 +511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
-      
+
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
       }
@@ -534,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/terminal/execute', isAuthenticated, async (req, res) => {
     try {
       const { command } = req.body;
-      
+
       // Security: Only allow specific safe commands
       const allowedCommands = [
         'nginx -t',
@@ -567,7 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss.on('connection', (ws) => {
     wsClients.add(ws);
-    
+
     ws.on('close', () => {
       wsClients.delete(ws);
     });
@@ -583,6 +598,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: 'Connected to server'
     }));
   });
+
+  setupCors(app); // Initialize CORS setup
 
   return httpServer;
 }
