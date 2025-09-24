@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import customAuthRoutes from "./routes/customAuth";
+import { authenticateCustom } from "./middleware/customAuth";
 import { 
   insertApplicationSchema, 
   insertDomainSchema, 
@@ -64,7 +66,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
 
-  // Auth routes
+  // Custom authentication routes
+  app.use('/api/custom-auth', customAuthRoutes);
+
+  // Original Replit Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
