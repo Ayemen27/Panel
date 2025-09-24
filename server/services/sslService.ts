@@ -15,6 +15,10 @@ export class SslService {
     try {
       // Issue certificate using certbot
       const command = `sudo certbot certonly --nginx -d ${domain} -d www.${domain} --non-interactive --agree-tos --email admin@${domain}`;
+// For IP addresses, we need to use --preferred-challenges http
+if (/^\d+\.\d+\.\d+\.\d+$/.test(domain)) {
+  command = `sudo certbot certonly --standalone --preferred-challenges http -d ${domain} --non-interactive --agree-tos --email admin@example.com`;
+}
       await execAsync(command);
       
       // Get certificate expiration date

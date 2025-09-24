@@ -43,7 +43,7 @@ export function useWebSocket(url?: string) {
       wsRef.current.onclose = () => {
         setIsConnected(false);
         console.log('WebSocket disconnected');
-        
+
         // Attempt to reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
@@ -65,7 +65,7 @@ export function useWebSocket(url?: string) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
