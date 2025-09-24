@@ -23,11 +23,27 @@ import MainLayout from "@/components/Layout/MainLayout";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // إذا كان التحميل جارياً، عرض loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+      {!isAuthenticated ? (
+        // المستخدم غير مسجل دخول - إظهار صفحة Landing لأي route
+        <Route>
+          <Landing />
+        </Route>
       ) : (
+        // المستخدم مسجل دخول - إظهار الصفحات المحمية
         <>
           <Route path="/" exact>
             <MainLayout>
@@ -87,7 +103,6 @@ function Router() {
           <Route component={NotFound} />
         </>
       )}
-      <Route component={NotFound} />
     </Switch>
   );
 }
