@@ -17,7 +17,7 @@ import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
 
 // WebSocket clients store
-const wsClients = new Map<string, WebSocket>();
+const wsClients = new Set<WebSocket>();
 
 // Add CORS headers for WebSocket
 function setupWebSocketCORS(req: any, res: any, next: any) {
