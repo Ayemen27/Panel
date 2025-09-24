@@ -84,69 +84,15 @@ export const queryClient = new QueryClient({
       queryFn: async ({ queryKey, meta }) => {
         const url = queryKey[0] as string;
 
-        // إعداد الرؤوس
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-
-        // التحقق من وجود رمز مخصص
-        const customToken = localStorage.getItem('customAuthToken');
-        if (customToken) {
-          headers['Authorization'] = `Bearer ${customToken}`;
-        }
-
         const response = await fetch(url, {
-          credentials: "include",
-          headers,
+          credentials: "include", // استخدام session cookies لـ Replit Auth
+          headers: {
+            'Content-Type': 'application/json',
+          },
           ...(meta as RequestInit),
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            // محاولة تجديد الرمز إذا كان مخصصاً
-            if (customToken) {
-              const refreshToken = localStorage.getItem('customRefreshToken');
-              if (refreshToken) {
-                try {
-                  const refreshResponse = await fetch('/api/custom-auth/refresh', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refreshToken }),
-                  });
-
-                  if (refreshResponse.ok) {
-                    const refreshData = await refreshResponse.json();
-                    if (refreshData.success && refreshData.accessToken) {
-                      localStorage.setItem('customAuthToken', refreshData.accessToken);
-
-                      // إعادة المحاولة مع الرمز الجديد
-                      const retryResponse = await fetch(url, {
-                        credentials: "include",
-                        headers: {
-                          ...headers,
-                          'Authorization': `Bearer ${refreshData.accessToken}`,
-                        },
-                        ...(meta as RequestInit),
-                      });
-
-                      if (retryResponse.ok) {
-                        return retryResponse.json();
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error('Token refresh failed:', error);
-                }
-              }
-
-              // إذا فشل التجديد، امسح الرموز
-              localStorage.removeItem('customAuthToken');
-              localStorage.removeItem('customRefreshToken');
-              localStorage.removeItem('currentUser');
-            }
-
-            throw new Error(`401: Unauthorized - ${response.statusText}`);
-          }
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 

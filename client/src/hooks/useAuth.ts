@@ -12,174 +12,56 @@ interface User {
   profileImageUrl?: string;
 }
 
-interface AuthResponse {
-  isAuthenticated: boolean;
-  user: User | null;
-  error?: string;
-}
-
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  
-  // إدارة state للـ tokens للتحكم في enabled condition
-  const [hasCustomToken, setHasCustomToken] = useState(() => {
-    return !!localStorage.getItem('customAuthToken');
-  });
 
-  const [hasCheckedTokens, setHasCheckedTokens] = useState(false);
-
-  // التحقق من التحديث في localStorage
-  useEffect(() => {
-    const checkTokens = () => {
-      const customToken = localStorage.getItem('customAuthToken');
-      setHasCustomToken(!!customToken);
-      setHasCheckedTokens(true);
-    };
-
-    checkTokens();
-    
-    // إضافة listener للتحديثات في localStorage
-    window.addEventListener('storage', checkTokens);
-    return () => window.removeEventListener('storage', checkTokens);
-  }, []);
-
-  // التحقق من المصادقة المخصصة
-  const { data: customAuthResult, isLoading: isCustomLoading, error: customError } = useQuery({
-    queryKey: ["/api/custom-auth/me"],
-    queryFn: async (): Promise<AuthResponse> => {
-      const token = localStorage.getItem('customAuthToken');
-      if (!token) {
-        return { isAuthenticated: false, user: null };
-      }
-
-      try {
-        const response = await fetch('/api/custom-auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          // تنظيف tokens غير الصالحة
-          localStorage.removeItem('customAuthToken');
-          localStorage.removeItem('customRefreshToken');
-          localStorage.removeItem('currentUser');
-          setHasCustomToken(false);
-          
-          return { isAuthenticated: false, user: null, error: 'Token expired' };
-        }
-
-        const data = await response.json();
-        if (data.success && data.user) {
-          return { isAuthenticated: true, user: data.user };
-        }
-        
-        return { isAuthenticated: false, user: null, error: 'Invalid response format' };
-      } catch (error) {
-        console.error('Custom auth error:', error);
-        // تنظيف tokens في حالة الخطأ
-        localStorage.removeItem('customAuthToken');
-        localStorage.removeItem('customRefreshToken');
-        localStorage.removeItem('currentUser');
-        setHasCustomToken(false);
-        
-        return { 
-          isAuthenticated: false, 
-          user: null, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
-        };
-      }
-    },
-    enabled: hasCustomToken && hasCheckedTokens,
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // التحقق من مصادقة Replit
-  const { data: replitAuthResult, isLoading: isReplitLoading, error: replitError } = useQuery({
+  // التحقق من مصادقة Replit فقط
+  const { data: user, isLoading: isAuthLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
-    queryFn: async (): Promise<AuthResponse> => {
+    queryFn: async (): Promise<User | null> => {
       try {
         const response = await fetch("/api/auth/user", {
           credentials: "include",
         });
 
         if (!response.ok) {
-          return { isAuthenticated: false, user: null };
+          return null;
         }
 
         const user = await response.json();
-        return { isAuthenticated: true, user };
+        return user;
       } catch (error) {
-        console.error('Replit auth error:', error);
-        return { 
-          isAuthenticated: false, 
-          user: null, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
-        };
+        console.error('Auth error:', error);
+        return null;
       }
     },
-    enabled: !hasCustomToken && hasCheckedTokens,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // حساب النتائج النهائية
-  const authResult = customAuthResult || replitAuthResult || { isAuthenticated: false, user: null };
-  const user = authResult.user || null;
-  const isAuthenticated = authResult.isAuthenticated || false;
-  const authError = customError || replitError || authResult.error;
+  const isAuthenticated = !!user;
 
   // تحديث isLoading
   useEffect(() => {
-    if (!hasCheckedTokens) {
-      setIsLoading(true);
-    } else {
-      setIsLoading(isCustomLoading || isReplitLoading);
-    }
-  }, [hasCheckedTokens, isCustomLoading, isReplitLoading]);
+    setIsLoading(isAuthLoading);
+  }, [isAuthLoading]);
 
   // معالجة إعادة التوجيه بعد المصادقة الناجحة
   useEffect(() => {
-    if (isAuthenticated && user && !isLoading && hasCheckedTokens) {
+    if (isAuthenticated && user && !isLoading) {
       const currentPath = window.location.pathname;
       // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing
       if (currentPath === '/' || currentPath === '/login') {
         navigate('/dashboard');
       }
     }
-  }, [isAuthenticated, user, isLoading, navigate, hasCheckedTokens]);
+  }, [isAuthenticated, user, isLoading, navigate]);
 
   const logout = async () => {
-    const customToken = localStorage.getItem('customAuthToken');
-    
-    if (customToken) {
-      // تسجيل خروج النظام المخصص
-      try {
-        await fetch('/api/custom-auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${customToken}`,
-          },
-        });
-      } catch (error) {
-        console.error('Custom logout error:', error);
-      }
-      
-      localStorage.removeItem('customAuthToken');
-      localStorage.removeItem('customRefreshToken');
-      localStorage.removeItem('currentUser');
-      setHasCustomToken(false);
-    } else {
-      // تسجيل خروج Replit
-      window.location.href = "/api/logout";
-      return;
-    }
-
-    queryClient.clear();
-    navigate('/');
+    // تسجيل خروج Replit
+    window.location.href = "/api/logout";
   };
 
   return {
@@ -187,6 +69,6 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     logout,
-    error: authError,
+    error,
   };
 }
