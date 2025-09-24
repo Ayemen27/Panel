@@ -8,6 +8,50 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import type { Application } from "@shared/schema";
+
+// API Response Types
+interface DashboardStats {
+  applications: {
+    total: number;
+    running: number;
+    stopped: number;
+    error: number;
+  };
+  ssl: {
+    total: number;
+    valid: number;
+    expiringSoon: number;
+  };
+  system: {
+    cpu: {
+      usage: number;
+      cores: number;
+    };
+    memory: {
+      total: number;
+      used: number;
+      free: number;
+      usage: number;
+    };
+    disk: {
+      total: number;
+      used: number;
+      free: number;
+      usage: number;
+    };
+    uptime: number;
+  };
+}
+
+interface SystemInfo {
+  hostname: string;
+  platform: string;
+  arch: string;
+  kernel: string;
+  uptime: number;
+  loadAverage: number[];
+}
 
 export default function Dashboard() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -27,19 +71,19 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: stats, isLoading: statsLoading, error } = useQuery({
+  const { data: stats, isLoading: statsLoading, error } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
     enabled: isAuthenticated,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const { data: applications, isLoading: appsLoading } = useQuery({
+  const { data: applications, isLoading: appsLoading } = useQuery<Application[]>({
     queryKey: ["/api/applications"],
     enabled: isAuthenticated,
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
-  const { data: systemInfo, isLoading: systemLoading } = useQuery({
+  const { data: systemInfo, isLoading: systemLoading } = useQuery<SystemInfo>({
     queryKey: ["/api/system/info"],
     enabled: isAuthenticated,
     refetchInterval: 15000, // Refresh every 15 seconds

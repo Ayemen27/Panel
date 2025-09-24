@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
+import type { Application } from "@shared/schema";
 
 export default function Applications() {
   const [showAddModal, setShowAddModal] = useState(false);
