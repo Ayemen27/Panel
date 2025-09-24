@@ -129,6 +129,11 @@ export class SystemService {
       system: { status: 'unknown', message: 'جاري فحص النظام...' },
       services: { status: 'unknown', message: 'جاري فحص الخدمات...' },
       overall: { status: 'unknown', score: 0, message: 'جاري تقييم الحالة العامة...' }
+    } as {
+      database: { status: string; message: string; details?: any };
+      system: { status: string; message: string; details?: any };
+      services: { status: string; message: string; details?: any };
+      overall: { status: string; score: number; message: string };
     };
     
     let healthScore = 0;
