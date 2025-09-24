@@ -30,7 +30,7 @@ function setupWebSocketCORS(req: any, res: any, next: any) {
     next();
   }
 }
-function setupCors(app: Express) {
+function setupCORS(app: Express) {
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'https://binarjoinanelytic.info');
     res.header('Access-Control-Allow-Credentials', 'true');
@@ -55,7 +55,12 @@ export function broadcast(message: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
+  const server = createServer(app);
+
+  // Setup CORS first
+  setupCORS(app);
+
+  // Setup authentication
   await setupAuth(app);
 
   // Auth routes
@@ -585,8 +590,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-
   // WebSocket server setup
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
@@ -608,8 +611,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: 'Connected to server'
     }));
   });
-
-  setupCors(app); // Initialize CORS setup
 
   return httpServer;
 }

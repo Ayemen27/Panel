@@ -41,49 +41,7 @@ export function useWebSocket(url?: string) {
 
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
-      
-      // Handle 301 redirect errors (server response issues)
-      if (error.toString().includes('301') || error.toString().includes('Unexpected server response')) {
-        setError('Server redirect error - Attempting localhost connection');
-        
-        // Try connecting to localhost directly
-        setTimeout(() => {
-          if (wsRef.current?.readyState !== WebSocket.OPEN) {
-            try {
-              const localhostUrl = `ws://localhost:5000/ws`;
-              console.log('Attempting localhost connection:', localhostUrl);
-              wsRef.current = new WebSocket(localhostUrl);
-              setupWebSocketHandlers(wsRef.current);
-            } catch (fallbackError) {
-              console.error('Localhost fallback failed:', fallbackError);
-              setError('WebSocket connection failed completely');
-            }
-          }
-        }, 1000);
-      }
-      // Handle SSL certificate errors specifically
-      else if (error.toString().includes('certificate') || error.toString().includes('TLS')) {
-        setError('SSL Certificate Error - Using fallback connection');
-        
-        // Attempt to reconnect with HTTP if HTTPS fails
-        if (url && url.startsWith('wss://')) {
-          const httpUrl = url.replace('wss://', 'ws://');
-          console.log('Attempting HTTP fallback:', httpUrl);
-          setTimeout(() => {
-            if (wsRef.current?.readyState !== WebSocket.OPEN) {
-              try {
-                wsRef.current = new WebSocket(httpUrl);
-                setupWebSocketHandlers(wsRef.current);
-              } catch (fallbackError) {
-                console.error('HTTP fallback failed:', fallbackError);
-                setError('WebSocket connection failed completely');
-              }
-            }
-          }, 1000);
-        }
-      } else {
-        setError('WebSocket connection error');
-      }
+      setError('WebSocket connection error');
     };
   };
 
@@ -92,18 +50,13 @@ export function useWebSocket(url?: string) {
       return;
     }
 
-    // Force WebSocket to use localhost/replit domain instead of external IP
+    // Always use the same host as the current page for WebSocket
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    let wsHost = window.location.host;
-    
-    // If we're on an external IP, force to use localhost for WebSocket
-    if (wsHost.match(/^\d+\.\d+\.\d+\.\d+/)) {
-      wsHost = 'localhost:5000';
-    }
-    
+    const wsHost = window.location.host;
     const wsUrl = url || `${protocol}//${wsHost}/ws`;
 
     try {
+      console.log('Connecting to WebSocket:', wsUrl);
       wsRef.current = new WebSocket(wsUrl);
       setupWebSocketHandlers(wsRef.current);
     } catch (err) {
