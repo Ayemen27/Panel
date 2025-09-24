@@ -19,7 +19,8 @@ export function useWebSocket(url?: string) {
     }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = url || `${protocol}//${window.location.host}/ws`;
+    // const wsUrl = url || `${protocol}//${window.location.host}/ws`;
+    const wsUrl = url || `wss://binarjoinanelytic.info/v2`;
 
     try {
       wsRef.current = new WebSocket(wsUrl);
