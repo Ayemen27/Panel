@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import customAuthRoutes from "./routes/customAuth";
-import { authenticateCustom } from "./middleware/customAuth";
+import { authenticateCustom, AuthenticatedRequest } from "./middleware/customAuth";
 import { 
   insertApplicationSchema, 
   insertDomainSchema, 
@@ -74,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       res.json({
         success: true,
-        user: req.user
+        user: req.authUser
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats route
   app.get('/api/dashboard/stats', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.authUser!.id;
       const [appStats, sslStats, systemStats, unreadCount] = await Promise.all([
         storage.getApplicationStats(userId),
         storage.getSslStats(),
@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Application routes
   app.get('/api/applications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.authUser!.id;
       const applications = await storage.getApplications(userId);
 
       // Get real-time status for each application
@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/applications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.authUser!.id;
       const appData = insertApplicationSchema.parse({
         ...req.body,
         userId
@@ -504,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: 'تم إصدار شهادة SSL',
         message: `تم إصدار شهادة SSL لـ ${domain.domain} بنجاح`,
         source: 'ssl',
-        userId: req.user!.id
+        userId: req.authUser!.id
       });
 
       res.status(201).json(sslCert);
@@ -572,7 +572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: 'تم إعادة تحميل Nginx',
         message: 'تم إعادة تحميل تكوين Nginx بنجاح',
         source: 'nginx',
-        userId: req.user!.id
+        userId: req.authUser!.id
       });
 
       res.json({ message: "Nginx reloaded successfully" });
@@ -585,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notifications routes
   app.get('/api/notifications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.authUser!.id;
       const notifications = await storage.getNotifications(userId);
       res.json(notifications);
     } catch (error) {

@@ -6,7 +6,7 @@ import { db } from '../db';
 import { authUsers } from '../../shared/schema';
 
 export interface AuthenticatedRequest extends Request {
-  user?: {
+  authUser?: {
     id: string;
     email: string;
     firstName: string;
@@ -44,12 +44,12 @@ export const authenticateCustom = async (req: AuthenticatedRequest, res: Respons
       });
     }
 
-    req.user = {
+    req.authUser = {
       id: user[0].id,
       email: user[0].email,
       firstName: user[0].firstName,
-      lastName: user[0].lastName,
-      role: user[0].role,
+      lastName: user[0].lastName || undefined,
+      role: user[0].role || 'user',
       isActive: user[0].isActive,
     };
 
@@ -65,14 +65,14 @@ export const authenticateCustom = async (req: AuthenticatedRequest, res: Respons
 
 export const requireRole = (role: string) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    if (!req.authUser) {
       return res.status(401).json({
         success: false,
         message: 'غير مصرح بالوصول'
       });
     }
 
-    if (req.user.role !== role) {
+    if (req.authUser.role !== role) {
       return res.status(403).json({
         success: false,
         message: 'صلاحيات غير كافية'
