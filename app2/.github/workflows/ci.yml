@@ -1,0 +1,91 @@
+name: CI - التدقيق والفحص التلقائي
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # تشغيل تلقائي شهرياً في اليوم الأول الساعة 3 صباحاً UTC
+    - cron: '0 3 1 * *'
+
+jobs:
+  build-and-lint:
+    name: البناء والفحص
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: استخراج الكود
+        uses: actions/checkout@v4
+        
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: تثبيت التبعيات
+        run: npm ci
+        
+      - name: فحص TypeScript
+        run: npx tsc --noEmit
+        
+      - name: فحص ESLint
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx
+        continue-on-error: true
+        
+      - name: بناء المشروع
+        run: npm run build || echo "تحذير: فشل البناء"
+        continue-on-error: true
+        
+      - name: تشغيل الاختبارات
+        run: npm test || echo "تحذير: فشلت الاختبارات أو غير موجودة"
+        continue-on-error: true
+        
+      - name: تشغيل سكربت التدقيق
+        run: |
+          if [ -f "./repo-audit.sh" ]; then
+            bash ./repo-audit.sh
+          else
+            echo "سكربت التدقيق غير موجود"
+          fi
+        continue-on-error: true
+        
+      - name: فحص استخدام الحزم
+        run: |
+          if [ -f "./tools/check-deps-usage.sh" ]; then
+            chmod +x ./tools/check-deps-usage.sh
+            bash ./tools/check-deps-usage.sh
+          else
+            echo "سكربت فحص الحزم غير موجود"
+          fi
+        continue-on-error: true
+        
+      - name: رفع نتائج التدقيق
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-results-${{ github.run_number }}
+          path: audit-results/
+          retention-days: 30
+          
+      - name: تحديث قاعدة بيانات المتصفحات
+        run: npx update-browserslist-db@latest || echo "تحذير: فشل تحديث browserslist"
+        continue-on-error: true
+
+  security-audit:
+    name: تدقيق الأمان
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: استخراج الكود  
+        uses: actions/checkout@v4
+        
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: تدقيق npm للثغرات الأمنية
+        run: npm audit --audit-level high || echo "تحذير: وُجدت ثغرات أمنية"
+        continue-on-error: true

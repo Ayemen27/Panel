@@ -245,7 +245,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Application started successfully" });
     } catch (error) {
       console.error("Error starting application:", error);
-      res.status(500).json({ message: "Failed to start application" });
+      
+      // Provide specific error messages based on error type
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
+        res.status(503).json({ 
+          message: "Process manager is unavailable", 
+          details: errorMessage,
+          solution: "Please ensure PM2 is installed or use fallback mode"
+        });
+      } else if (errorMessage.includes('ENOENT') || errorMessage.includes('command not found')) {
+        res.status(404).json({ 
+          message: "Application command or path not found", 
+          details: errorMessage 
+        });
+      } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
+        res.status(403).json({ 
+          message: "Permission denied", 
+          details: errorMessage 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to start application", 
+          details: errorMessage 
+        });
+      }
     }
   });
 
@@ -270,7 +295,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Application stopped successfully" });
     } catch (error) {
       console.error("Error stopping application:", error);
-      res.status(500).json({ message: "Failed to stop application" });
+      
+      // Provide specific error messages based on error type
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
+        res.status(503).json({ 
+          message: "Process manager is unavailable", 
+          details: errorMessage,
+          solution: "Please ensure PM2 is installed or use fallback mode"
+        });
+      } else if (errorMessage.includes('not found') || errorMessage.includes('ESRCH')) {
+        res.status(404).json({ 
+          message: "Application process not found", 
+          details: errorMessage 
+        });
+      } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
+        res.status(403).json({ 
+          message: "Permission denied", 
+          details: errorMessage 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to stop application", 
+          details: errorMessage 
+        });
+      }
     }
   });
 
@@ -295,7 +345,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Application restarted successfully" });
     } catch (error) {
       console.error("Error restarting application:", error);
-      res.status(500).json({ message: "Failed to restart application" });
+      
+      // Provide specific error messages based on error type
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
+        res.status(503).json({ 
+          message: "Process manager is unavailable", 
+          details: errorMessage,
+          solution: "Please ensure PM2 is installed or use fallback mode"
+        });
+      } else if (errorMessage.includes('not found') || errorMessage.includes('ESRCH')) {
+        res.status(404).json({ 
+          message: "Application process not found", 
+          details: errorMessage 
+        });
+      } else if (errorMessage.includes('fallback mode')) {
+        res.status(501).json({ 
+          message: "Restart not supported in fallback mode", 
+          details: errorMessage,
+          solution: "Please stop and start the application manually"
+        });
+      } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
+        res.status(403).json({ 
+          message: "Permission denied", 
+          details: errorMessage 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to restart application", 
+          details: errorMessage 
+        });
+      }
     }
   });
 
@@ -535,7 +616,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       console.error("Error fetching application logs:", error);
-      res.status(500).json({ message: "Failed to fetch application logs" });
+      
+      // Provide specific error messages based on error type
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
+        res.status(503).json({ 
+          message: "Process manager is unavailable", 
+          details: errorMessage,
+          solution: "Please ensure PM2 is installed or check log service status"
+        });
+      } else if (errorMessage.includes('not found') || errorMessage.includes('ENOENT')) {
+        res.status(404).json({ 
+          message: "Application or log file not found", 
+          details: errorMessage 
+        });
+      } else if (errorMessage.includes('fallback mode')) {
+        res.status(200).json({ 
+          message: "Logs retrieved from fallback mode", 
+          logs: ["Detailed logs not available in fallback mode"] 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to fetch application logs", 
+          details: errorMessage 
+        });
+      }
     }
   });
 
@@ -556,7 +662,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(processes);
     } catch (error) {
       console.error("Error fetching processes:", error);
-      res.status(500).json({ message: "Failed to fetch processes" });
+      
+      // Provide specific error messages based on error type
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
+        res.status(503).json({ 
+          message: "Process manager is unavailable", 
+          details: errorMessage,
+          solution: "Please ensure PM2 is installed or check process manager status"
+        });
+      } else if (errorMessage.includes('command not found')) {
+        res.status(404).json({ 
+          message: "PM2 command not found", 
+          details: errorMessage,
+          solution: "Please install PM2 using npm install -g pm2"
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to fetch processes", 
+          details: errorMessage 
+        });
+      }
     }
   });
 

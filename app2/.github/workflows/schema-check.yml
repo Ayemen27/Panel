@@ -1,0 +1,129 @@
+name: Schema Drift Detection
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths: 
+      - 'shared/schema.ts'
+      - 'shared/**/*.ts'
+  push:
+    branches: [ main ]
+    paths:
+      - 'shared/schema.ts' 
+      - 'shared/**/*.ts'
+
+jobs:
+  schema-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate expected schema
+      run: npm run gen:expected
+      
+    - name: Compare with database
+      env:
+        DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      run: npm run check:schema
+      
+    - name: Upload schema comparison report
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: schema-comparison-report
+        path: scripts/schema_comparison_report.json
+        retention-days: 7
+        
+    - name: Comment on PR with schema drift
+      if: failure() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'scripts/schema_comparison_report.json';
+          
+          if (fs.existsSync(path)) {
+            const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+            
+            let comment = `## ⚠️ Schema Drift Detected\n\n`;
+            comment += `**Comparison Date:** ${report.compared_at}\n`;
+            comment += `**Database:** ${report.database_url_host}\n\n`;
+            
+            if (report.missing_tables.length > 0) {
+              comment += `### ❌ Missing Tables (${report.missing_tables.length})\n`;
+              report.missing_tables.forEach(table => {
+                comment += `- \`${table}\`\n`;
+              });
+              comment += '\n';
+            }
+            
+            if (report.extra_tables.length > 0) {
+              comment += `### ➕ Extra Tables (${report.extra_tables.length})\n`;
+              report.extra_tables.forEach(table => {
+                comment += `- \`${table}\`\n`;
+              });
+              comment += '\n';
+            }
+            
+            if (report.mismatches.length > 0) {
+              comment += `### 🔍 Column Mismatches (${report.mismatches.length})\n`;
+              report.mismatches.slice(0, 10).forEach((mismatch, index) => {
+                comment += `${index + 1}. **${mismatch.table}.${mismatch.column}** - ${mismatch.issue}\n`;
+                if (mismatch.expected) comment += `   - Expected: \`${mismatch.expected}\`\n`;
+                if (mismatch.actual) comment += `   - Actual: \`${mismatch.actual}\`\n`;
+              });
+              
+              if (report.mismatches.length > 10) {
+                comment += `\n... and ${report.mismatches.length - 10} more issues.\n`;
+              }
+            }
+            
+            comment += '\n**Action Required:** Review and create appropriate database migrations before merging.';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+  backup-before-deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: schema-check
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create database backup
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      run: npm run backup:create
+      
+    - name: Upload backup artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: database-backup-${{ github.sha }}
+        path: backups/
+        retention-days: 30
