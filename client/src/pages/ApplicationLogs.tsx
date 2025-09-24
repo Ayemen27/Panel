@@ -1,14 +1,19 @@
 
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 export default function ApplicationLogs() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
+
+  const navigate = (delta: number) => {
+    if (delta === -1) {
+      window.history.back();
+    }
+  };
 
   const { data: logs, isLoading, refetch } = useQuery({
     queryKey: [`/api/applications/${id}/logs`],
