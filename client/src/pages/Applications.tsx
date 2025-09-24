@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ApplicationTable } from "@/components/Applications/ApplicationTable";
 import { AddAppModal } from "@/components/Applications/AddAppModal";
+import { EditAppModal } from "@/components/Applications/EditAppModal"; // Assuming EditAppModal is in the same directory
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
@@ -13,6 +14,8 @@ import type { Application } from "@shared/schema";
 
 export default function Applications() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAppId, setEditingAppId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -136,30 +139,32 @@ export default function Applications() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
-        title: "تم الحذف",
+        title: "تم حذف التطبيق",
         description: "تم حذف التطبيق بنجاح",
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "غير مخول",
-          description: "أنت غير مسجل دخول. جاري تسجيل الدخول مرة أخرى...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
       toast({
-        title: "خطأ في الحذف",
-        description: "فشل في حذف التطبيق",
+        title: "خطأ في حذف التطبيق",
+        description: error instanceof Error ? error.message : "فشل في حذف التطبيق",
         variant: "destructive",
       });
     },
   });
+
+  const handleEdit = (id: string) => {
+    setEditingAppId(id);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = (open: boolean) => {
+    setShowEditModal(open);
+    if (!open) {
+      setEditingAppId(null);
+    }
+  };
 
   if (error && isUnauthorizedError(error as Error)) {
     return null; // The useEffect will handle the redirect
@@ -183,7 +188,7 @@ export default function Applications() {
           <h2 className="text-2xl font-bold" data-testid="page-title">إدارة التطبيقات</h2>
           <p className="text-muted-foreground">إدارة جميع تطبيقاتك وخدماتك</p>
         </div>
-        <Button 
+        <Button
           onClick={() => setShowAddModal(true)}
           data-testid="button-add-app"
         >
@@ -199,6 +204,7 @@ export default function Applications() {
         onStop={stopAppMutation.mutate}
         onRestart={restartAppMutation.mutate}
         onDelete={deleteAppMutation.mutate}
+        onEdit={handleEdit}
         startLoading={startAppMutation.isPending}
         stopLoading={stopAppMutation.isPending}
         restartLoading={restartAppMutation.isPending}
@@ -210,6 +216,12 @@ export default function Applications() {
         open={showAddModal}
         onOpenChange={setShowAddModal}
         data-testid="add-app-modal"
+      />
+
+      <EditAppModal
+        open={showEditModal}
+        onOpenChange={handleCloseEditModal}
+        applicationId={editingAppId}
       />
     </div>
   );

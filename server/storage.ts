@@ -138,7 +138,16 @@ export class DatabaseStorage implements IStorage {
     // Delete related notifications first to avoid foreign key constraint
     await db.delete(notifications).where(eq(notifications.applicationId, id));
     
-    // Then delete the application
+    // Delete related domains if any
+    await db.delete(domains).where(eq(domains.applicationId, id));
+    
+    // Delete related nginx configs if any
+    await db.delete(nginxConfigs).where(eq(nginxConfigs.applicationId, applicationId));
+    
+    // Delete related system logs if any
+    await db.delete(systemLogs).where(eq(systemLogs.applicationId, id));
+    
+    // Finally delete the application
     await db.delete(applications).where(eq(applications.id, id));
   }
 

@@ -39,6 +39,7 @@ interface ApplicationTableProps {
   onStop: (id: string) => void;
   onRestart: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
   startLoading?: boolean;
   stopLoading?: boolean;
   restartLoading?: boolean;
@@ -52,6 +53,7 @@ export function ApplicationTable({
   onStop,
   onRestart,
   onDelete,
+  onEdit,
   startLoading = false,
   stopLoading = false,
   restartLoading = false,
@@ -194,11 +196,7 @@ export function ApplicationTable({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            // For now, we'll show a toast that this feature is coming soon
-                            // You can implement edit modal later
-                            alert('ميزة التعديل قيد التطوير');
-                          }}
+                          onClick={() => onEdit?.(app.id)}
                           title="تعديل"
                           data-testid={`button-edit-${app.id}`}
                         >

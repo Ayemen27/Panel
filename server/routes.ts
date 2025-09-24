@@ -195,7 +195,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/applications/:id', isAuthenticated, async (req: any, res) => {
+  // Update application
+  app.put("/api/applications/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const updatedApp = await storage.updateApplication(id, updates);
+      res.json(updatedApp);
+    } catch (error) {
+      console.error("Error updating application:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Unknown error occurred" 
+      });
+    }
+  });
+
+  // Delete application
+  app.delete("/api/applications/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -246,10 +262,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Application started successfully" });
     } catch (error) {
       console.error("Error starting application:", error);
-      
+
       // Provide specific error messages based on error type
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
         res.status(503).json({ 
           message: "Process manager is unavailable", 
@@ -296,10 +312,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Application stopped successfully" });
     } catch (error) {
       console.error("Error stopping application:", error);
-      
+
       // Provide specific error messages based on error type
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
         res.status(503).json({ 
           message: "Process manager is unavailable", 
@@ -346,10 +362,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Application restarted successfully" });
     } catch (error) {
       console.error("Error restarting application:", error);
-      
+
       // Provide specific error messages based on error type
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
         res.status(503).json({ 
           message: "Process manager is unavailable", 
@@ -617,10 +633,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       console.error("Error fetching application logs:", error);
-      
+
       // Provide specific error messages based on error type
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
         res.status(503).json({ 
           message: "Process manager is unavailable", 
@@ -689,21 +705,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .max(50, "Dependency name too long")
           .regex(/^[a-zA-Z0-9\-_]+$/, "Invalid dependency name format")
       });
-      
+
       const { dependencyName } = requestSchema.parse(req.body);
-      
+
       // Additional whitelist validation - only allow specific known dependencies
       const allowedDependencies = [
         'node', 'npm', 'pm2', 'nginx', 'certbot', 'git', 'curl', 'ufw', 'htop'
       ];
-      
+
       if (!allowedDependencies.includes(dependencyName)) {
         return res.status(400).json({ 
           success: false,
           message: `التبعية '${dependencyName}' غير مدعومة أو غير آمنة للتثبيت التلقائي`
         });
       }
-      
+
       const result = await systemService.installDependency(dependencyName);
       res.json(result);
     } catch (error) {
@@ -728,10 +744,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(processes);
     } catch (error) {
       console.error("Error fetching processes:", error);
-      
+
       // Provide specific error messages based on error type
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
         res.status(503).json({ 
           message: "Process manager is unavailable", 
