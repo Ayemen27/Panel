@@ -66,6 +66,9 @@ export interface IStorage {
   getSystemLogs(filters?: { source?: string; level?: string; applicationId?: string; limit?: number }): Promise<SystemLog[]>;
   createSystemLog(log: InsertSystemLog): Promise<SystemLog>;
 
+  // Database connection test
+  testConnection(): Promise<void>;
+
   // Statistics
   getApplicationStats(userId: string): Promise<{
     total: number;
@@ -341,6 +344,16 @@ export class DatabaseStorage implements IStorage {
       ).length,
       expired: certs.filter(cert => cert.expiresAt && cert.expiresAt <= now).length,
     };
+  }
+
+  // Test database connection
+  async testConnection(): Promise<void> {
+    try {
+      // Use proper Drizzle query instead of raw execute
+      await db.select().from(users).limit(1);
+    } catch (error) {
+      throw new Error(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 

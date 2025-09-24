@@ -117,6 +117,335 @@ export class SystemService {
     }
   }
 
+  // Health check interface for beginners
+  async performHealthCheck(): Promise<{
+    database: { status: string; message: string; details?: any };
+    system: { status: string; message: string; details?: any };
+    services: { status: string; message: string; details?: any };
+    overall: { status: string; score: number; message: string };
+  }> {
+    const results = {
+      database: { status: 'unknown', message: 'جاري فحص قاعدة البيانات...' },
+      system: { status: 'unknown', message: 'جاري فحص النظام...' },
+      services: { status: 'unknown', message: 'جاري فحص الخدمات...' },
+      overall: { status: 'unknown', score: 0, message: 'جاري تقييم الحالة العامة...' }
+    };
+    
+    let healthScore = 0;
+    const maxScore = 3;
+
+    try {
+      // Check database
+      try {
+        const { storage } = await import('../storage');
+        await storage.testConnection();
+        results.database = { 
+          status: 'healthy', 
+          message: '✅ قاعدة البيانات تعمل بشكل طبيعي',
+          details: { connected: true, type: 'PostgreSQL' }
+        };
+        healthScore++;
+      } catch (error) {
+        results.database = { 
+          status: 'error', 
+          message: '❌ مشكلة في الاتصال بقاعدة البيانات',
+          details: { error: error instanceof Error ? error.message : 'خطأ غير معروف' }
+        };
+      }
+
+      // Check system resources
+      try {
+        const systemStats = await this.getSystemStats();
+        const criticalIssues = [];
+        
+        if (systemStats.cpu.usage > 90) criticalIssues.push('استخدام المعالج مرتفع جداً');
+        if (systemStats.memory.usage > 90) criticalIssues.push('استخدام الذاكرة مرتفع جداً');
+        if (systemStats.disk.usage > 95) criticalIssues.push('مساحة القرص ممتلئة تقريباً');
+        
+        if (criticalIssues.length === 0) {
+          results.system = { 
+            status: 'healthy', 
+            message: '✅ موارد النظام في حالة جيدة',
+            details: systemStats 
+          };
+          healthScore++;
+        } else {
+          results.system = { 
+            status: 'warning', 
+            message: `⚠️ تحذير: ${criticalIssues.join(', ')}`,
+            details: systemStats 
+          };
+          healthScore += 0.5;
+        }
+      } catch (error) {
+        results.system = { 
+          status: 'error', 
+          message: '❌ فشل في فحص موارد النظام',
+          details: { error: error instanceof Error ? error.message : 'خطأ غير معروف' }
+        };
+      }
+
+      // Check core services
+      try {
+        const dependencies = await this.checkDependencies();
+        const criticalDeps = dependencies.filter(dep => dep.category === 'critical' && !dep.installed);
+        
+        if (criticalDeps.length === 0) {
+          results.services = { 
+            status: 'healthy', 
+            message: '✅ جميع الخدمات الأساسية متوفرة',
+            details: { installed: dependencies.filter(d => d.installed).length, total: dependencies.length }
+          };
+          healthScore++;
+        } else {
+          results.services = { 
+            status: 'warning', 
+            message: `⚠️ بعض الخدمات مفقودة: ${criticalDeps.map(d => d.name).join(', ')}`,
+            details: { missing: criticalDeps.length, installed: dependencies.filter(d => d.installed).length }
+          };
+        }
+      } catch (error) {
+        results.services = { 
+          status: 'error', 
+          message: '❌ فشل في فحص الخدمات',
+          details: { error: error instanceof Error ? error.message : 'خطأ غير معروف' }
+        };
+      }
+
+      // Calculate overall health
+      const scorePercentage = (healthScore / maxScore) * 100;
+      if (scorePercentage >= 80) {
+        results.overall = { 
+          status: 'healthy', 
+          score: Math.round(scorePercentage),
+          message: `🎉 النظام يعمل بشكل ممتاز! (${Math.round(scorePercentage)}%)`
+        };
+      } else if (scorePercentage >= 60) {
+        results.overall = { 
+          status: 'warning', 
+          score: Math.round(scorePercentage),
+          message: `⚠️ النظام يعمل مع بعض التحذيرات (${Math.round(scorePercentage)}%)`
+        };
+      } else {
+        results.overall = { 
+          status: 'critical', 
+          score: Math.round(scorePercentage),
+          message: `🔴 النظام يحتاج للإصلاح (${Math.round(scorePercentage)}%)`
+        };
+      }
+
+    } catch (error) {
+      results.overall = { 
+        status: 'error', 
+        score: 0,
+        message: `❌ خطأ في فحص النظام: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`
+      };
+    }
+
+    return results;
+  }
+
+  // Check dependencies and tools for beginners
+  async checkDependencies(): Promise<Array<{
+    name: string;
+    displayName: string;
+    description: string;
+    category: 'critical' | 'recommended' | 'optional';
+    installed: boolean;
+    version?: string;
+    installCommand?: string;
+    checkCommand: string;
+    icon: string;
+    purpose: string;
+    installable: boolean;
+  }>> {
+    const dependencies = [
+      {
+        name: 'node',
+        displayName: 'Node.js',
+        description: 'بيئة تشغيل JavaScript لتطبيقات الخادم',
+        category: 'critical' as const,
+        checkCommand: 'node --version',
+        installCommand: 'curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs',
+        icon: '⚡',
+        purpose: 'تشغيل التطبيقات والخدمات المبنية بـ JavaScript',
+        installable: true
+      },
+      {
+        name: 'npm',
+        displayName: 'NPM',
+        description: 'مدير الحزم الخاص بـ Node.js',
+        category: 'critical' as const,
+        checkCommand: 'npm --version',
+        installCommand: 'curl -L https://www.npmjs.com/install.sh | sudo sh',
+        icon: '📦',
+        purpose: 'تثبيت وإدارة مكتبات JavaScript والتبعيات',
+        installable: true
+      },
+      {
+        name: 'pm2',
+        displayName: 'PM2',
+        description: 'مدير العمليات لتطبيقات Node.js',
+        category: 'critical' as const,
+        checkCommand: 'pm2 --version',
+        installCommand: 'npm install -g pm2',
+        icon: '⚙️',
+        purpose: 'مراقبة وإدارة تطبيقات Node.js في الخلفية',
+        installable: true
+      },
+      {
+        name: 'nginx',
+        displayName: 'Nginx',
+        description: 'خادم ويب وموزع للأحمال',
+        category: 'recommended' as const,
+        checkCommand: 'nginx -v',
+        installCommand: 'sudo apt update && sudo apt install -y nginx',
+        icon: '🌐',
+        purpose: 'توزيع المحتوى وإدارة SSL وتوجيه الطلبات',
+        installable: true
+      },
+      {
+        name: 'certbot',
+        displayName: 'Certbot',
+        description: 'أداة الحصول على شهادات SSL من Let\'s Encrypt',
+        category: 'recommended' as const,
+        checkCommand: 'certbot --version',
+        installCommand: 'sudo apt update && sudo apt install -y certbot python3-certbot-nginx',
+        icon: '🔒',
+        purpose: 'الحصول على شهادات SSL مجانية لتأمين المواقع',
+        installable: true
+      },
+      {
+        name: 'git',
+        displayName: 'Git',
+        description: 'نظام التحكم في الإصدارات',
+        category: 'recommended' as const,
+        checkCommand: 'git --version',
+        installCommand: 'sudo apt update && sudo apt install -y git',
+        icon: '📝',
+        purpose: 'إدارة التحكم في إصدارات الكود والنشر',
+        installable: true
+      },
+      {
+        name: 'curl',
+        displayName: 'cURL',
+        description: 'أداة نقل البيانات من وإلى الخوادم',
+        category: 'optional' as const,
+        checkCommand: 'curl --version',
+        installCommand: 'sudo apt update && sudo apt install -y curl',
+        icon: '🔄',
+        purpose: 'تنزيل الملفات واختبار الـ APIs',
+        installable: true
+      },
+      {
+        name: 'ufw',
+        displayName: 'UFW Firewall',
+        description: 'جدار حماية بسيط لنظام Linux',
+        category: 'recommended' as const,
+        checkCommand: 'ufw --version',
+        installCommand: 'sudo apt update && sudo apt install -y ufw',
+        icon: '🛡️',
+        purpose: 'حماية الخادم من الوصول غير المرخص',
+        installable: true
+      },
+      {
+        name: 'htop',
+        displayName: 'htop',
+        description: 'مراقب العمليات التفاعلي',
+        category: 'optional' as const,
+        checkCommand: 'htop --version',
+        installCommand: 'sudo apt update && sudo apt install -y htop',
+        icon: '📊',
+        purpose: 'مراقبة استخدام موارد النظام بصورة تفاعلية',
+        installable: true
+      }
+    ];
+
+    // Check each dependency
+    const results = await Promise.all(
+      dependencies.map(async (dep) => {
+        try {
+          const { stdout } = await execAsync(dep.checkCommand);
+          const version = stdout.trim().split('\n')[0];
+          return {
+            ...dep,
+            installed: true,
+            version
+          };
+        } catch (error) {
+          return {
+            ...dep,
+            installed: false
+          };
+        }
+      })
+    );
+
+    return results;
+  }
+
+  // Install dependency for beginners
+  async installDependency(dependencyName: string): Promise<{
+    success: boolean;
+    message: string;
+    details?: any;
+  }> {
+    try {
+      const dependencies = await this.checkDependencies();
+      const dep = dependencies.find(d => d.name === dependencyName);
+      
+      if (!dep) {
+        return {
+          success: false,
+          message: 'الأداة المطلوبة غير موجودة في قائمة الأدوات المدعومة'
+        };
+      }
+
+      if (dep.installed) {
+        return {
+          success: true,
+          message: `${dep.displayName} مثبت بالفعل (${dep.version})`
+        };
+      }
+
+      if (!dep.installable || !dep.installCommand) {
+        return {
+          success: false,
+          message: `لا يمكن تثبيت ${dep.displayName} تلقائياً. يرجى التثبيت يدوياً.`
+        };
+      }
+
+      console.log(`🔧 جاري تثبيت ${dep.displayName}...`);
+      console.log(`📝 الأمر: ${dep.installCommand}`);
+      
+      const { stdout, stderr } = await execAsync(dep.installCommand);
+      
+      // Verify installation
+      try {
+        await execAsync(dep.checkCommand);
+        return {
+          success: true,
+          message: `✅ تم تثبيت ${dep.displayName} بنجاح!`,
+          details: { stdout, stderr }
+        };
+      } catch (verifyError) {
+        return {
+          success: false,
+          message: `❌ فشل التحقق من تثبيت ${dep.displayName}`,
+          details: { stdout, stderr, verifyError }
+        };
+      }
+
+    } catch (error) {
+      console.error(`خطأ في تثبيت ${dependencyName}:`, error);
+      return {
+        success: false,
+        message: `❌ فشل في تثبيت ${dependencyName}: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`,
+        details: { error: error instanceof Error ? error.message : error }
+      };
+    }
+  }
+
   async getProcesses(): Promise<ProcessInfo[]> {
     try {
       const { stdout } = await execAsync("ps aux --no-headers | awk '{print $2,$11,$3,$4,$8}' | head -20");

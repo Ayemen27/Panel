@@ -15,6 +15,7 @@ import SSL from "@/pages/SSL";
 import Processes from "@/pages/Processes";
 import Logs from "@/pages/Logs";
 import Terminal from "@/pages/Terminal";
+import HealthCheck from "@/pages/HealthCheck";
 import MainLayout from "@/components/Layout/MainLayout";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
               <Route path="/processes" component={Processes} />
               <Route path="/logs" component={Logs} />
               <Route path="/terminal" component={Terminal} />
+              <Route path="/health-check" component={HealthCheck} />
               <Route component={NotFound} />
             </Switch>
           </MainLayout>

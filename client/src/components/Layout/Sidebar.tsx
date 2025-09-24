@@ -13,7 +13,8 @@ import {
   Server,
   User,
   LogOut,
-  X
+  X,
+  Activity
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -26,6 +27,7 @@ interface SidebarProps {
 
 const navigationItems = [
   { href: "/", label: "لوحة المعلومات", icon: BarChart3 },
+  { href: "/health-check", label: "فحص النظام", icon: Activity },
   { href: "/applications", label: "التطبيقات", icon: Box },
   { href: "/domains", label: "النطاقات", icon: Globe },
   { href: "/nginx", label: "Nginx", icon: Settings },

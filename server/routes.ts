@@ -10,6 +10,7 @@ import {
   insertNginxConfigSchema,
   insertNotificationSchema 
 } from "@shared/schema";
+import { z } from "zod";
 import { pm2Service } from "./services/pm2Service";
 import { nginxService } from "./services/nginxService";
 import { sslService } from "./services/sslService";
@@ -653,6 +654,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching system info:", error);
       res.status(500).json({ message: "Failed to fetch system info" });
+    }
+  });
+
+  // System health check route for beginners
+  app.get('/api/system/health-check', isAuthenticated, async (req: any, res) => {
+    try {
+      const healthCheck = await systemService.performHealthCheck();
+      res.json(healthCheck);
+    } catch (error) {
+      console.error("Error performing health check:", error);
+      res.status(500).json({ message: "Failed to perform health check" });
+    }
+  });
+
+  // Dependencies check route
+  app.get('/api/system/dependencies', isAuthenticated, async (req: any, res) => {
+    try {
+      const dependencies = await systemService.checkDependencies();
+      res.json(dependencies);
+    } catch (error) {
+      console.error("Error checking dependencies:", error);
+      res.status(500).json({ message: "Failed to check dependencies" });
+    }
+  });
+
+  // Install dependency route with security validation
+  app.post('/api/system/install-dependency', isAuthenticated, async (req: any, res) => {
+    try {
+      // Validate request body with Zod schema
+      const requestSchema = z.object({
+        dependencyName: z.string()
+          .min(1, "Dependency name cannot be empty")
+          .max(50, "Dependency name too long")
+          .regex(/^[a-zA-Z0-9\-_]+$/, "Invalid dependency name format")
+      });
+      
+      const { dependencyName } = requestSchema.parse(req.body);
+      
+      // Additional whitelist validation - only allow specific known dependencies
+      const allowedDependencies = [
+        'node', 'npm', 'pm2', 'nginx', 'certbot', 'git', 'curl', 'ufw', 'htop'
+      ];
+      
+      if (!allowedDependencies.includes(dependencyName)) {
+        return res.status(400).json({ 
+          success: false,
+          message: `التبعية '${dependencyName}' غير مدعومة أو غير آمنة للتثبيت التلقائي`
+        });
+      }
+      
+      const result = await systemService.installDependency(dependencyName);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          success: false,
+          message: "بيانات الطلب غير صحيحة",
+          details: error.errors
+        });
+      }
+      console.error("Error installing dependency:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "فشل في تثبيت التبعية" 
+      });
     }
   });
 

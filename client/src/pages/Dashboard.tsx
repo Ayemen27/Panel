@@ -123,7 +123,7 @@ export default function Dashboard() {
           value={stats?.ssl?.valid || 0}
           total={stats?.ssl?.total || 0}
           icon="shield"
-          trend={stats?.ssl?.expiringSoon > 0 ? "warning" : "up"}
+          trend={(stats?.ssl?.expiringSoon || 0) > 0 ? "warning" : "up"}
           warning={stats?.ssl?.expiringSoon}
           loading={statsLoading}
           data-testid="stat-ssl-certificates"
