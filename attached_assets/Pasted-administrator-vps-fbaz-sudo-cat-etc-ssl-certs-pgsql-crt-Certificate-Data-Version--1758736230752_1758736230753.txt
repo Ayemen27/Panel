@@ -1,0 +1,113 @@
+administrator@vps-fbaz:~$ sudo cat /etc/ssl/certs/pgsql.crt
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            0d:0a:a9:e6:4e:e8:7b:73:85:d2:76:b9:4c:01:0e:32:49:24:02:43
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C = AU, ST = Some-State, L = bin, O = Internet Widgits Pty Ltd, CN = Ayemen, emailAddress = binarjoinanalytic@gmail.com
+        Validity
+            Not Before: Sep 17 18:50:54 2025 GMT
+            Not After : Sep 17 18:50:54 2026 GMT
+        Subject: C = AU, ST = Some-State, L = bin, O = Internet Widgits Pty Ltd, CN = Ayemen, emailAddress = binarjoinanalytic@gmail.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:98:f1:1d:b6:e8:0c:1a:9d:d2:e6:d6:87:24:61:
+                    94:d7:7f:7f:c1:fe:e2:3b:ae:d7:81:b7:4f:77:14:
+                    1c:cf:07:83:ca:66:e3:0f:ab:7a:b5:e5:8b:6f:56:
+                    2e:b6:fa:f9:33:cb:73:82:82:f7:1c:1a:d0:8e:0d:
+                    4a:25:55:39:f3:99:9a:be:47:2c:32:1f:c6:2e:a0:
+                    87:c9:50:be:5b:ad:7b:41:3f:2c:b1:9a:77:b8:10:
+                    78:27:ea:28:4c:80:5e:11:16:fd:89:3e:00:b3:bf:
+                    30:d9:73:9c:fc:ea:d8:4c:51:9d:ae:47:e6:bf:e0:
+                    5f:4d:03:46:33:67:11:9f:25:4d:9f:c2:aa:33:06:
+                    72:e7:ea:6f:c9:fe:b2:0c:78:bf:3f:4a:76:3e:64:
+                    c4:9e:d0:93:b4:b0:2f:48:0c:84:f3:91:04:7b:a0:
+                    2f:a3:7b:56:06:6f:79:70:fa:e0:b1:04:a1:4b:fc:
+                    61:d9:4b:8e:6e:42:0d:a9:ea:82:3c:f8:c2:43:f7:
+                    a7:c4:21:a1:d0:0b:7f:aa:73:6a:93:be:b2:97:97:
+                    1d:ea:bb:42:ba:66:9f:b4:6b:4a:10:2e:f3:5b:50:
+                    ab:ff:71:a0:64:3f:cd:bc:d5:74:e1:12:a4:62:08:
+                    e1:88:0a:c4:32:89:74:93:d9:c5:14:f4:7f:4c:c0:
+                    0d:95
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Subject Key Identifier:
+                C6:EB:37:5A:27:0A:C9:E8:B6:D6:5A:3C:7F:98:1B:77:7B:C7:CE:D7
+            X509v3 Authority Key Identifier:
+                C6:EB:37:5A:27:0A:C9:E8:B6:D6:5A:3C:7F:98:1B:77:7B:C7:CE:D7
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        8b:3a:38:a8:f3:f8:5b:67:89:88:e8:9f:e6:e4:2d:fc:2e:70:
+        55:a8:d9:2b:b3:03:7b:14:01:1a:8b:f5:93:d9:6e:33:b4:ce:
+        6e:97:18:4c:8f:6d:bf:88:cc:64:47:a4:a5:48:f0:fa:43:76:
+        24:e7:af:7c:6c:10:8f:84:ea:09:ec:a6:d0:4f:4c:5a:5b:4b:
+        e3:12:22:e1:b4:fc:b6:95:7e:a2:08:cd:24:e3:1a:9d:8b:59:
+        66:24:7a:fa:0d:46:31:b4:d3:2d:81:84:95:98:de:da:22:fa:
+        f8:04:aa:55:25:7c:81:6d:56:36:a4:fe:b7:a0:52:79:38:fb:
+        04:20:53:32:ef:2e:52:60:74:82:80:fc:93:1c:a8:15:73:34:
+        e1:b4:72:0a:f9:1e:0d:d2:89:d2:11:5b:ba:b4:06:b7:39:b1:
+        4e:63:35:7b:ba:1a:34:6d:26:59:ea:f3:c6:f0:ea:84:c3:91:
+        49:fb:13:6c:76:90:d2:9f:44:ee:f3:c6:7d:51:3e:52:29:5e:
+        e5:bd:69:4c:44:22:c2:7d:a1:06:d1:5b:31:22:ab:ff:aa:54:
+        37:af:a1:77:58:7b:e7:0e:ca:ef:2e:b1:99:cd:ed:9b:93:57:
+        d8:c3:5a:e3:8c:25:a8:7e:e9:4b:4e:c0:eb:e2:17:a5:70:f9:
+        68:f7:d9:8c
+-----BEGIN CERTIFICATE-----
+MIIEAzCCAuugAwIBAgIUDQqp5k7oe3OF0na5TAEOMkkkAkMwDQYJKoZIhvcNAQEL
+BQAwgZAxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMQwwCgYDVQQH
+DANiaW4xITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDEPMA0GA1UE
+AwwGQXllbWVuMSowKAYJKoZIhvcNAQkBFhtiaW5hcmpvaW5hbmFseXRpY0BnbWFp
+bC5jb20wHhcNMjUwOTE3MTg1MDU0WhcNMjYwOTE3MTg1MDU0WjCBkDELMAkGA1UE
+BhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxDDAKBgNVBAcMA2JpbjEhMB8GA1UE
+CgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMQ8wDQYDVQQDDAZBeWVtZW4xKjAo
+BgkqhkiG9w0BCQEWG2JpbmFyam9pbmFuYWx5dGljQGdtYWlsLmNvbTCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAJjxHbboDBqd0ubWhyRhlNd/f8H+4juu
+14G3T3cUHM8Hg8pm4w+rerXli29WLrb6+TPLc4KC9xwa0I4NSiVVOfOZmr5HLDIf
+xi6gh8lQvlute0E/LLGad7gQeCfqKEyAXhEW/Yk+ALO/MNlznPzq2ExRna5H5r/g
+X00DRjNnEZ8lTZ/CqjMGcufqb8n+sgx4vz9Kdj5kxJ7Qk7SwL0gMhPORBHugL6N7
+VgZveXD64LEEoUv8YdlLjm5CDanqgjz4wkP3p8QhodALf6pzapO+speXHeq7Qrpm
+n7RrShAu81tQq/9xoGQ/zbzVdOESpGII4YgKxDKJdJPZxRT0f0zADZUCAwEAAaNT
+MFEwHQYDVR0OBBYEFMbrN1onCsnottZaPH+YG3d7x87XMB8GA1UdIwQYMBaAFMbr
+N1onCsnottZaPH+YG3d7x87XMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL
+BQADggEBAIs6OKjz+FtniYjon+bkLfwucFWo2SuzA3sUARqL9ZPZbjO0zm6XGEyP
+bb+IzGRHpKVI8PpDdiTnr3xsEI+E6gnsptBPTFpbS+MSIuG0/LaVfqIIzSTjGp2L
+WWYkevoNRjG00y2BhJWY3toi+vgEqlUlfIFtVjak/regUnk4+wQgUzLvLlJgdIKA
+/JMcqBVzNOG0cgr5Hg3SidIRW7q0Brc5sU5jNXu6GjRtJlnq88bw6oTDkUn7E2x2
+kNKfRO7zxn1RPlIpXuW9aUxEIsJ9oQbRWzEiq/+qVDevoXdYe+cOyu8usZnN7ZuT
+V9jDWuOMJah+6UtOwOviF6Vw+Wj32Yw=
+-----END CERTIFICATE-----
+administrator@vps-fbaz:~$ sudo cat /etc/ssl/private/pgsql.key
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCY8R226AwandLm
+1ockYZTXf3/B/uI7rteBt093FBzPB4PKZuMPq3q15YtvVi62+vkzy3OCgvccGtCO
+DUolVTnzmZq+RywyH8YuoIfJUL5brXtBPyyxmne4EHgn6ihMgF4RFv2JPgCzvzDZ
+c5z86thMUZ2uR+a/4F9NA0YzZxGfJU2fwqozBnLn6m/J/rIMeL8/SnY+ZMSe0JO0
+sC9IDITzkQR7oC+je1YGb3lw+uCxBKFL/GHZS45uQg2p6oI8+MJD96fEIaHQC3+q
+c2qTvrKXlx3qu0K6Zp+0a0oQLvNbUKv/caBkP8281XThEqRiCOGICsQyiXST2cUU
+9H9MwA2VAgMBAAECggEAHkx0GcpmLXazM5pv2uf/A+MlFPJQ8MhuNqsxUbKZE3WW
+aQhRdsb+sB7ZrPSanBLjwBxP1Zzq5fU0+FNPK06zRJxbUNNKQOLVEOMqC1qU35Yi
+axZgHQ4wJfWTTDsCAUfT+tg+YYw4OOPJQmb6RIukzpfDoGVro/sH/jqGE4RZdBiy
+HEyiAbT16aked8GH1gdpkYqT4A6DmOZSdrL48i77n62NOgJTpJgXEn9NfRtzBHVr
+8+Q2HxK9xusR/HGxW+b1oHE+Nj43fBoYvVNVJPsSAupdWCIITuzKSxPbU/TCdyDy
+WJhWJnm597LlHCaZB6dpMfODzvXUo4bi4nq1mbxX2QKBgQDIYepXdop8n9wmMv8R
+4uWHvWKm1I1rBzLQPXxSfsT6hE14auwgN62QcAdHBJson95KLQY9dOEhtN+ttqh7
+/zOI8XXieW9CbIYSe6PW1LbWAGvm6u2U05GIygruXQrbqTuMKHmq8AJjqM7mDm7G
+eMAa8PjHVU4fey1KegCZzyzsTQKBgQDDZFRFxmhmUzIY47mhgIU13KdFVmbXtBmf
+gAcL0Jne9hcSHq6ihtPHC3+Jv/uwR8JZPolCvLRZb+T6Gl/Tn8GYZKebHam1BXxe
+jIXVXtVnejiBH4MPC/lDJRzNYEaLvxaMqneP5E7WCgMArAdamyYqDc0fmjQeYzEA
+4C4EjAiqaQKBgQC+IjKCxScIs4Ln+BGQ/jN/BhOaayq4uH7dmsnhWQo9DtaXgRUG
+SO52k+ZD27oB5Re+WFSIcePA4Ogw45Wg+nkC4uJRf5ozc9gPp6PBj9rg2kuIM7g1
+ND7uhY+ztzM7VKv9BNbVfKE3wRB4uI8h4aeeqLHWKjpTosRJ29PAHhXpLQKBgC3B
+aeapDrufkeS4Nzk1snwpftZC5HRwzWtHfN7sa4wFzuNEYhrXPfKno6crWRIvy7hA
+Z75EGGu1Q0a6NGSHTbuVHpa5fItSjIxLle+gdJL10ROTwIoegLGTmEoT2JFTH0Gz
+jaoZicifsZJPtq0mFerVLorO/pN7IPeWh9Ayxri5AoGAe/Tuod23CJCi9cN4WzB6
+2HkHFakcS8ZurA/IhQPIzNmArnHGuCNb0MYO0jC7CXiCKZf7HRobVDMj03JES9T0
+yPO/X5/8YSG7IWQ0Y4Eas/SXmzNA4VtVGSJ9CkEyDPSPyZRjROM60C6m0h4qHpHN
+KK05EDlTi77LUdbX3k/QjHY=
+-----END PRIVATE KEY-----
+administrator@vps-fbaz:~$
