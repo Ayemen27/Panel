@@ -20,6 +20,16 @@ import { logService } from "./services/logService";
 const wsClients = new Map<string, WebSocket>();
 
 // Add CORS headers for WebSocket
+function setupWebSocketCORS(req: any, res: any, next: any) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+}
 function setupCors(app: Express) {
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'https://binarjoinanelytic.info');

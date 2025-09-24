@@ -1,6 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-const API_BASE = 'https://binarjoinanelytic.info';
+// Use relative URLs to avoid SSL issues with IP addresses
+const API_BASE = window.location.origin;
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {

@@ -19,8 +19,8 @@ export function useWebSocket(url?: string) {
     }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // Use the domain name instead of IP
-    const wsUrl = url || `wss://binarjoinanelytic.info/ws`;
+    // Use the same host as the current page to avoid SSL issues
+    const wsUrl = url || `${protocol}//${window.location.host}/ws`;
 
     try {
       wsRef.current = new WebSocket(wsUrl);
