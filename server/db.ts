@@ -63,9 +63,9 @@ function setupSSLConfig() {
     } else {
       // إذا لم توجد شهادة في متغيرات البيئة، تحقق من الملف
       const certPath = './pg_cert.pem';
-      if (require('fs').existsSync(certPath)) {
+      if (fs.existsSync(certPath)) {
         console.log('📜 [SSL] استخدام شهادة SSL من الملف');
-        sslConfig.ca = require('fs').readFileSync(certPath);
+        sslConfig.ca = fs.readFileSync(certPath);
         console.log('✅ [SSL] تم تحميل الشهادة من الملف - تفعيل التحقق الكامل');
       } else {
         // للخوادم الخاصة المعروفة والموثوقة فقط أو الاختبار
