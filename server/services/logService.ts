@@ -2,8 +2,135 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { spawn } from 'child_process';
 
 const execAsync = promisify(exec);
+
+// Security utility functions for input validation and shell escaping
+class SecurityUtils {
+  /**
+   * Validates application name to prevent command injection
+   * Only allows alphanumeric characters, hyphens, and underscores
+   */
+  static validateAppName(appName: string): string {
+    if (!appName || typeof appName !== 'string') {
+      throw new Error('Application name must be a non-empty string');
+    }
+    
+    // Only allow safe characters: letters, numbers, hyphens, underscores
+    if (!/^[a-zA-Z0-9_-]+$/.test(appName)) {
+      throw new Error('Application name contains invalid characters');
+    }
+    
+    if (appName.length > 50) {
+      throw new Error('Application name too long');
+    }
+    
+    return appName;
+  }
+
+  /**
+   * Validates and sanitizes line count parameter
+   */
+  static validateLines(lines: number): number {
+    const numLines = parseInt(String(lines), 10);
+    if (isNaN(numLines) || numLines < 1 || numLines > 10000) {
+      throw new Error('Lines parameter must be a number between 1 and 10000');
+    }
+    return numLines;
+  }
+
+  /**
+   * Validates service name for systemd services
+   */
+  static validateServiceName(service: string): string {
+    if (!service || typeof service !== 'string') {
+      throw new Error('Service name must be a non-empty string');
+    }
+    
+    // Allow letters, numbers, hyphens, dots, and @ symbols (systemd naming)
+    if (!/^[a-zA-Z0-9_.-]+(@[a-zA-Z0-9_.-]+)?$/.test(service)) {
+      throw new Error('Service name contains invalid characters');
+    }
+    
+    if (service.length > 100) {
+      throw new Error('Service name too long');
+    }
+    
+    return service;
+  }
+
+  /**
+   * Validates and sanitizes search query to prevent command injection
+   */
+  static validateSearchQuery(query: string): string {
+    if (!query || typeof query !== 'string') {
+      throw new Error('Search query must be a non-empty string');
+    }
+    
+    if (query.length > 500) {
+      throw new Error('Search query too long');
+    }
+    
+    // Remove dangerous characters that could be used for command injection
+    // Allow letters, numbers, spaces, basic punctuation, but not shell metacharacters
+    const sanitized = query.replace(/[`$()\\|&;<>"']/g, '');
+    
+    if (sanitized !== query) {
+      console.warn('Search query contained potentially dangerous characters and was sanitized');
+    }
+    
+    return sanitized;
+  }
+
+  /**
+   * Validates log source parameter
+   */
+  static validateLogSource(source: string): string {
+    const validSources = ['nginx', 'system', 'pm2'];
+    if (!validSources.includes(source)) {
+      throw new Error(`Invalid log source. Must be one of: ${validSources.join(', ')}`);
+    }
+    return source;
+  }
+
+  /**
+   * Escapes shell arguments to prevent injection
+   */
+  static escapeShellArg(arg: string): string {
+    // Use single quotes and escape any single quotes in the argument
+    return `'${arg.replace(/'/g, "'\\''")}'`;
+  }
+
+  /**
+   * Validates file path to prevent directory traversal
+   */
+  static validateLogPath(logPath: string): string {
+    const normalizedPath = path.normalize(logPath);
+    
+    // Prevent directory traversal
+    if (normalizedPath.includes('..')) {
+      throw new Error('Invalid log path: directory traversal detected');
+    }
+    
+    // Only allow specific log directories
+    const allowedPaths = [
+      '/var/log/nginx/',
+      '/home/administrator/',
+      '/var/log/',
+    ];
+    
+    const isAllowed = allowedPaths.some(allowedPath => 
+      normalizedPath.startsWith(allowedPath)
+    );
+    
+    if (!isAllowed) {
+      throw new Error('Access to this log path is not allowed');
+    }
+    
+    return normalizedPath;
+  }
+}
 
 export interface LogEntry {
   timestamp: string;
@@ -15,15 +142,22 @@ export interface LogEntry {
 export class LogService {
   async getApplicationLogs(appName: string, lines = 100): Promise<LogEntry[]> {
     try {
-      // Try PM2 logs first
-      const { stdout } = await execAsync(`pm2 logs ${appName} --lines ${lines} --nostream --raw`);
+      // Validate inputs to prevent command injection
+      const validatedAppName = SecurityUtils.validateAppName(appName);
+      const validatedLines = SecurityUtils.validateLines(lines);
+      
+      // Try PM2 logs first - use escaped parameters
+      const escapedAppName = SecurityUtils.escapeShellArg(validatedAppName);
+      const { stdout } = await execAsync(`pm2 logs ${escapedAppName} --lines ${validatedLines} --nostream --raw`);
       
       return this.parsePM2Logs(stdout);
     } catch (error) {
       // Fallback to application log file if it exists
       try {
-        const logPath = `/home/administrator/${appName}/logs/app.log`;
-        const content = await fs.readFile(logPath, 'utf8');
+        const validatedAppName = SecurityUtils.validateAppName(appName);
+        const logPath = `/home/administrator/${validatedAppName}/logs/app.log`;
+        const validatedLogPath = SecurityUtils.validateLogPath(logPath);
+        const content = await fs.readFile(validatedLogPath, 'utf8');
         return this.parseGenericLogs(content, lines);
       } catch (fileError) {
         return [];
@@ -33,8 +167,14 @@ export class LogService {
 
   async getNginxLogs(type: 'access' | 'error' = 'error', lines = 100): Promise<LogEntry[]> {
     try {
+      // Validate inputs
+      const validatedLines = SecurityUtils.validateLines(lines);
       const logPath = type === 'access' ? '/var/log/nginx/access.log' : '/var/log/nginx/error.log';
-      const { stdout } = await execAsync(`sudo tail -n ${lines} ${logPath}`);
+      const validatedLogPath = SecurityUtils.validateLogPath(logPath);
+      
+      // Use escaped parameters for shell command
+      const escapedLogPath = SecurityUtils.escapeShellArg(validatedLogPath);
+      const { stdout } = await execAsync(`sudo tail -n ${validatedLines} ${escapedLogPath}`);
       
       return this.parseNginxLogs(stdout, type);
     } catch (error) {
@@ -46,9 +186,14 @@ export class LogService {
 
   async getSystemLogs(service?: string, lines = 100): Promise<LogEntry[]> {
     try {
-      let command = `journalctl --no-pager -n ${lines}`;
+      // Validate inputs
+      const validatedLines = SecurityUtils.validateLines(lines);
+      let command = `journalctl --no-pager -n ${validatedLines}`;
+      
       if (service) {
-        command += ` -u ${service}`;
+        const validatedService = SecurityUtils.validateServiceName(service);
+        const escapedService = SecurityUtils.escapeShellArg(validatedService);
+        command += ` -u ${escapedService}`;
       }
       
       const { stdout } = await execAsync(command);
@@ -62,11 +207,17 @@ export class LogService {
 
   async searchLogs(query: string, source?: string, level?: string): Promise<LogEntry[]> {
     try {
-      let grepCommand = `grep -i "${query}"`;
+      // Validate and sanitize inputs - CRITICAL for preventing command injection
+      const validatedQuery = SecurityUtils.validateSearchQuery(query);
+      const escapedQuery = SecurityUtils.escapeShellArg(validatedQuery);
+      
+      let grepCommand = `grep -i ${escapedQuery}`;
       
       if (source === 'nginx') {
+        SecurityUtils.validateLogSource(source);
         grepCommand = `sudo ${grepCommand} /var/log/nginx/*.log`;
       } else if (source === 'system') {
+        SecurityUtils.validateLogSource(source);
         grepCommand = `journalctl --no-pager | ${grepCommand}`;
       } else {
         // Search PM2 logs
@@ -87,12 +238,18 @@ export class LogService {
       [Symbol.asyncIterator]: async function* () {
         let command = '';
         
-        if (source === 'nginx') {
+        // Validate source parameter
+        const validatedSource = SecurityUtils.validateLogSource(source);
+        
+        if (validatedSource === 'nginx') {
           command = 'sudo tail -f /var/log/nginx/error.log';
-        } else if (source === 'system') {
+        } else if (validatedSource === 'system') {
           command = 'journalctl -f --no-pager';
-        } else if (source === 'pm2' && appName) {
-          command = `pm2 logs ${appName} --raw --lines 0`;
+        } else if (validatedSource === 'pm2' && appName) {
+          // Validate and escape appName to prevent injection
+          const validatedAppName = SecurityUtils.validateAppName(appName);
+          const escapedAppName = SecurityUtils.escapeShellArg(validatedAppName);
+          command = `pm2 logs ${escapedAppName} --raw --lines 0`;
         }
         
         if (!command) return;
@@ -109,7 +266,7 @@ export class LogService {
                     timestamp: new Date().toISOString(),
                     level: 'info',
                     message: line.trim(),
-                    source
+                    source: validatedSource
                   };
                 }
               }
