@@ -148,7 +148,7 @@ export function useAuth() {
       const currentPath = window.location.pathname;
       // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing
       if (currentPath === '/' || currentPath === '/login') {
-        navigate('/');
+        navigate('/dashboard');
       }
     }
   }, [isAuthenticated, user, isLoading, navigate]);

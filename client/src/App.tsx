@@ -28,23 +28,64 @@ function Router() {
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
-        <Route path="/" nest>
-          <MainLayout>
-            <Switch>
-              <Route path="/" component={Dashboard} />
-              <Route path="/applications" component={Applications} />
-              <Route path="/applications/logs/:id" component={ApplicationLogs} />
-              <Route path="/domains" component={Domains} />
-              <Route path="/nginx" component={Nginx} />
-              <Route path="/ssl" component={SSL} />
-              <Route path="/processes" component={Processes} />
-              <Route path="/logs" component={Logs} />
-              <Route path="/terminal" component={Terminal} />
-              <Route path="/health-check" component={HealthCheck} />
-              <Route component={NotFound} />
-            </Switch>
-          </MainLayout>
-        </Route>
+        <>
+          <Route path="/" exact>
+            <MainLayout>
+              <Dashboard />
+            </MainLayout>
+          </Route>
+          <Route path="/dashboard">
+            <MainLayout>
+              <Dashboard />
+            </MainLayout>
+          </Route>
+          <Route path="/applications" exact>
+            <MainLayout>
+              <Applications />
+            </MainLayout>
+          </Route>
+          <Route path="/applications/logs/:id">
+            <MainLayout>
+              <ApplicationLogs />
+            </MainLayout>
+          </Route>
+          <Route path="/domains">
+            <MainLayout>
+              <Domains />
+            </MainLayout>
+          </Route>
+          <Route path="/nginx">
+            <MainLayout>
+              <Nginx />
+            </MainLayout>
+          </Route>
+          <Route path="/ssl">
+            <MainLayout>
+              <SSL />
+            </MainLayout>
+          </Route>
+          <Route path="/processes">
+            <MainLayout>
+              <Processes />
+            </MainLayout>
+          </Route>
+          <Route path="/logs">
+            <MainLayout>
+              <Logs />
+            </MainLayout>
+          </Route>
+          <Route path="/terminal">
+            <MainLayout>
+              <Terminal />
+            </MainLayout>
+          </Route>
+          <Route path="/health-check">
+            <MainLayout>
+              <HealthCheck />
+            </MainLayout>
+          </Route>
+          <Route component={NotFound} />
+        </>
       )}
       <Route component={NotFound} />
     </Switch>
