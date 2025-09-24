@@ -632,6 +632,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Nginx logs route
+  app.get('/api/logs/nginx', isAuthenticated, async (req, res) => {
+    try {
+      const logs = await logService.getNginxLogs('error');
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching nginx logs:", error);
+      res.status(500).json({ message: "Failed to fetch nginx logs" });
+    }
+  });
+
+  // System logs route
+  app.get('/api/logs/system', isAuthenticated, async (req, res) => {
+    try {
+      const logs = await logService.getSystemLogs();
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching system logs:", error);
+      res.status(500).json({ message: "Failed to fetch system logs" });
+    }
+  });
+
   app.get('/api/applications/:id/logs', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;

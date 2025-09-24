@@ -90,15 +90,24 @@ export default function Logs() {
   const { data: nginxLogs, isLoading: nginxLoading } = useQuery({
     queryKey: ["/api/logs/nginx"],
     enabled: isAuthenticated && activeTab === "nginx",
+    retry: 1,
+    retryOnMount: false
   });
 
   const { data: systemLogs, isLoading: systemLoading } = useQuery({
-    queryKey: ["/api/logs/system"],
+    queryKey: ["/api/logs/system"], 
     enabled: isAuthenticated && activeTab === "system",
+    retry: 1,
+    retryOnMount: false
   });
 
   if (error && isUnauthorizedError(error as Error)) {
     return null;
+  }
+
+  // Handle other errors gracefully
+  if (error && !isUnauthorizedError(error as Error)) {
+    console.warn("Logs error:", error);
   }
 
   if (authLoading || !isAuthenticated) {

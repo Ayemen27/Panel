@@ -137,16 +137,16 @@ export class DatabaseStorage implements IStorage {
   async deleteApplication(id: string): Promise<void> {
     // Delete related notifications first to avoid foreign key constraint
     await db.delete(notifications).where(eq(notifications.applicationId, id));
-    
+
     // Delete related domains if any
     await db.delete(domains).where(eq(domains.applicationId, id));
-    
+
     // Delete related nginx configs if any
     await db.delete(nginxConfigs).where(eq(nginxConfigs.applicationId, id));
-    
+
     // Delete related system logs if any
     await db.delete(systemLogs).where(eq(systemLogs.applicationId, id));
-    
+
     // Finally delete the application
     await db.delete(applications).where(eq(applications.id, id));
   }
@@ -294,7 +294,7 @@ export class DatabaseStorage implements IStorage {
     if (filters?.applicationId) {
       conditions.push(eq(systemLogs.applicationId, filters.applicationId));
     }
-    
+
     if (conditions.length > 0) {
       return await db
         .select()
@@ -303,7 +303,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(systemLogs.timestamp))
         .limit(filters?.limit || 100);
     }
-    
+
     return await db
       .select()
       .from(systemLogs)
