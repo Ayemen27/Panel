@@ -69,12 +69,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Custom authentication routes
   app.use('/api/custom-auth', customAuthRoutes);
 
-  // Original Replit Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Custom Auth route for user info
+  app.get('/api/auth/user', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      res.json({
+        success: true,
+        user: req.user
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -82,9 +83,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats route
-  app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/stats', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const [appStats, sslStats, systemStats, unreadCount] = await Promise.all([
         storage.getApplicationStats(userId),
         storage.getSslStats(),
@@ -105,9 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Application routes
-  app.get('/api/applications', isAuthenticated, async (req: any, res) => {
+  app.get('/api/applications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const applications = await storage.getApplications(userId);
 
       // Get real-time status for each application
@@ -125,9 +126,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/applications', isAuthenticated, async (req: any, res) => {
+  app.post('/api/applications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const appData = insertApplicationSchema.parse({
         ...req.body,
         userId
@@ -180,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/applications/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/applications/:id', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -201,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update application
-  app.put("/api/applications/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/applications/:id", authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -223,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete application
-  app.delete("/api/applications/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/applications/:id", authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -253,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Application control routes
-  app.post('/api/applications/:id/start', isAuthenticated, async (req: any, res) => {
+  app.post('/api/applications/:id/start', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -303,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/applications/:id/stop', isAuthenticated, async (req: any, res) => {
+  app.post('/api/applications/:id/stop', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -353,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/applications/:id/restart', isAuthenticated, async (req: any, res) => {
+  app.post('/api/applications/:id/restart', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -410,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Domain routes
-  app.get('/api/domains', isAuthenticated, async (req, res) => {
+  app.get('/api/domains', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const domains = await storage.getDomains();
       res.json(domains);
@@ -420,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/domains', isAuthenticated, async (req, res) => {
+  app.post('/api/domains', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const domainData = insertDomainSchema.parse(req.body);
       const domain = await storage.createDomain(domainData);
@@ -440,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/domains/:id/check-dns', isAuthenticated, async (req, res) => {
+  app.post('/api/domains/:id/check-dns', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const domains = await storage.getDomains();
@@ -461,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // SSL Certificate routes
-  app.get('/api/ssl-certificates', isAuthenticated, async (req, res) => {
+  app.get('/api/ssl-certificates', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const certificates = await storage.getSslCertificates();
       res.json(certificates);
@@ -471,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ssl-certificates', isAuthenticated, async (req: any, res) => {
+  app.post('/api/ssl-certificates', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { domainId } = req.body;
       const domains = await storage.getDomains();
@@ -503,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: 'تم إصدار شهادة SSL',
         message: `تم إصدار شهادة SSL لـ ${domain.domain} بنجاح`,
         source: 'ssl',
-        userId: req.user.claims.sub
+        userId: req.user!.id
       });
 
       res.status(201).json(sslCert);
@@ -514,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Nginx routes
-  app.get('/api/nginx/configs', isAuthenticated, async (req, res) => {
+  app.get('/api/nginx/configs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const configs = await storage.getNginxConfigs();
       res.json(configs);
@@ -524,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/nginx/configs', isAuthenticated, async (req: any, res) => {
+  app.post('/api/nginx/configs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const configData = insertNginxConfigSchema.parse(req.body);
 
@@ -549,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/nginx/test', isAuthenticated, async (req, res) => {
+  app.post('/api/nginx/test', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { content } = req.body;
       const result = await nginxService.testConfig(content);
@@ -560,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/nginx/reload', isAuthenticated, async (req: any, res) => {
+  app.post('/api/nginx/reload', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       await nginxService.reloadNginx();
 
@@ -571,7 +572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: 'تم إعادة تحميل Nginx',
         message: 'تم إعادة تحميل تكوين Nginx بنجاح',
         source: 'nginx',
-        userId: req.user.claims.sub
+        userId: req.user!.id
       });
 
       res.json({ message: "Nginx reloaded successfully" });
@@ -582,9 +583,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notifications routes
-  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+  app.get('/api/notifications', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const notifications = await storage.getNotifications(userId);
       res.json(notifications);
     } catch (error) {
@@ -593,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/notifications/:id/acknowledge', isAuthenticated, async (req, res) => {
+  app.patch('/api/notifications/:id/acknowledge', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       await storage.acknowledgeNotification(id);
@@ -604,7 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/notifications/:id/resolve', isAuthenticated, async (req, res) => {
+  app.patch('/api/notifications/:id/resolve', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       await storage.resolveNotification(id);
@@ -616,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System logs routes
-  app.get('/api/logs', isAuthenticated, async (req, res) => {
+  app.get('/api/logs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { source, level, applicationId, limit } = req.query;
       const logs = await storage.getSystemLogs({
@@ -633,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Nginx logs route
-  app.get('/api/logs/nginx', isAuthenticated, async (req, res) => {
+  app.get('/api/logs/nginx', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const logs = await logService.getNginxLogs('error');
       res.json(logs);
@@ -644,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System logs route
-  app.get('/api/logs/system', isAuthenticated, async (req, res) => {
+  app.get('/api/logs/system', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const logs = await logService.getSystemLogs();
       res.json(logs);
@@ -654,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/applications/:id/logs', isAuthenticated, async (req, res) => {
+  app.get('/api/applications/:id/logs', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
@@ -697,7 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System info routes
-  app.get('/api/system/info', isAuthenticated, async (req, res) => {
+  app.get('/api/system/info', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const systemInfo = await systemService.getSystemInfo();
       res.json(systemInfo);
@@ -708,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System health check route for beginners
-  app.get('/api/system/health-check', isAuthenticated, async (req: any, res) => {
+  app.get('/api/system/health-check', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const healthCheck = await systemService.performHealthCheck();
       res.json(healthCheck);
@@ -719,7 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dependencies check route
-  app.get('/api/system/dependencies', isAuthenticated, async (req: any, res) => {
+  app.get('/api/system/dependencies', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const dependencies = await systemService.checkDependencies();
       res.json(dependencies);
@@ -730,7 +731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Install dependency route with security validation
-  app.post('/api/system/install-dependency', isAuthenticated, async (req: any, res) => {
+  app.post('/api/system/install-dependency', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       // Validate request body with Zod schema
       const requestSchema = z.object({
@@ -772,7 +773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/system/processes', isAuthenticated, async (req, res) => {
+  app.get('/api/system/processes', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const processes = await pm2Service.listProcesses();
       res.json(processes);
@@ -804,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Terminal routes
-  app.post('/api/terminal/execute', isAuthenticated, async (req, res) => {
+  app.post('/api/terminal/execute', authenticateCustom, async (req: AuthenticatedRequest, res) => {
     try {
       const { command } = req.body;
 
