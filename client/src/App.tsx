@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Applications from "@/pages/Applications";
+import ApplicationLogs from "@/pages/ApplicationLogs";
 import Domains from "@/pages/Domains";
 import Nginx from "@/pages/Nginx";
 import SSL from "@/pages/SSL";
@@ -31,6 +32,7 @@ function Router() {
             <Switch>
               <Route path="/" component={Dashboard} />
               <Route path="/applications" component={Applications} />
+              <Route path="/applications/logs/:id" component={ApplicationLogs} />
               <Route path="/domains" component={Domains} />
               <Route path="/nginx" component={Nginx} />
               <Route path="/ssl" component={SSL} />

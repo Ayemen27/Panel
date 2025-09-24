@@ -135,6 +135,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteApplication(id: string): Promise<void> {
+    // Delete related notifications first to avoid foreign key constraint
+    await db.delete(notifications).where(eq(notifications.applicationId, id));
+    
+    // Then delete the application
     await db.delete(applications).where(eq(applications.id, id));
   }
 

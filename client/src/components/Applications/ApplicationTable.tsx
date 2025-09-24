@@ -184,7 +184,7 @@ export function ApplicationTable({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {}} // TODO: View logs
+                          onClick={() => window.open(`/logs/${app.id}`, '_blank')}
                           title="عرض السجلات"
                           data-testid={`button-logs-${app.id}`}
                         >
@@ -194,7 +194,11 @@ export function ApplicationTable({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {}} // TODO: Edit app
+                          onClick={() => {
+                            // For now, we'll show a toast that this feature is coming soon
+                            // You can implement edit modal later
+                            alert('ميزة التعديل قيد التطوير');
+                          }}
                           title="تعديل"
                           data-testid={`button-edit-${app.id}`}
                         >
