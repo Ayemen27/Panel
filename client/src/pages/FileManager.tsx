@@ -167,6 +167,7 @@ export default function FileManager() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [storageSection, setStorageSection] = useState('main');
   const [showMainLibraries, setShowMainLibraries] = useState(true);
+  const [activeTab, setActiveTab] = useState<'files' | 'favorites' | 'recent'>('files');
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/' }
@@ -233,55 +234,90 @@ export default function FileManager() {
     }
   }, [realFilesError, isRealFilesLoading, fileSystemMode]);
 
-  // Get current files based on mode with sorting
+  // Get current files based on mode, tab, and sorting
   const currentFiles = useMemo(() => {
-    const files = fileSystemMode === 'database' 
+    let files = fileSystemMode === 'database' 
       ? (searchQuery ? databaseSearchResults : databaseFiles)
       : (realFilesData?.items || []);
 
-    // If no sort is selected, return files as-is
-    if (sortBy === 'none') {
-      return files;
-    }
-
-    // Create a copy to avoid mutating original array
-    const sortedFiles = [...files];
-
-    // Apply sorting based on sortBy and sortOrder
-    sortedFiles.sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortBy) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name, 'ar');
-          break;
-        case 'size':
-          const aSize = 'size' in a ? a.size : 0;
-          const bSize = 'size' in b ? b.size : 0;
-          comparison = aSize - bSize;
-          break;
-        case 'date':
+    // Apply tab-based filtering
+    switch (activeTab) {
+      case 'favorites':
+        // Filter for favorite files (assuming tags include 'favorite' or there's a star system)
+        files = files.filter(file => {
+          if ('tags' in file) {
+            return file.tags.includes('favorite') || file.tags.includes('starred');
+          }
+          // For real files, we'll check if name contains star or if it's marked somehow
+          return file.name.includes('⭐') || file.name.includes('★');
+        }) as typeof files;
+        break;
+      case 'recent':
+        // Get recent files (last 7 days) and sort by date
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        files = files.filter(file => {
+          const fileDate = 'modified' in file ? new Date(file.modified) : 
+                          'updatedAt' in file ? new Date(file.updatedAt) : new Date(0);
+          return fileDate >= sevenDaysAgo;
+        }).sort((a, b) => {
           const aDate = 'modified' in a ? new Date(a.modified).getTime() : 
                        'updatedAt' in a ? new Date(a.updatedAt).getTime() : 0;
           const bDate = 'modified' in b ? new Date(b.modified).getTime() : 
                        'updatedAt' in b ? new Date(b.updatedAt).getTime() : 0;
-          comparison = aDate - bDate;
-          break;
-        case 'type':
-          const aType = 'type' in a ? a.type : 'extension' in a ? ((a as any).extension || '') : '';
-          const bType = 'type' in b ? b.type : 'extension' in b ? ((b as any).extension || '') : '';
-          comparison = String(aType).localeCompare(String(bType), 'ar');
-          break;
-        default:
-          return 0;
-      }
+          return bDate - aDate; // Most recent first
+        }) as typeof files;
+        break;
+      case 'files':
+      default:
+        // Show all files (default behavior)
+        break;
+    }
 
-      // Apply sort order
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+    // Apply sorting if not 'none' and not already sorted by recent tab
+    if (sortBy !== 'none' && activeTab !== 'recent') {
+      // Create a copy to avoid mutating original array
+      const sortedFiles = [...files];
 
-    return sortedFiles;
-  }, [fileSystemMode, searchQuery, databaseSearchResults, databaseFiles, realFilesData?.items, sortBy, sortOrder]);
+      // Apply sorting based on sortBy and sortOrder
+      sortedFiles.sort((a, b) => {
+        let comparison = 0;
+
+        switch (sortBy) {
+          case 'name':
+            comparison = a.name.localeCompare(b.name, 'ar');
+            break;
+          case 'size':
+            const aSize = 'size' in a ? a.size : 0;
+            const bSize = 'size' in b ? b.size : 0;
+            comparison = aSize - bSize;
+            break;
+          case 'date':
+            const aDate = 'modified' in a ? new Date(a.modified).getTime() : 
+                         'updatedAt' in a ? new Date(a.updatedAt).getTime() : 0;
+            const bDate = 'modified' in b ? new Date(b.modified).getTime() : 
+                         'updatedAt' in b ? new Date(b.updatedAt).getTime() : 0;
+            comparison = aDate - bDate;
+            break;
+          case 'type':
+            const aType = 'type' in a ? a.type : 'extension' in a ? ((a as any).extension || '') : '';
+            const bType = 'type' in b ? b.type : 'extension' in b ? ((b as any).extension || '') : '';
+            comparison = String(aType).localeCompare(String(bType), 'ar');
+            break;
+          default:
+            return 0;
+        }
+
+        // Apply sort order
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+
+      return sortedFiles;
+    }
+
+    return files;
+  }, [fileSystemMode, searchQuery, databaseSearchResults, databaseFiles, realFilesData?.items, sortBy, sortOrder, activeTab]);
   
   const isLoading = fileSystemMode === 'database' 
     ? (searchQuery ? isDatabaseSearching : isDatabaseLoading)
@@ -2041,6 +2077,59 @@ export default function FileManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bottom Navigation Tabs */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50">
+        <div className="flex items-center justify-around px-4 py-2">
+          {/* Files Tab */}
+          <button
+            onClick={() => setActiveTab('files')}
+            className={cn(
+              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
+              activeTab === 'files' 
+                ? "text-primary bg-primary/10" 
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            )}
+            data-testid="tab-files"
+          >
+            <FileIcon className="w-6 h-6 mb-1" />
+            <span className="text-xs">الملفات</span>
+          </button>
+
+          {/* Favorites Tab */}
+          <button
+            onClick={() => setActiveTab('favorites')}
+            className={cn(
+              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
+              activeTab === 'favorites' 
+                ? "text-primary bg-primary/10" 
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            )}
+            data-testid="tab-favorites"
+          >
+            <Star className="w-6 h-6 mb-1" />
+            <span className="text-xs">النجمة</span>
+          </button>
+
+          {/* Recent Tab */}
+          <button
+            onClick={() => setActiveTab('recent')}
+            className={cn(
+              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
+              activeTab === 'recent' 
+                ? "text-primary bg-primary/10" 
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            )}
+            data-testid="tab-recent"
+          >
+            <Clock className="w-6 h-6 mb-1" />
+            <span className="text-xs">التاريخ</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom padding to account for fixed tabs */}
+      <div className="h-20"></div>
     </div>
   );
 }
