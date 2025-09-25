@@ -115,9 +115,6 @@ export function AddAppModal({ open, onOpenChange }: AddAppModalProps) {
               نموذج لإضافة تطبيق جديد إلى النظام
             </div>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold">
-              إضافة تطبيق جديد
-            </DialogTitle>
             <Button 
               variant="ghost" 
               size="sm"
@@ -232,7 +229,7 @@ export function AddAppModal({ open, onOpenChange }: AddAppModalProps) {
             <Switch
               id="usePm2"
               checked={usePm2}
-              onCheckedChange={(checked) => setValue("usePm2", checked)}
+              onCheckedChange={(checked) => setValue("usePm2", checked ?? true)}
               data-testid="switch-use-pm2"
             />
             <Label htmlFor="usePm2" className="text-sm">

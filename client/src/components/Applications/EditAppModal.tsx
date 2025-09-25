@@ -32,12 +32,12 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
   const queryClient = useQueryClient();
   const [envVarsText, setEnvVarsText] = useState("");
 
-  const { data: applications } = useQuery({
+  const { data: applications } = useQuery<Application[]>({
     queryKey: ["/api/applications"],
     enabled: !!applicationId && open,
   });
 
-  const application = applications?.find((app: any) => app.id === applicationId);
+  const application = applications?.find((app) => app.id === applicationId);
 
   const {
     register,
@@ -153,9 +153,6 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
             نموذج لتعديل بيانات التطبيق الموجود
           </div>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold">
-              تعديل التطبيق
-            </DialogTitle>
             <Button 
               variant="ghost" 
               size="sm"
@@ -260,7 +257,7 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
             <Switch
               id="usePm2"
               checked={usePm2}
-              onCheckedChange={(checked) => setValue("usePm2", checked)}
+              onCheckedChange={(checked) => setValue("usePm2", checked ?? false)}
               data-testid="switch-use-pm2"
             />
             <Label htmlFor="usePm2" className="text-sm">
