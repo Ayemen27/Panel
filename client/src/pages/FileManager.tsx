@@ -710,16 +710,107 @@ export default function FileManager() {
     }
   };
 
+  // Storage Statistics Types
+  interface StorageStats {
+    totalSpace: number;
+    usedSpace: number;
+    freeSpace: number;
+    usagePercentage: number;
+  }
+  
+  interface CategoryStats {
+    id: string;
+    name: string;
+    size: number;
+    fileCount: number;
+    icon: string;
+    iconColor: string;
+    bgColor: string;
+  }
+  
+  interface SystemStats {
+    mainStorage: StorageStats;
+    categories: CategoryStats[];
+    recentFiles: CategoryStats;
+    trash: CategoryStats;
+  }
+
+  // Fetch storage statistics
+  const { data: storageStats, isLoading: isStorageLoading } = useQuery<{ success: boolean; data: SystemStats }>({
+    queryKey: ['/api/storage/stats'],
+    enabled: showMainLibraries
+  });
+
+  // Helper function to format bytes
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
   // Main Libraries Grid Component
   const MainLibrariesGrid = () => {
+    // Get icon component from string name
+    const getIconComponent = (iconName: string) => {
+      const icons: { [key: string]: React.ComponentType<{ className?: string }> } = {
+        'HardDrive': HardDrive,
+        'Download': Download,
+        'Database': Database,
+        'Image': Image,
+        'Music': Music,
+        'Video': Video,
+        'FileText': FileText,
+        'Smartphone': Smartphone,
+        'Clock': Clock,
+        'Cloud': Cloud,
+        'Trash2': Trash2
+      };
+      return icons[iconName] || HardDrive;
+    };
+
+    if (isStorageLoading) {
+      return (
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center text-center p-4 sm:p-6 rounded-2xl bg-gray-100 animate-pulse"
+              >
+                <div className="w-12 h-12 rounded-full bg-gray-300 mb-3"></div>
+                <div className="w-16 h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="w-12 h-3 bg-gray-300 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    const stats = storageStats?.data;
+    if (!stats) {
+      return (
+        <div className="p-4 sm:p-6">
+          <div className="text-center text-gray-500">
+            فشل في تحميل إحصائيات التخزين
+          </div>
+        </div>
+      );
+    }
+
+    // Build libraries array from real data
     const libraries = [
       {
         id: 'main-storage',
         name: 'التخزين الرئيسي',
-        subtitle: '3.7 GB / 512 GB',
+        subtitle: `${formatBytes(stats.mainStorage.usedSpace)} / ${formatBytes(stats.mainStorage.totalSpace)}`,
         icon: HardDrive,
         iconColor: 'text-gray-600',
         bgColor: 'bg-gray-100',
+        showProgress: true,
+        progress: stats.mainStorage.usagePercentage,
         onClick: () => {
           setShowMainLibraries(false);
           setStorageSection('main-storage');
@@ -729,26 +820,26 @@ export default function FileManager() {
           ]);
         }
       },
-      {
-        id: 'downloads',
-        name: 'التحميلات',
-        subtitle: '45 GB (6110)',
-        icon: Download,
-        iconColor: 'text-orange-600',
-        bgColor: 'bg-orange-100',
+      ...stats.categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        subtitle: `${formatBytes(category.size)} (${category.fileCount})`,
+        icon: getIconComponent(category.icon),
+        iconColor: category.iconColor,
+        bgColor: category.bgColor,
         onClick: () => {
           setShowMainLibraries(false);
-          setStorageSection('downloads');
+          setStorageSection(category.id);
           setBreadcrumbs([
             { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'التحميلات', path: '/downloads' }
+            { id: null, name: category.name, path: `/${category.id}` }
           ]);
         }
-      },
+      })),
       {
         id: 'analysis',
         name: 'تحليل التخزين',
-        subtitle: 'مستخدم 59%',
+        subtitle: `مستخدم ${stats.mainStorage.usagePercentage}%`,
         icon: Database,
         iconColor: 'text-gray-600',
         bgColor: 'bg-gray-100',
@@ -762,92 +853,12 @@ export default function FileManager() {
         }
       },
       {
-        id: 'images',
-        name: 'صور',
-        subtitle: '9.2 GB (1165)',
-        icon: Image,
-        iconColor: 'text-purple-600',
-        bgColor: 'bg-purple-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('pictures');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'الصور', path: '/pictures' }
-          ]);
-        }
-      },
-      {
-        id: 'audio',
-        name: 'صوتي',
-        subtitle: '787 MB (78)',
-        icon: Music,
-        iconColor: 'text-teal-600',
-        bgColor: 'bg-teal-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('music');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'الصوت', path: '/music' }
-          ]);
-        }
-      },
-      {
-        id: 'video',
-        name: 'فيديو',
-        subtitle: '195 GB (1189)',
-        icon: Video,
-        iconColor: 'text-red-600',
-        bgColor: 'bg-red-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('video');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'الفيديو', path: '/video' }
-          ]);
-        }
-      },
-      {
-        id: 'documents',
-        name: 'وثائق',
-        subtitle: '4.9 GB (2113)',
-        icon: FileText,
-        iconColor: 'text-blue-600',
-        bgColor: 'bg-blue-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('documents');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'الوثائق', path: '/documents' }
-          ]);
-        }
-      },
-      {
-        id: 'apps',
-        name: 'تطبيقات',
-        subtitle: '42 GB (159)',
-        icon: Smartphone,
-        iconColor: 'text-green-600',
-        bgColor: 'bg-green-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('apps');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'التطبيقات', path: '/apps' }
-          ]);
-        }
-      },
-      {
         id: 'recent',
-        name: 'ملفات حديثة',
-        subtitle: '1.01 MB (216)',
+        name: stats.recentFiles.name,
+        subtitle: `${formatBytes(stats.recentFiles.size)} (${stats.recentFiles.fileCount})`,
         icon: Clock,
-        iconColor: 'text-blue-600',
-        bgColor: 'bg-blue-100',
+        iconColor: stats.recentFiles.iconColor,
+        bgColor: stats.recentFiles.bgColor,
         onClick: () => {
           setShowMainLibraries(false);
           setStorageSection('recent');
@@ -907,11 +918,11 @@ export default function FileManager() {
       },
       {
         id: 'trash',
-        name: 'سلة المحذوفات',
-        subtitle: '1.09 kB',
+        name: stats.trash.name,
+        subtitle: formatBytes(stats.trash.size),
         icon: Trash2,
-        iconColor: 'text-gray-600',
-        bgColor: 'bg-gray-100',
+        iconColor: stats.trash.iconColor,
+        bgColor: stats.trash.bgColor,
         onClick: () => {
           setShowMainLibraries(false);
           setStorageSection('trash');
@@ -934,18 +945,28 @@ export default function FileManager() {
               data-testid={`library-${library.id}`}
             >
               <div className={cn(
-                "w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl flex items-center justify-center mb-3 sm:mb-4",
+                "w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 shadow-sm",
                 library.bgColor
               )}>
                 <library.icon className={cn("w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12", library.iconColor)} />
               </div>
-              <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-1 leading-tight">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 leading-tight">
                 {library.name}
               </h3>
               {library.subtitle && (
-                <p className="text-xs sm:text-sm text-gray-500 leading-tight">
+                <p className="text-xs sm:text-sm text-gray-600 font-medium leading-tight">
                   {library.subtitle}
                 </p>
+              )}
+              {(library as any).showProgress && (
+                <div className="w-full mt-2">
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className="bg-gray-700 h-1.5 rounded-full transition-all duration-300" 
+                      style={{ width: `${(library as any).progress}%` }}
+                    ></div>
+                  </div>
+                </div>
               )}
             </div>
           ))}
