@@ -135,8 +135,14 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
               <User className="text-primary-foreground text-sm" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium">{user?.firstName || "مدير النظام"}</p>
-              <p className="text-xs text-muted-foreground">{user?.email || "administrator"}</p>
+              <p className="text-sm font-medium">
+                {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email?.split('@')[0] || "مدير النظام"}
+              </p>
+              <p className="text-xs text-muted-foreground">{user?.email || "administrator"}</p> {user?.role && (
+                <p className="text-xs text-primary font-medium">
+                  {user.role === 'admin' ? 'مدير' : user.role === 'moderator' ? 'مشرف' : user.role === 'user' ? 'مستخدم' : 'مشاهد'}
+                </p>
+              )}
             </div>
             <Button 
               variant="ghost" 

@@ -1185,6 +1185,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get files and folders in current directory - placed last to avoid route conflicts
+  app.get('/api/files/:folderId?', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      // Support both query param and path param for folder ID
+      const folderId = req.params.folderId || req.query.folderId || null;
+      
+      // Convert 'root' or 'null' string to actual null
+      const actualFolderId = (folderId === 'root' || folderId === 'null') ? null : folderId as string || null;
+      
+      // Get files in the specified folder (or root if no folderId)
+      const rawFiles = await storage.getFiles(actualFolderId, userId);
+      
+      // Normalize data to match FileItem interface from frontend
+      const files = rawFiles.map(file => ({
+        ...file,
+        size: file.size || 0, // Ensure size is never null
+        createdAt: file.createdAt instanceof Date ? file.createdAt.toISOString() : (file.createdAt || new Date().toISOString()),
+        updatedAt: file.updatedAt instanceof Date ? file.updatedAt.toISOString() : (file.updatedAt || new Date().toISOString()),
+        tags: file.tags || [], // Ensure tags is always an array
+        metadata: file.metadata || {}, // Ensure metadata is always an object
+        isPublic: file.isPublic || false, // Ensure boolean
+        checksum: file.checksum || undefined, // Convert null to undefined
+        mimeType: file.mimeType || undefined, // Convert null to undefined
+      }));
+      
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      res.status(500).json({ message: "Failed to fetch files" });
+    }
+  });
+
   // System logs routes
   app.get('/api/logs', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
