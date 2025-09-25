@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -148,6 +149,8 @@ export default function FileManager() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [pathError, setPathError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/' }
@@ -224,6 +227,48 @@ export default function FileManager() {
     : isRealFilesLoading;
   
   const refetch = fileSystemMode === 'database' ? refetchDatabase : refetchRealFiles;
+
+  // Pull to refresh handler
+  const handlePullToRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
+
+  // Touch gesture handling
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 150;
+    const isRightSwipe = distance < -150;
+
+    if (isRightSwipe && breadcrumbs.length > 1) {
+      // Navigate back
+      const newBreadcrumbs = breadcrumbs.slice(0, -1);
+      setBreadcrumbs(newBreadcrumbs);
+      
+      if (fileSystemMode === 'database') {
+        setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+      } else {
+        setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
+      }
+    }
+  };
 
   // Create new file/folder mutation
   const createItemMutation = useMutation({
@@ -639,7 +684,7 @@ export default function FileManager() {
 
     return (
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="sm:max-w-[425px]" data-testid="create-item-modal">
+        <DialogContent className="sm:max-w-[425px] mx-2 max-h-[90vh] overflow-y-auto" data-testid="create-item-modal">
           <DialogHeader>
             <DialogTitle>إنشاء عنصر جديد</DialogTitle>
             <DialogDescription>
@@ -647,11 +692,11 @@ export default function FileManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <Button
                 variant={itemType === 'folder' ? 'default' : 'outline'}
                 onClick={() => setItemType('folder')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-12 text-sm"
                 data-testid="button-folder-type"
               >
                 <Folder className="w-4 h-4" />
@@ -660,7 +705,7 @@ export default function FileManager() {
               <Button
                 variant={itemType === 'file' ? 'default' : 'outline'}
                 onClick={() => setItemType('file')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-12 text-sm"
                 data-testid="button-file-type"
               >
                 <FileIcon className="w-4 h-4" />
@@ -682,7 +727,7 @@ export default function FileManager() {
                 data-testid="textarea-file-content"
               />
             )}
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button 
                 variant="outline" 
                 onClick={() => setIsCreateModalOpen(false)}
@@ -968,14 +1013,20 @@ export default function FileManager() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div 
+      className="h-full flex flex-col"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Header */}
-      <div className="border-b border-border bg-card p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+      <div className="border-b border-border bg-card p-2 sm:p-4">
+        <div className="flex items-center justify-between mb-2 sm:mb-4">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               size="sm"
               variant="ghost"
+              className="h-8 w-8 p-0 touch-manipulation"
               onClick={() => {
                 if (breadcrumbs.length > 1) {
                   const newBreadcrumbs = breadcrumbs.slice(0, -1);
@@ -993,10 +1044,10 @@ export default function FileManager() {
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-xl font-bold">مدير الملفات</h1>
+            <h1 className="text-lg sm:text-xl font-bold">مدير الملفات</h1>
             
             {/* File System Mode Toggle */}
-            <div className="flex items-center gap-3 mr-4 p-2 bg-muted/50 rounded-lg" data-testid="file-system-toggle">
+            <div className="hidden md:flex items-center gap-3 mr-4 p-2 bg-muted/50 rounded-lg" data-testid="file-system-toggle">
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-blue-600" />
                 <Label className="text-sm font-medium">قاعدة البيانات</Label>
@@ -1012,18 +1063,21 @@ export default function FileManager() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => refetch()}
+              className="h-8 w-8 p-0 touch-manipulation"
+              onClick={handlePullToRefresh}
+              disabled={isRefreshing}
               data-testid="button-refresh"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
             </Button>
             <Button
               size="sm"
               variant="ghost"
+              className="h-8 w-8 p-0 touch-manipulation hidden sm:flex"
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
               data-testid="button-view-mode"
             >
@@ -1032,29 +1086,83 @@ export default function FileManager() {
             <Button 
               size="sm"
               onClick={() => setIsCreateModalOpen(true)}
+              className="h-8 touch-manipulation"
               data-testid="button-create-item"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              جديد
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">جديد</span>
             </Button>
+            
+            {/* Mobile Menu */}
+            <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu}>
+              <SheetTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 touch-manipulation md:hidden"
+                  data-testid="button-mobile-menu"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80">
+                <SheetHeader>
+                  <SheetTitle>إعدادات مدير الملفات</SheetTitle>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  {/* File System Mode Toggle for Mobile */}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">نوع نظام الملفات</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">قاعدة البيانات</Label>
+                      <Switch 
+                        checked={fileSystemMode === 'real'}
+                        onCheckedChange={handleFileSystemModeChange}
+                        data-testid="switch-mobile-file-system"
+                      />
+                      <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
+                    </div>
+                  </div>
+                  
+                  {/* View Mode Toggle for Mobile */}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">عرض الملفات</Label>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                      className="touch-manipulation"
+                    >
+                      {viewMode === 'grid' ? (
+                        <><List className="w-4 h-4 mr-2" />قائمة</>
+                      ) : (
+                        <><Grid3X3 className="w-4 h-4 mr-2" />شبكة</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
         {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-4 overflow-x-auto scrollbar-hide px-2 sm:px-0">
           {breadcrumbs.map((crumb, index) => (
-            <div key={crumb.id || 'root'} className="flex items-center gap-2">
+            <div key={crumb.id || 'root'} className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-1 text-sm font-normal"
+                className="h-auto p-1 text-xs sm:text-sm font-normal whitespace-nowrap touch-manipulation"
                 onClick={() => handleBreadcrumbClick(index)}
                 data-testid={`breadcrumb-${index}`}
               >
-                {index === 0 ? <Home className="w-4 h-4" /> : crumb.name}
+                {index === 0 ? <Home className="w-3 h-3 sm:w-4 sm:h-4" /> : (
+                  <span className="max-w-[80px] sm:max-w-none truncate">{crumb.name}</span>
+                )}
               </Button>
               {index < breadcrumbs.length - 1 && (
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
               )}
             </div>
           ))}
@@ -1072,10 +1180,10 @@ export default function FileManager() {
         
         {/* Real Files Info */}
         {fileSystemMode === 'real' && realFilesData && (
-          <div className="mb-4 p-3 bg-muted/30 rounded-lg" data-testid="real-files-info">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <span>المسار: {currentPath}</span>
+          <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-muted/30 rounded-lg mx-2 sm:mx-0" data-testid="real-files-info">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-muted-foreground gap-1 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                <span className="truncate max-w-[200px] sm:max-w-none">المسار: {currentPath}</span>
                 <span>إجمالي {realFilesData.totalFiles} ملف</span>
                 <span>{realFilesData.totalDirectories} مجلد</span>
               </div>
@@ -1087,7 +1195,7 @@ export default function FileManager() {
         )}
 
         {/* Search and Filters */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-2 sm:px-0">
           <div className="flex-1 relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
@@ -1095,13 +1203,14 @@ export default function FileManager() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               disabled={fileSystemMode === 'real'}
-              className="pr-10"
+              className="pr-10 h-9 sm:h-10 text-sm"
               data-testid="input-search"
             />
           </div>
           <Button
             size="sm"
             variant="outline"
+            className="h-9 w-9 sm:h-10 sm:w-10 p-0 touch-manipulation"
             onClick={() => setShowFilters(!showFilters)}
             data-testid="button-filters"
           >
@@ -1111,30 +1220,30 @@ export default function FileManager() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <Card className="mt-4 p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="cursor-pointer">
-                <Tags className="w-3 h-3 mr-1" />
+          <Card className="mt-2 sm:mt-4 p-2 sm:p-4 mx-2 sm:mx-0">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                <Tags className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                 الكل
               </Badge>
-              <Badge variant="outline" className="cursor-pointer">
-                <FileIcon className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                <FileIcon className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                 ملفات
               </Badge>
-              <Badge variant="outline" className="cursor-pointer">
-                <Folder className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                <Folder className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                 مجلدات
               </Badge>
-              <Badge variant="outline" className="cursor-pointer">
-                <Clock className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                <Clock className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                 حديث
               </Badge>
-              <Badge variant="outline" className="cursor-pointer">
-                <Star className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                <Star className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                 مفضل
               </Badge>
-              <Badge variant="outline" className="cursor-pointer">
-                <Users className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                <Users className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                 مشترك
               </Badge>
             </div>
@@ -1144,8 +1253,8 @@ export default function FileManager() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div className="p-4">
+        <ScrollArea className="h-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="p-2 sm:p-4">
             {isLoading || isSearching ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
@@ -1166,13 +1275,13 @@ export default function FileManager() {
                 </Button>
               </div>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-4">
                 {currentFiles.map((item) => (
                   <FileItem key={getItemKey(item)} item={item} />
                 ))}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {currentFiles.map((item) => (
                   <FileItem key={getItemKey(item)} item={item} />
                 ))}
@@ -1184,23 +1293,24 @@ export default function FileManager() {
 
       {/* Selection Info */}
       {selectedItems.length > 0 && (
-        <div className="border-t border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+        <div className="border-t border-border bg-card p-2 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               تم تحديد {selectedItems.length} عنصر
             </p>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" data-testid="button-copy-selected">
-                <Copy className="w-4 h-4 mr-2" />
-                نسخ
+            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+              <Button size="sm" variant="outline" className="touch-manipulation h-8 flex-shrink-0" data-testid="button-copy-selected">
+                <Copy className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">نسخ</span>
               </Button>
-              <Button size="sm" variant="outline" data-testid="button-share-selected">
-                <Share className="w-4 h-4 mr-2" />
-                مشاركة
+              <Button size="sm" variant="outline" className="touch-manipulation h-8 flex-shrink-0" data-testid="button-share-selected">
+                <Share className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">مشاركة</span>
               </Button>
               <Button 
                 size="sm" 
                 variant="destructive"
+                className="touch-manipulation h-8 flex-shrink-0"
                 onClick={() => {
                   if (selectedItems.length === 1) {
                     handleDeleteClick(selectedItems[0]);
@@ -1208,12 +1318,13 @@ export default function FileManager() {
                 }}
                 data-testid="button-delete-selected"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                حذف
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">حذف</span>
               </Button>
               <Button 
                 size="sm" 
                 variant="ghost"
+                className="touch-manipulation h-8 flex-shrink-0"
                 onClick={() => setSelectedItems([])}
                 data-testid="button-clear-selection"
               >
@@ -1228,16 +1339,17 @@ export default function FileManager() {
       <CreateItemModal />
       
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent data-testid="delete-confirmation-dialog">
+        <AlertDialogContent className="mx-2 max-w-[calc(100vw-1rem)] sm:max-w-[425px]" data-testid="delete-confirmation-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
             <AlertDialogDescription>
               هل أنت متأكد من حذف هذا العنصر؟ سيتم نقله إلى سلة المهملات.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">إلغاء</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="w-full sm:w-auto touch-manipulation" data-testid="button-cancel-delete">إلغاء</AlertDialogCancel>
             <AlertDialogAction
+              className="w-full sm:w-auto touch-manipulation"
               onClick={() => {
                 if (itemToDelete) {
                   deleteMutation.mutate(itemToDelete);
