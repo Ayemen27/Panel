@@ -239,6 +239,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Migration route for adding default paths
+  app.post('/api/admin/setup-default-paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      // Import migration function dynamically
+      const { addDefaultPaths } = await import('./migrations/001_add_default_paths.js');
+      
+      const userId = getUserId(req)!;
+      const result = await addDefaultPaths(userId);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error setting up default paths:", error);
+      res.status(500).json({ message: "Failed to setup default paths", error: error.message });
+    }
+  });
+
   // Dashboard stats route
   app.get('/api/dashboard/stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
