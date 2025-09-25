@@ -3,7 +3,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface WebSocketMessage {
   type: string;
-  data: any;
+  data?: any;
+  message?: string;
+  token?: string;
+  command?: string;
+  [key: string]: any; // Allow additional properties
 }
 
 export function useWebSocket() {
@@ -55,6 +59,12 @@ export function useWebSocket() {
         console.log('WebSocket disconnected', event.code, event.reason);
         setIsConnected(false);
         wsRef.current = null;
+        
+        // Clear last message to reset any authentication state
+        setLastMessage({
+          type: 'CONNECTION_CLOSED',
+          message: 'Connection closed'
+        });
         
         // إعادة الاتصال التلقائي مع حد أقصى للمحاولات
         if (reconnectAttemptsRef.current < maxReconnectAttempts && 

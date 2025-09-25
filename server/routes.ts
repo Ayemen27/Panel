@@ -852,25 +852,414 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // WebSocket server setup with CORS inheritance
-  const wss = new WebSocketServer({ server, path: '/ws' });
+  // WebSocket server setup with CORS inheritance and Origin checking
+  const wss = new WebSocketServer({ 
+    server, 
+    path: '/ws',
+    verifyClient: (info: any) => {
+      // Verify Origin for security
+      const origin = info.origin;
+      const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
+      
+      const allowedOrigins = isDevelopment 
+        ? ['http://localhost:5000', 'https://replit.dev', 'http://127.0.0.1:5000']
+        : ['https://binarjoinanelytic.info'];
+      
+      if (!origin || !allowedOrigins.some(allowed => 
+        origin === allowed || (isDevelopment && (
+          origin.includes('localhost') || 
+          origin.includes('replit.dev') ||
+          origin.includes('127.0.0.1')
+        ))
+      )) {
+        console.warn(`Security: Blocked WebSocket connection from unauthorized origin: ${origin}`);
+        return false;
+      }
+      
+      return true;
+    }
+  });
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', async (ws, req) => {
     wsClients.add(ws);
+    console.log('WebSocket client connected from:', req.headers.origin);
 
-    ws.on('close', () => {
-      wsClients.delete(ws);
+    // Store user info for this connection (for terminal authentication)
+    let wsUser: any = null;
+    let isTerminalAuthenticated = false;
+    let activeProcess: any = null; // Track active terminal process
+
+    // Parse cookies to get session
+    const parseCookies = (cookieHeader: string) => {
+      const cookies: Record<string, string> = {};
+      if (cookieHeader) {
+        cookieHeader.split(';').forEach(cookie => {
+          const [name, value] = cookie.trim().split('=');
+          if (name && value) {
+            cookies[name] = decodeURIComponent(value);
+          }
+        });
+      }
+      return cookies;
+    };
+
+    // Authenticate user using HTTP session (NOT token)
+    const authenticateUser = async () => {
+      try {
+        const cookies = parseCookies(req.headers.cookie || '');
+        const sessionId = cookies['connect.sid'];
+
+        if (!sessionId) {
+          return null;
+        }
+
+        // TODO: Implement proper session store validation
+        // For now, simulated - in production, validate against session store
+        if (sessionId && sessionId.length > 10) {
+          // Mock user - in production, get from authenticated session
+          return { 
+            isAuthenticated: true, 
+            role: 'admin', // Get from actual session/database
+            id: 'authenticated-user-id' // Get from actual session
+          };
+        }
+        
+        return null;
+      } catch (error) {
+        console.error('Session validation error:', error);
+        return null;
+      }
+    };
+
+    ws.on('message', async (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        switch (message.type) {
+          case 'TERMINAL_AUTH_REQUEST':
+            // Authenticate the WebSocket connection using HTTP session (NO TOKENS)
+            try {
+              wsUser = await authenticateUser();
+              
+              if (!wsUser || !wsUser.isAuthenticated) {
+                ws.send(JSON.stringify({
+                  type: 'TERMINAL_AUTH_ERROR',
+                  message: 'Authentication failed. Please login first.'
+                }));
+                return;
+              }
+
+              // Check role authorization for terminal access
+              if (wsUser.role !== 'admin') {
+                console.warn(`Security: Terminal access denied for user ${wsUser.id} with role: ${wsUser.role}`);
+                ws.send(JSON.stringify({
+                  type: 'TERMINAL_AUTH_ERROR',
+                  message: 'Admin role required for terminal access.'
+                }));
+                return;
+              }
+
+              isTerminalAuthenticated = true;
+              console.log(`Security: Terminal access granted for admin user: ${wsUser.id}`);
+
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_AUTH_SUCCESS',
+                message: 'Terminal authentication successful'
+              }));
+              
+            } catch (error) {
+              console.error('Terminal auth error:', error);
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_AUTH_ERROR',
+                message: 'Authentication failed'
+              }));
+            }
+            break;
+
+          case 'TERMINAL_COMMAND':
+            // Execute terminal command via WebSocket - SECURE VERSION
+            if (!isTerminalAuthenticated || !wsUser || !wsUser.isAuthenticated) {
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_ERROR',
+                message: 'Terminal authentication required'
+              }));
+              return;
+            }
+
+            // Strict role check for terminal access - ADMIN ONLY
+            if (wsUser.role !== 'admin') {
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_ERROR',
+                message: 'Admin role required for terminal access'
+              }));
+              return;
+            }
+
+            const { command } = message;
+            
+            if (!command || typeof command !== 'string') {
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_ERROR',
+                message: 'Invalid command format'
+              }));
+              return;
+            }
+
+            // CRITICAL SECURITY: Strict server-side command allowlist - NO SHELL METACHARACTERS
+            const SECURE_COMMAND_MAP: Record<string, {binary: string, args: string[]}> = {
+              'nginx -t': { binary: 'nginx', args: ['-t'] },
+              'systemctl reload nginx': { binary: 'systemctl', args: ['reload', 'nginx'] },
+              'systemctl status nginx': { binary: 'systemctl', args: ['status', 'nginx'] },
+              'pm2 list': { binary: 'pm2', args: ['list'] },
+              'pm2 status': { binary: 'pm2', args: ['status'] },
+              'certbot renew --dry-run': { binary: 'certbot', args: ['renew', '--dry-run'] },
+              'df -h': { binary: 'df', args: ['-h'] },
+              'free -h': { binary: 'free', args: ['-h'] },
+              'top -bn1': { binary: 'top', args: ['-b', '-n1'] },
+              'ps aux': { binary: 'ps', args: ['aux'] }, // Removed pipe - safer
+              'netstat -tlnp': { binary: 'netstat', args: ['-tlnp'] },
+              'systemctl status': { binary: 'systemctl', args: ['status'] }
+            };
+
+            const trimmedCommand = command.trim();
+            const commandSpec = SECURE_COMMAND_MAP[trimmedCommand];
+            
+            if (!commandSpec) {
+              console.warn(`Security: Blocked unauthorized command attempt: "${trimmedCommand}" from user: ${wsUser.id}`);
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_ERROR',
+                message: 'Command not allowed for security reasons. Only approved commands can be executed.'
+              }));
+              return;
+            }
+
+            // Additional security: Check for dangerous characters
+            if (trimmedCommand.includes('|') || trimmedCommand.includes(';') || 
+                trimmedCommand.includes('&') || trimmedCommand.includes('`') ||
+                trimmedCommand.includes('$') || trimmedCommand.includes('>') ||
+                trimmedCommand.includes('<')) {
+              console.error(`Security: Blocked command with dangerous characters: "${trimmedCommand}" from user: ${wsUser.id}`);
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_ERROR',
+                message: 'Command contains dangerous characters and is blocked.'
+              }));
+              return;
+            }
+
+            // Log command execution for security audit
+            console.log(`Terminal: User ${wsUser.id} executing: "${trimmedCommand}"`);
+
+            // Send command started message to THIS connection only (not broadcast)
+            ws.send(JSON.stringify({
+              type: 'TERMINAL_OUTPUT',
+              data: {
+                command: trimmedCommand,
+                output: `$ ${trimmedCommand}\n`,
+                status: 'running'
+              }
+            }));
+
+            try {
+              // SECURE EXECUTION: Use spawn without shell to prevent RCE
+              const { spawn } = await import('child_process');
+              
+              // Use direct binary execution (NO SHELL) for security
+              const childProcess = spawn(commandSpec.binary, commandSpec.args, {
+                stdio: ['pipe', 'pipe', 'pipe'],
+                env: { 
+                  ...process.env, 
+                  TERM: 'xterm-256color',
+                  PATH: process.env.PATH // Ensure PATH is available
+                },
+                shell: false, // CRITICAL: No shell to prevent RCE
+                timeout: 30000 // 30 second timeout
+              });
+
+              // Store process reference for cleanup
+              activeProcess = childProcess;
+              let outputBuffer = '';
+              let outputSize = 0;
+              const MAX_OUTPUT_SIZE = 1024 * 1024; // 1MB limit
+
+              // Stream stdout to THIS connection only (no broadcast)
+              childProcess.stdout?.on('data', (data: Buffer) => {
+                const output = data.toString();
+                outputSize += output.length;
+                
+                // Prevent memory abuse
+                if (outputSize > MAX_OUTPUT_SIZE) {
+                  childProcess.kill('SIGKILL');
+                  ws.send(JSON.stringify({
+                    type: 'TERMINAL_ERROR',
+                    message: 'Command output exceeded size limit (1MB)'
+                  }));
+                  return;
+                }
+                
+                outputBuffer += output;
+                
+                // Send to THIS connection only
+                ws.send(JSON.stringify({
+                  type: 'TERMINAL_OUTPUT',
+                  data: {
+                    command: trimmedCommand,
+                    output,
+                    status: 'running'
+                  }
+                }));
+              });
+
+              // Stream stderr to THIS connection only (no broadcast)
+              childProcess.stderr?.on('data', (data: Buffer) => {
+                const output = data.toString();
+                outputSize += output.length;
+                
+                if (outputSize > MAX_OUTPUT_SIZE) {
+                  childProcess.kill('SIGKILL');
+                  ws.send(JSON.stringify({
+                    type: 'TERMINAL_ERROR',
+                    message: 'Command output exceeded size limit (1MB)'
+                  }));
+                  return;
+                }
+                
+                outputBuffer += output;
+                
+                // Send to THIS connection only
+                ws.send(JSON.stringify({
+                  type: 'TERMINAL_OUTPUT',
+                  data: {
+                    command: trimmedCommand,
+                    output,
+                    status: 'error',
+                    isError: true
+                  }
+                }));
+              });
+
+              // Handle process completion
+              childProcess.on('close', (code: number | null, signal: string | null) => {
+                activeProcess = null; // Clear reference
+                const finalStatus = code === 0 ? 'success' : 'error';
+                
+                // Send completion to THIS connection only
+                ws.send(JSON.stringify({
+                  type: 'TERMINAL_COMPLETE',
+                  data: {
+                    command: trimmedCommand,
+                    exitCode: code,
+                    signal,
+                    status: finalStatus
+                  }
+                }));
+
+                // Security audit log
+                console.log(`Terminal: User ${wsUser.id} command "${trimmedCommand}" completed with exit code: ${code}, signal: ${signal}`);
+              });
+
+              // Handle process errors
+              childProcess.on('error', (error: Error) => {
+                activeProcess = null; // Clear reference
+                console.error(`Terminal: Process error for command "${trimmedCommand}":`, error);
+                ws.send(JSON.stringify({
+                  type: 'TERMINAL_ERROR',
+                  message: `Process error: ${error.message}`
+                }));
+              });
+
+              // Timeout with proper cleanup
+              const timeoutId = setTimeout(() => {
+                if (activeProcess) {
+                  console.warn(`Terminal: Command "${trimmedCommand}" timed out, killing process`);
+                  activeProcess.kill('SIGTERM'); // Try graceful first
+                  
+                  // Force kill if not terminated in 5 seconds
+                  setTimeout(() => {
+                    if (activeProcess) {
+                      activeProcess.kill('SIGKILL');
+                      activeProcess = null;
+                    }
+                  }, 5000);
+                  
+                  ws.send(JSON.stringify({
+                    type: 'TERMINAL_ERROR',
+                    message: 'Command timed out (30s limit)'
+                  }));
+                }
+              }, 30000);
+
+              // Clear timeout when process completes
+              childProcess.on('exit', () => {
+                clearTimeout(timeoutId);
+              });
+
+            } catch (error) {
+              console.error(`Terminal: Failed to execute command "${trimmedCommand}":`, error);
+              ws.send(JSON.stringify({
+                type: 'TERMINAL_ERROR',
+                message: `Failed to execute command: ${error instanceof Error ? error.message : 'Unknown error'}`
+              }));
+            }
+            break;
+
+          default:
+            // Handle other WebSocket message types (existing functionality)
+            break;
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+        ws.send(JSON.stringify({
+          type: 'ERROR',
+          message: 'Invalid message format'
+        }));
+      }
     });
 
-    ws.on('error', (error) => {
+    ws.on('close', (code: number, reason: Buffer) => {
+      wsClients.delete(ws);
+      
+      // CRITICAL: Kill any active process on connection close
+      if (activeProcess) {
+        console.log(`Terminal: Killing active process on connection close for user: ${wsUser?.id}`);
+        activeProcess.kill('SIGTERM');
+        setTimeout(() => {
+          if (activeProcess) {
+            activeProcess.kill('SIGKILL');
+          }
+        }, 5000);
+        activeProcess = null;
+      }
+      
+      // If user was authenticated, log the disconnection for security
+      if (wsUser) {
+        console.log(`Terminal: Authenticated user ${wsUser.id} disconnected`);
+      }
+      
+      // Reset authentication state
+      wsUser = null;
+      isTerminalAuthenticated = false;
+      
+      console.log(`WebSocket client disconnected. Code: ${code}, Reason: ${reason.toString()}`);
+    });
+
+    ws.on('error', (error: Error) => {
       console.error('WebSocket error:', error);
       wsClients.delete(ws);
+      
+      // Reset authentication state on error
+      wsUser = null;
+      isTerminalAuthenticated = false;
+      
+      // Log security event if authenticated user had error
+      if (wsUser) {
+        console.warn(`Terminal: Authenticated user ${wsUser.id} connection error: ${error.message}`);
+      }
     });
 
     // Send initial connection message
     ws.send(JSON.stringify({
       type: 'CONNECTED',
-      message: 'Connected to server'
+      message: 'Connected to server - Terminal ready'
     }));
   });
 

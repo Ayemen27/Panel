@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { 
   Terminal as TerminalIcon, 
   Play, 
@@ -15,14 +13,17 @@ import {
   Copy,
   CheckCircle,
   AlertCircle,
-  Clock
+  Clock,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 
-interface CommandResult {
+interface TerminalOutput {
+  id: string;
   command: string;
-  stdout: string;
-  stderr: string;
-  success: boolean;
+  output: string;
+  isError?: boolean;
+  status: 'running' | 'success' | 'error';
   timestamp: Date;
 }
 
@@ -36,7 +37,7 @@ const ALLOWED_COMMANDS = [
   'df -h',
   'free -h',
   'top -bn1',
-  'ps aux | head -20',
+  'ps aux',
   'netstat -tlnp',
   'systemctl status',
 ];
@@ -48,23 +49,35 @@ const QUICK_COMMANDS = [
   { label: 'قائمة PM2', command: 'pm2 list' },
   { label: 'مساحة القرص', command: 'df -h' },
   { label: 'استخدام الذاكرة', command: 'free -h' },
-  { label: 'العمليات النشطة', command: 'ps aux | head -20' },
+  { label: 'العمليات النشطة', command: 'ps aux' },
   { label: 'المنافذ المفتوحة', command: 'netstat -tlnp' },
 ];
 
 export default function Terminal() {
   const [command, setCommand] = useState("");
-  const [history, setHistory] = useState<CommandResult[]>([]);
+  const [history, setHistory] = useState<TerminalOutput[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const currentCommandRef = useRef<string>("");
   
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated: authStatus, isLoading: authLoading } = useAuth();
+  const { isConnected, lastMessage, sendMessage } = useWebSocket();
 
+  // Auto-scroll to bottom when new output is added
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [history]);
+
+  // Authentication check
+  useEffect(() => {
+    if (!authLoading && !authStatus) {
       toast({
         title: "غير مخول",
         description: "أنت غير مسجل دخول. جاري تسجيل الدخول مرة أخرى...",
@@ -75,72 +88,114 @@ export default function Terminal() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, authLoading, toast]);
+  }, [authStatus, authLoading, toast]);
 
-  // Auto-scroll to bottom when new output is added
+  // WebSocket authentication  
   useEffect(() => {
-    if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    if (isConnected && authStatus && !isAuthenticated) {
+      // Send authentication request (server will validate using session)
+      sendMessage({
+        type: 'TERMINAL_AUTH_REQUEST'
+        // No token needed - server validates using HTTP session cookies
+      });
     }
-  }, [history]);
+  }, [isConnected, authStatus, isAuthenticated, sendMessage]);
 
-  const executeCommandMutation = useMutation({
-    mutationFn: async (cmd: string) => {
-      const response = await apiRequest("POST", "/api/terminal/execute", { command: cmd });
-      return response.json();
-    },
-    onSuccess: (data, cmd) => {
-      const result: CommandResult = {
-        command: cmd,
-        stdout: data.stdout || '',
-        stderr: data.stderr || '',
-        success: data.success,
-        timestamp: new Date(),
-      };
-      
-      setHistory(prev => [...prev, result]);
-      
-      // Add to command history if not already present
-      setCommandHistory(prev => {
-        const filtered = prev.filter(c => c !== cmd);
-        return [cmd, ...filtered].slice(0, 50); // Keep last 50 commands
-      });
-      
-      setCommand("");
-      setHistoryIndex(-1);
-      
-      if (!data.success) {
-        toast({
-          title: "فشل تنفيذ الأمر",
-          description: data.stderr || "حدث خطأ غير معروف",
-          variant: "destructive",
-        });
+  // Handle WebSocket messages
+  useEffect(() => {
+    if (lastMessage) {
+      switch (lastMessage.type) {
+        case 'CONNECTION_CLOSED':
+          // Reset authentication state when connection closes
+          setIsAuthenticated(false);
+          setIsExecuting(false);
+          currentCommandRef.current = "";
+          break;
+
+        case 'TERMINAL_AUTH_SUCCESS':
+          setIsAuthenticated(true);
+          toast({
+            title: "نجح الاتصال",
+            description: "تم تسجيل الدخول للطرفية بنجاح",
+          });
+          break;
+
+        case 'TERMINAL_AUTH_ERROR':
+          setIsAuthenticated(false);
+          toast({
+            title: "خطأ في المصادقة",
+            description: lastMessage.message || "فشل في تسجيل الدخول للطرفية",
+            variant: "destructive",
+          });
+          break;
+
+        case 'TERMINAL_OUTPUT':
+          const outputData = lastMessage.data;
+          if (outputData) {
+            const outputId = `${outputData.command}-${Date.now()}`;
+            setHistory(prev => {
+              const existingIndex = prev.findIndex(h => h.command === outputData.command && h.status === 'running');
+              if (existingIndex >= 0) {
+                // Update existing output
+                const updated = [...prev];
+                updated[existingIndex] = {
+                  ...updated[existingIndex],
+                  output: updated[existingIndex].output + outputData.output,
+                  isError: outputData.isError,
+                  status: outputData.status
+                };
+                return updated;
+              } else {
+                // Add new output
+                return [...prev, {
+                  id: outputId,
+                  command: outputData.command,
+                  output: outputData.output,
+                  isError: outputData.isError,
+                  status: outputData.status,
+                  timestamp: new Date()
+                }];
+              }
+            });
+          }
+          break;
+
+        case 'TERMINAL_COMPLETE':
+          const completeData = lastMessage.data;
+          if (completeData) {
+            setHistory(prev => {
+              const updated = [...prev];
+              const index = updated.findIndex(h => h.command === completeData.command);
+              if (index >= 0) {
+                updated[index] = {
+                  ...updated[index],
+                  status: completeData.status,
+                  output: updated[index].output + `\n[Exit code: ${completeData.exitCode}]`
+                };
+              }
+              return updated;
+            });
+            setIsExecuting(false);
+            currentCommandRef.current = "";
+          }
+          break;
+
+        case 'TERMINAL_ERROR':
+          toast({
+            title: "خطأ في الطرفية",
+            description: lastMessage.message || "حدث خطأ في تنفيذ الأمر",
+            variant: "destructive",
+          });
+          setIsExecuting(false);
+          currentCommandRef.current = "";
+          break;
       }
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "غير مخول",
-          description: "أنت غير مسجل دخول. جاري تسجيل الدخول مرة أخرى...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      
-      toast({
-        title: "خطأ في تنفيذ الأمر",
-        description: error instanceof Error ? error.message : "فشل في تنفيذ الأمر",
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  }, [lastMessage, toast]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!command.trim()) return;
+    if (!command.trim() || !isConnected || !isAuthenticated || isExecuting) return;
     
     const trimmedCommand = command.trim();
     
@@ -153,7 +208,23 @@ export default function Terminal() {
       return;
     }
     
-    executeCommandMutation.mutate(trimmedCommand);
+    // Send command via WebSocket
+    sendMessage({
+      type: 'TERMINAL_COMMAND',
+      command: trimmedCommand
+    });
+
+    setIsExecuting(true);
+    currentCommandRef.current = trimmedCommand;
+    
+    // Add to command history if not already present
+    setCommandHistory(prev => {
+      const filtered = prev.filter(c => c !== trimmedCommand);
+      return [trimmedCommand, ...filtered].slice(0, 50); // Keep last 50 commands
+    });
+    
+    setCommand("");
+    setHistoryIndex(-1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -195,11 +266,27 @@ export default function Terminal() {
   };
 
   const executeQuickCommand = (cmd: string) => {
+    if (!isConnected || !isAuthenticated || isExecuting) return;
+    
     setCommand(cmd);
-    executeCommandMutation.mutate(cmd);
+    
+    // Send command via WebSocket
+    sendMessage({
+      type: 'TERMINAL_COMMAND',
+      command: cmd
+    });
+
+    setIsExecuting(true);
+    currentCommandRef.current = cmd;
+    
+    // Add to command history
+    setCommandHistory(prev => {
+      const filtered = prev.filter(c => c !== cmd);
+      return [cmd, ...filtered].slice(0, 50);
+    });
   };
 
-  if (authLoading || !isAuthenticated) {
+  if (authLoading || !authStatus) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -210,14 +297,37 @@ export default function Terminal() {
     );
   }
 
+  const connectionStatus = isConnected && isAuthenticated ? 'connected' : isConnected ? 'authenticating' : 'disconnected';
+
   return (
     <div className="space-y-6" data-testid="terminal-content">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">الطرفية</h2>
-          <p className="text-muted-foreground">تنفيذ الأوامر الآمنة على النظام</p>
+          <h2 className="text-2xl font-bold">طرفية الويب التفاعلية</h2>
+          <p className="text-muted-foreground">تنفيذ الأوامر الآمنة في الوقت الفعلي</p>
         </div>
         <div className="flex items-center gap-2">
+          <Badge 
+            variant={connectionStatus === 'connected' ? 'default' : connectionStatus === 'authenticating' ? 'secondary' : 'destructive'}
+            className={connectionStatus === 'connected' ? 'text-green-500 border-green-500' : ''}
+          >
+            {connectionStatus === 'connected' ? (
+              <>
+                <Wifi className="w-3 h-3 ml-1" />
+                متصل
+              </>
+            ) : connectionStatus === 'authenticating' ? (
+              <>
+                <Clock className="w-3 h-3 ml-1" />
+                جاري المصادقة
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3 h-3 ml-1" />
+                غير متصل
+              </>
+            )}
+          </Badge>
           <Badge variant="outline" className="text-green-500 border-green-500">
             <CheckCircle className="w-3 h-3 ml-1" />
             آمن ومحدود
@@ -248,7 +358,7 @@ export default function Terminal() {
                 variant="outline"
                 size="sm"
                 onClick={() => executeQuickCommand(quickCmd.command)}
-                disabled={executeCommandMutation.isPending}
+                disabled={!isConnected || !isAuthenticated || isExecuting}
                 className="justify-start h-auto py-3 px-4"
                 data-testid={`quick-command-${index}`}
               >
@@ -269,7 +379,7 @@ export default function Terminal() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TerminalIcon className="w-5 h-5" />
-            طرفية النظام
+            طرفية الويب التفاعلية
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -281,7 +391,7 @@ export default function Terminal() {
           >
             {history.length === 0 ? (
               <div className="text-gray-500">
-                مرحباً بك في طرفية النظام الآمنة. يمكنك تنفيذ الأوامر المسموحة فقط.
+                مرحباً بك في الطرفية التفاعلية. يمكنك تنفيذ الأوامر المسموحة فقط.
                 <br />
                 استخدم الأسهم العلوية والسفلية للتنقل في سجل الأوامر.
                 <br />
@@ -297,7 +407,7 @@ export default function Terminal() {
               </div>
             ) : (
               history.map((result, index) => (
-                <div key={index} className="mb-4" data-testid={`command-result-${index}`}>
+                <div key={result.id} className="mb-4" data-testid={`command-result-${index}`}>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-blue-400">$</span>
                     <span className="text-white">{result.command}</span>
@@ -311,7 +421,9 @@ export default function Terminal() {
                       <Copy className="w-3 h-3" />
                     </Button>
                     <div className="flex items-center gap-1 mr-auto">
-                      {result.success ? (
+                      {result.status === 'running' ? (
+                        <div className="animate-spin w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full" />
+                      ) : result.status === 'success' ? (
                         <CheckCircle className="w-4 h-4 text-green-400" />
                       ) : (
                         <AlertCircle className="w-4 h-4 text-red-400" />
@@ -323,25 +435,21 @@ export default function Terminal() {
                     </div>
                   </div>
                   
-                  {result.stdout && (
-                    <pre className="text-green-400 whitespace-pre-wrap mb-2 bg-gray-800 p-2 rounded">
-                      {result.stdout}
-                    </pre>
-                  )}
-                  
-                  {result.stderr && (
-                    <pre className="text-red-400 whitespace-pre-wrap bg-red-900/20 p-2 rounded">
-                      {result.stderr}
-                    </pre>
-                  )}
+                  <pre className={`whitespace-pre-wrap mb-2 p-2 rounded ${
+                    result.isError 
+                      ? 'text-red-400 bg-red-900/20' 
+                      : 'text-green-400 bg-gray-800'
+                  }`}>
+                    {result.output}
+                  </pre>
                 </div>
               ))
             )}
             
-            {executeCommandMutation.isPending && (
+            {isExecuting && (
               <div className="flex items-center gap-2 text-yellow-400">
                 <div className="animate-spin w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full"></div>
-                <span>جاري تنفيذ الأمر...</span>
+                <span>جاري تنفيذ الأمر: {currentCommandRef.current}</span>
               </div>
             )}
           </div>
@@ -360,12 +468,12 @@ export default function Terminal() {
                 onKeyDown={handleKeyDown}
                 placeholder="أدخل أمراً آمناً..."
                 className="flex-1 font-mono"
-                disabled={executeCommandMutation.isPending}
+                disabled={!isConnected || !isAuthenticated || isExecuting}
                 data-testid="terminal-input"
               />
               <Button
                 type="submit"
-                disabled={!command.trim() || executeCommandMutation.isPending}
+                disabled={!command.trim() || !isConnected || !isAuthenticated || isExecuting}
                 data-testid="button-execute-command"
               >
                 <Play className="w-4 h-4" />
@@ -374,7 +482,9 @@ export default function Terminal() {
             </form>
             
             <div className="mt-2 text-xs text-muted-foreground">
-              نصيحة: استخدم الأسهم ↑↓ للتنقل في سجل الأوامر. الأوامر محدودة لأسباب أمنية.
+              نصيحة: استخدم الأسهم ↑↓ للتنقل في سجل الأوامر. 
+              {!isConnected && " | خطأ: غير متصل بالخادم"}
+              {!isAuthenticated && isConnected && " | خطأ: غير مسجل دخول للطرفية"}
             </div>
           </div>
         </CardContent>
@@ -388,7 +498,7 @@ export default function Terminal() {
             <div className="space-y-1">
               <h4 className="font-medium text-yellow-500">ملاحظة أمنية</h4>
               <p className="text-sm text-muted-foreground">
-                هذه الطرفية محدودة بمجموعة من الأوامر الآمنة فقط لحماية النظام. 
+                هذه الطرفية تستخدم WebSocket للاتصال المباشر وتدفق الأوامر في الوقت الفعلي. 
                 جميع الأوامر المنفذة يتم تسجيلها ومراقبتها. 
                 لا يمكن تنفيذ أوامر قد تؤثر على أمان أو استقرار النظام.
               </p>
