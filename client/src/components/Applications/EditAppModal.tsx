@@ -256,7 +256,7 @@ export function EditAppModal({ open, onOpenChange, applicationId }: EditAppModal
           <div className="flex items-center gap-3">
             <Switch
               id="usePm2"
-              checked={usePm2}
+              checked={usePm2 ?? false}
               onCheckedChange={(checked) => setValue("usePm2", checked ?? false)}
               data-testid="switch-use-pm2"
             />

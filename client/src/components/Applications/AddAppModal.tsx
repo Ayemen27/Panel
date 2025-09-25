@@ -228,7 +228,7 @@ export function AddAppModal({ open, onOpenChange }: AddAppModalProps) {
           <div className="flex items-center gap-3">
             <Switch
               id="usePm2"
-              checked={usePm2}
+              checked={usePm2 ?? true}
               onCheckedChange={(checked) => setValue("usePm2", checked ?? true)}
               data-testid="switch-use-pm2"
             />
