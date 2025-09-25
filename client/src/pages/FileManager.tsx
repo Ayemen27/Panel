@@ -169,6 +169,59 @@ export default function FileManager() {
     }
   });
 
+  // Copy mutation
+  const copyMutation = useMutation({
+    mutationFn: async ({ fileId, destinationFolderId }: { fileId: string; destinationFolderId?: string }) => {
+      const response = await apiRequest('POST', `/api/files/${fileId}/copy`, {
+        destinationFolderId: destinationFolderId || currentFolderId
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/files', currentFolderId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      toast({
+        title: "تم النسخ",
+        description: "تم نسخ الملف بنجاح",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "فشل في نسخ الملف",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Share mutation
+  const shareMutation = useMutation({
+    mutationFn: async ({ fileId, isPublic }: { fileId: string; isPublic: boolean }) => {
+      const response = await apiRequest('POST', `/api/files/${fileId}/share`, {
+        isPublic
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/files', currentFolderId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      toast({
+        title: data.file.isPublic ? "تم جعل الملف عاماً" : "تم جعل الملف خاصاً",
+        description: data.publicUrl ? `الرابط العام: ${window.location.origin}${data.publicUrl}` : "الملف أصبح خاصاً",
+      });
+      if (data.publicUrl) {
+        navigator.clipboard.writeText(`${window.location.origin}${data.publicUrl}`);
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "فشل في تحديث إعدادات المشاركة",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Handlers
   const handleFolderClick = (folder: FileItem) => {
     setCurrentFolderId(folder.id);
@@ -317,14 +370,41 @@ export default function FileManager() {
       }
     };
 
+    const handleCopy = () => {
+      copyMutation.mutate({ fileId: file.id });
+    };
+
+    const handleShare = () => {
+      shareMutation.mutate({ fileId: file.id, isPublic: !file.isPublic });
+    };
+
+    const handleDownload = () => {
+      window.open(`/api/files/${file.id}/download`, '_blank');
+    };
+
+    const handleEdit = () => {
+      if (file.type === 'file') {
+        // TODO: Open file editor
+        console.log('Edit:', file.name);
+        toast({
+          title: "قريباً",
+          description: "سيتم إضافة محرر الملفات قريباً",
+        });
+      }
+    };
+
     const contextMenuItems = [
       { icon: Eye, label: 'فتح', onClick: handleClick },
-      { icon: Edit, label: 'تحرير', onClick: () => console.log('Edit:', file.name) },
-      { icon: Copy, label: 'نسخ', onClick: () => console.log('Copy:', file.name) },
-      { icon: Share, label: 'مشاركة', onClick: () => console.log('Share:', file.name) },
+      { icon: Edit, label: 'تحرير', onClick: handleEdit, disabled: file.type === 'folder' },
+      { icon: Copy, label: 'نسخ', onClick: handleCopy, disabled: file.type === 'folder' },
+      { 
+        icon: Share, 
+        label: file.isPublic ? 'إلغاء المشاركة' : 'مشاركة', 
+        onClick: handleShare 
+      },
       { separator: true as const },
-      { icon: Download, label: 'تحميل', onClick: () => console.log('Download:', file.name) },
-      { icon: History, label: 'الإصدارات', onClick: () => console.log('Versions:', file.name) },
+      { icon: Download, label: 'تحميل', onClick: handleDownload, disabled: file.type === 'folder' },
+      { icon: History, label: 'الإصدارات', onClick: () => console.log('Versions:', file.name), disabled: file.type === 'folder' },
       { separator: true as const },
       { icon: Trash2, label: 'حذف', onClick: () => handleDeleteClick(file.id), variant: 'destructive' as const },
     ];
@@ -431,7 +511,11 @@ export default function FileManager() {
               <ContextMenuItem
                 key={index}
                 onClick={item.onClick}
-                className={item.variant === 'destructive' ? 'text-destructive focus:text-destructive' : ''}
+                disabled={item.disabled}
+                className={cn(
+                  item.variant === 'destructive' ? 'text-destructive focus:text-destructive' : '',
+                  item.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                )}
               >
                 <item.icon className="w-4 h-4 mr-2" />
                 {item.label}

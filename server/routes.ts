@@ -21,6 +21,9 @@ import { sslService } from "./services/sslService";
 import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
 import { FileManagerService } from "./services/fileManagerService";
+import { db } from "./db";
+import { files } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 // WebSocket clients store
 const wsClients = new Set<WebSocket>();
@@ -1182,6 +1185,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching audit logs:", error);
       res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  });
+
+  // Copy and Share Operations
+  app.post('/api/files/:id/copy', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      // Validate request body
+      const copySchema = z.object({
+        destinationFolderId: z.string().nullable().optional(),
+        name: z.string().min(1).max(255).optional()
+      });
+      
+      const { destinationFolderId, name } = copySchema.parse(req.body);
+      
+      const copiedFile = await storage.copyFile(id, destinationFolderId || null, userId, name);
+      
+      res.status(201).json(copiedFile);
+    } catch (error) {
+      console.error("Error copying file:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to copy file" });
+    }
+  });
+
+  app.post('/api/files/:id/duplicate', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      const duplicatedFile = await storage.duplicateFile(id, userId);
+      
+      res.status(201).json(duplicatedFile);
+    } catch (error) {
+      console.error("Error duplicating file:", error);
+      res.status(400).json({ message: "Failed to duplicate file" });
+    }
+  });
+
+  app.post('/api/files/:id/share', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      // Validate request body
+      const shareSchema = z.object({
+        isPublic: z.boolean()
+      });
+      
+      const { isPublic } = shareSchema.parse(req.body);
+      
+      const sharedFile = await storage.shareFile(id, isPublic, userId);
+      
+      res.json({
+        file: sharedFile,
+        publicUrl: isPublic ? storage.getPublicFileUrl(id) : null
+      });
+    } catch (error) {
+      console.error("Error sharing file:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to share file" });
+    }
+  });
+
+  app.get('/api/files/:id/download', async (req: Request, res) => {
+    try {
+      const { id } = req.params;
+      const { public: isPublicRequest } = req.query;
+      const isPublicDownload = isPublicRequest === 'true';
+      
+      // For public downloads, find file without user filter
+      let file;
+      let userId = null;
+      
+      if (isPublicDownload) {
+        // Get file without user restriction for public downloads
+        const [publicFile] = await db
+          .select()
+          .from(files)
+          .where(and(eq(files.id, id), eq(files.isPublic, true)));
+        
+        if (!publicFile) {
+          return res.status(404).json({ message: "Public file not found" });
+        }
+        file = publicFile;
+      } else {
+        // Authenticated download - require login
+        const authenticatedReq = req as AuthenticatedRequest;
+        if (!authenticatedReq.user) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+        
+        userId = getUserId(authenticatedReq)!;
+        file = await storage.getFile(id, userId);
+        
+        if (!file) {
+          return res.status(404).json({ message: "File not found" });
+        }
+        
+        // Check permissions for authenticated downloads
+        const hasAccess = await storage.checkFilePermission(id, userId, 'read');
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
+
+      // Use FileManagerService to read file
+      const result = await fileManagerService.readFile(file.path, userId || 'public');
+      if (!result.success) {
+        return res.status(404).json({ message: result.message });
+      }
+
+      // Set appropriate headers for download
+      res.setHeader('Content-Disposition', `attachment; filename="${file.name}"`);
+      res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+      
+      // Handle file content - if it's binary, send as buffer
+      const content = result.data?.content || '';
+      if (file.mimeType && !file.mimeType.startsWith('text/') && file.mimeType !== 'application/json') {
+        // For binary files, create a buffer
+        res.setHeader('Content-Length', file.size.toString());
+        res.send(Buffer.from(content, 'binary'));
+      } else {
+        // For text files, send as string
+        res.send(content);
+      }
+      
+      // Create audit log for authenticated downloads
+      if (userId) {
+        await storage.createAuditLog({
+          fileId: id,
+          action: 'access',
+          userId,
+          details: `Downloaded file: ${file.name}`
+        });
+      }
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      res.status(500).json({ message: "Failed to download file" });
     }
   });
 

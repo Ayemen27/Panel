@@ -143,6 +143,14 @@ export interface IStorage {
   // Audit log operations
   createAuditLog(log: InsertFileAuditLog): Promise<FileAuditLog>;
   getFileAuditLogs(fileId?: string, userId?: string, limit?: number): Promise<FileAuditLog[]>;
+
+  // Copy and duplicate operations
+  copyFile(fileId: string, destinationFolderId: string | null, userId: string, newName?: string): Promise<File>;
+  duplicateFile(fileId: string, userId: string): Promise<File>;
+
+  // Share operations
+  shareFile(fileId: string, isPublic: boolean, userId: string): Promise<File>;
+  getPublicFileUrl(fileId: string): string;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1162,6 +1170,134 @@ export class DatabaseStorage implements IStorage {
       .from(fileAuditLogs)
       .orderBy(desc(fileAuditLogs.timestamp))
       .limit(limit);
+  }
+
+  // Copy and duplicate operations
+  async copyFile(fileId: string, destinationFolderId: string | null, userId: string, newName?: string): Promise<File> {
+    // Check user has read permission on source file
+    const hasAccess = await this.checkUserFileAccess(fileId, userId, 'read');
+    if (!hasAccess) {
+      throw new Error('Access denied to source file');
+    }
+
+    // Get source file
+    const sourceFile = await this.getFile(fileId, userId);
+    if (!sourceFile) {
+      throw new Error('Source file not found');
+    }
+
+    if (sourceFile.type === 'folder') {
+      throw new Error('Folder copying not yet implemented');
+    }
+
+    // Get destination folder path
+    let destinationPath = '';
+    if (destinationFolderId) {
+      const destinationFolder = await this.getFile(destinationFolderId, userId);
+      if (!destinationFolder || destinationFolder.type !== 'folder') {
+        throw new Error('Invalid destination folder');
+      }
+      destinationPath = destinationFolder.path;
+    }
+
+    // Generate new name if not provided
+    const fileName = newName || `Copy of ${sourceFile.name}`;
+    const fullDestinationPath = destinationPath ? `${destinationPath}/${fileName}` : fileName;
+    
+    // Create copy in database first
+    const copyData: InsertFile = {
+      name: fileName,
+      type: sourceFile.type,
+      size: 0, // Will be updated after file copy
+      path: fullDestinationPath,
+      parentId: destinationFolderId,
+      ownerId: userId,
+      isPublic: false,
+      tags: sourceFile.tags,
+      mimeType: sourceFile.mimeType,
+    };
+
+    const [copy] = await db.insert(files).values(copyData).returning();
+
+    // Use FileManagerService to copy physical file
+    const { FileManagerService } = await import('./services/fileManagerService');
+    const fileManagerService = new FileManagerService(this);
+    const copyResult = await fileManagerService.copyFile(
+      sourceFile.path,
+      fullDestinationPath,
+      userId,
+      { preserveMetadata: true }
+    );
+
+    if (!copyResult.success) {
+      // Rollback database entry if file copy failed
+      await db.delete(files).where(eq(files.id, copy.id));
+      throw new Error(`Failed to copy file: ${copyResult.message}`);
+    }
+
+    // Update copy with actual file size and checksum
+    const [updatedCopy] = await db
+      .update(files)
+      .set({ 
+        size: copyResult.data?.size || sourceFile.size,
+        checksum: copyResult.data?.checksum 
+      })
+      .where(eq(files.id, copy.id))
+      .returning();
+
+    // Create audit log
+    await this.createAuditLog({
+      fileId: copy.id,
+      action: 'create',
+      userId,
+      details: `Copied from ${sourceFile.name}`,
+      newValue: updatedCopy
+    });
+
+    return updatedCopy;
+  }
+
+  async duplicateFile(fileId: string, userId: string): Promise<File> {
+    const sourceFile = await this.getFile(fileId, userId);
+    if (!sourceFile) {
+      throw new Error('Source file not found');
+    }
+    
+    return this.copyFile(fileId, sourceFile.parentId, userId, `${sourceFile.name} (Copy)`);
+  }
+
+  // Share operations
+  async shareFile(fileId: string, isPublic: boolean, userId: string): Promise<File> {
+    // Check user has write permission
+    const hasAccess = await this.checkUserFileAccess(fileId, userId, 'write');
+    if (!hasAccess) {
+      throw new Error('Access denied');
+    }
+
+    const [updatedFile] = await db
+      .update(files)
+      .set({ isPublic })
+      .where(eq(files.id, fileId))
+      .returning();
+
+    if (!updatedFile) {
+      throw new Error('File not found');
+    }
+
+    // Create audit log
+    await this.createAuditLog({
+      fileId,
+      action: 'share',
+      userId,
+      details: `${isPublic ? 'Made public' : 'Made private'}`,
+      newValue: { isPublic }
+    });
+
+    return updatedFile;
+  }
+
+  getPublicFileUrl(fileId: string): string {
+    return `/api/files/${fileId}/download?public=true`;
   }
 }
 
