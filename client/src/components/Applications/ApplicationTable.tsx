@@ -142,7 +142,7 @@ export function ApplicationTable({
                   <TableRow 
                     key={app.id} 
                     className="hover:bg-accent transition-colors"
-                    data-testid={`app-row-${app.id || 'unknown'}`}
+                    data-testid={`app-row-${app.id!}`}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -154,11 +154,11 @@ export function ApplicationTable({
                           }`} />
                         </div>
                         <div>
-                          <p className="font-medium" data-testid={`app-name-${app.id || 'unknown'}`}>
+                          <p className="font-medium" data-testid={`app-name-${app.id!}`}>
                             {app.name}
                           </p>
                           {app.description && (
-                            <p className="text-sm text-muted-foreground" data-testid={`app-description-${app.id || 'unknown'}`}>
+                            <p className="text-sm text-muted-foreground" data-testid={`app-description-${app.id!}`}>
                               {app.description}
                             </p>
                           )}
@@ -166,19 +166,19 @@ export function ApplicationTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm font-mono" data-testid={`app-path-${app.id || 'unknown'}`}>
+                      <span className="text-sm font-mono" data-testid={`app-path-${app.id!}`}>
                         {app.path}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm font-mono" data-testid={`app-port-${app.id || 'unknown'}`}>
+                      <span className="text-sm font-mono" data-testid={`app-port-${app.id!}`}>
                         {app.port}
                       </span>
                     </TableCell>
                     <TableCell>
                       <StatusBadge 
                         status={app.status} 
-                        data-testid={`app-status-${app.id || 'unknown'}`}
+                        data-testid={`app-status-${app.id!}`}
                       />
                     </TableCell>
                     <TableCell>
@@ -188,7 +188,7 @@ export function ApplicationTable({
                           size="sm"
                           onClick={() => window.open(`/logs/${app.id}`, '_blank')}
                           title="عرض السجلات"
-                          data-testid={`button-logs-${app.id || 'unknown'}`}
+                          data-testid={`button-logs-${app.id!}`}
                         >
                           <FileText className="w-4 h-4 text-blue-500" />
                         </Button>
@@ -198,7 +198,7 @@ export function ApplicationTable({
                           size="sm"
                           onClick={() => onEdit?.(app.id)}
                           title="تعديل"
-                          data-testid={`button-edit-${app.id || 'unknown'}`}
+                          data-testid={`button-edit-${app.id!}`}
                         >
                           <Edit className="w-4 h-4 text-yellow-500" />
                         </Button>
@@ -211,7 +211,7 @@ export function ApplicationTable({
                               onClick={() => onRestart(app.id)}
                               disabled={restartLoading}
                               title="إعادة تشغيل"
-                              data-testid={`button-restart-${app.id || 'unknown'}`}
+                              data-testid={`button-restart-${app.id!}`}
                             >
                               <RotateCcw className="w-4 h-4 text-green-500" />
                             </Button>
@@ -221,7 +221,7 @@ export function ApplicationTable({
                               onClick={() => onStop(app.id)}
                               disabled={stopLoading}
                               title="إيقاف"
-                              data-testid={`button-stop-${app.id || 'unknown'}`}
+                              data-testid={`button-stop-${app.id!}`}
                             >
                               <Square className="w-4 h-4 text-orange-500" />
                             </Button>
@@ -233,7 +233,7 @@ export function ApplicationTable({
                             onClick={() => onStart(app.id)}
                             disabled={startLoading}
                             title="تشغيل"
-                            data-testid={`button-start-${app.id || 'unknown'}`}
+                            data-testid={`button-start-${app.id!}`}
                           >
                             <Play className="w-4 h-4 text-green-500" />
                           </Button>
@@ -245,7 +245,7 @@ export function ApplicationTable({
                           onClick={() => setDeleteAppId(app.id)}
                           disabled={deleteLoading}
                           title="حذف"
-                          data-testid={`button-delete-${app.id || 'unknown'}`}
+                          data-testid={`button-delete-${app.id!}`}
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
