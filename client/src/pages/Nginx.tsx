@@ -27,7 +27,7 @@ export default function Nginx() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: configs, isLoading: configsLoading } = useQuery({
+  const { data: configs, isLoading: configsLoading } = useQuery<any[]>({
     queryKey: ["/api/nginx/configs"],
   });
 

@@ -142,7 +142,7 @@ export class SystemService {
     try {
       // Check database
       try {
-        const { storage } = await import('../storage');
+        const { storage } = await import('../storage.js');
         await storage.testConnection();
         results.database = { 
           status: 'healthy', 

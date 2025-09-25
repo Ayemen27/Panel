@@ -2,9 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
-// Temporarily disable SSL certificate verification to fix Neon database connection issues
-// This is needed because Neon connects via IP instead of domain name
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// SSL certificate verification is enabled for security
+// If you encounter SSL issues with database connections, configure proper certificates
+// instead of disabling SSL verification globally
 
 const app = express();
 app.use(express.json());

@@ -1,7 +1,7 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
   insertApplicationSchema, 
@@ -57,8 +57,11 @@ function setupCORS(app: Express) {
 }
 
 // Enhanced authentication middleware for Replit OIDC with role-based access
-interface AuthenticatedRequest extends Express.Request {
+interface AuthenticatedRequest extends Request {
   user?: any; // Replit OIDC user session
+  body: any;
+  params: any;
+  query: any;
 }
 
 const requireRole = (roles: string[]) => {
@@ -613,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const config = await storage.createNginxConfig({
         ...configData,
         lastTest: new Date(),
-        testResult: testResult.message
+        testResult: testResult.error || 'Configuration is valid'
       });
 
       res.status(201).json(config);
@@ -636,7 +639,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/nginx/reload', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
     try {
-      const result = await nginxService.reload();
+      await nginxService.reloadNginx();
+      const result = { success: true, message: 'Nginx reloaded successfully' };
       res.json(result);
     } catch (error) {
       console.error("Error reloading nginx:", error);
@@ -739,7 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check route
   app.get('/api/health', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const healthStatus = await systemService.getHealthStatus();
+      const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
     } catch (error) {
       console.error("Error checking health:", error);
@@ -750,7 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // System health check route (for HealthCheck page)
   app.get('/api/system/health-check', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const healthStatus = await systemService.getHealthStatus();
+      const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
     } catch (error) {
       console.error("Error checking system health:", error);

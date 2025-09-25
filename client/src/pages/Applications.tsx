@@ -34,7 +34,7 @@ export default function Applications() {
     }
   }, [isAuthenticated, authLoading, toast]);
 
-  const { data: applications, isLoading, error } = useQuery({
+  const { data: applications, isLoading, error } = useQuery<Application[]>({
     queryKey: ["/api/applications"],
     enabled: isAuthenticated,
     refetchInterval: 5000, // Refresh every 5 seconds for real-time status
