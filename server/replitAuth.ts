@@ -142,6 +142,31 @@ export async function setupAuth(app: Express) {
       );
     });
   });
+
+  // إضافة endpoint للحصول على معلومات المستخدم
+  app.get("/api/auth/user", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || !user.claims) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const claims = user.claims;
+      const userInfo = {
+        id: claims.sub,
+        email: claims.email,
+        firstName: claims.first_name,
+        lastName: claims.last_name,
+        profileImageUrl: claims.profile_image_url,
+        role: 'admin' // يمكن تعديل هذا حسب منطق التطبيق
+      };
+
+      res.json(userInfo);
+    } catch (error) {
+      console.error('Error getting user info:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {

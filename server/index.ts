@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupAuth } from './replitAuth.js';
 
 // SSL certificate verification is enabled for security
 // If you encounter SSL issues with database connections, configure proper certificates
@@ -8,7 +9,10 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
+
+// تهيئة نظام المصادقة
+await setupAuth(app);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -67,7 +71,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  
+
   // Check if port is available
   const net = await import('net');
   const checkPort = (port: number): Promise<boolean> => {
