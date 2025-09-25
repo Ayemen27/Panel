@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, lazy, Suspense } from "react";
 import NotFound from "@/pages/not-found";
 import MainLayout from "@/components/Layout/MainLayout";
+import { AdminOnly, ModeratorAndAbove } from "@/components/auth/RoleGuard";
 
 // Critical components loaded immediately
 import Landing from "@/pages/Landing";
@@ -119,9 +120,11 @@ function Router() {
           </Route>
           <Route path="/terminal">
             <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Terminal />
-              </Suspense>
+              <AdminOnly>
+                <Suspense fallback={<PageLoader />}>
+                  <Terminal />
+                </Suspense>
+              </AdminOnly>
             </MainLayout>
           </Route>
           <Route path="/health-check">

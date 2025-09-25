@@ -8,9 +8,19 @@ interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  role?: string;
+  role?: 'admin' | 'user' | 'moderator' | 'viewer';
   profileImageUrl?: string;
 }
+
+export type UserRole = 'admin' | 'user' | 'moderator' | 'viewer';
+
+// Role hierarchy - higher roles include permissions of lower roles
+export const ROLE_HIERARCHY = {
+  admin: 4,
+  moderator: 3,
+  user: 2,
+  viewer: 1,
+} as const;
 
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
@@ -64,11 +74,44 @@ export function useAuth() {
     window.location.href = "/api/logout";
   };
 
+  // Role checking helpers
+  const hasRole = (requiredRole: UserRole): boolean => {
+    if (!user?.role) return false;
+    return ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY[requiredRole];
+  };
+
+  const hasAnyRole = (requiredRoles: UserRole[]): boolean => {
+    return requiredRoles.some(role => hasRole(role));
+  };
+
+  const isAdmin = (): boolean => {
+    return user?.role === 'admin';
+  };
+
+  const isModerator = (): boolean => {
+    return hasRole('moderator');
+  };
+
+  const isUser = (): boolean => {
+    return hasRole('user');
+  };
+
+  const isViewer = (): boolean => {
+    return hasRole('viewer');
+  };
+
   return {
     user,
     isAuthenticated,
     isLoading,
     logout,
     error,
+    // Role helpers
+    hasRole,
+    hasAnyRole,
+    isAdmin,
+    isModerator,
+    isUser,
+    isViewer,
   };
 }
