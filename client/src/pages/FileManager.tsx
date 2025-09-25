@@ -278,6 +278,13 @@ export default function FileManager() {
       const newBreadcrumbs = breadcrumbs.slice(0, -1);
       setBreadcrumbs(newBreadcrumbs);
       
+      // If returning to home, show main libraries
+      if (newBreadcrumbs.length === 1) {
+        setShowMainLibraries(true);
+        setStorageSection('main');
+        return;
+      }
+      
       if (fileSystemMode === 'database') {
         setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
       } else {
@@ -562,6 +569,10 @@ export default function FileManager() {
     setSelectedItems([]);
     setSearchQuery('');
     setPathError(null);
+    // Reset to main libraries view when changing file system mode
+    setShowMainLibraries(true);
+    setStorageSection('main');
+    setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
   };
 
   // Helper functions
@@ -1337,6 +1348,13 @@ export default function FileManager() {
                     // Normal breadcrumb navigation
                     const newBreadcrumbs = breadcrumbs.slice(0, -1);
                     setBreadcrumbs(newBreadcrumbs);
+                    
+                    // If returning to home, show main libraries
+                    if (newBreadcrumbs.length === 1) {
+                      setShowMainLibraries(true);
+                      setStorageSection('main');
+                      return;
+                    }
                     
                     if (fileSystemMode === 'database') {
                       setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
