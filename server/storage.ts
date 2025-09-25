@@ -12,6 +12,7 @@ import {
   fileAuditLogs,
   fileLocks,
   filePermissions,
+  allowedPaths,
   type User,
   type UpsertUser,
   type Application,
@@ -38,6 +39,8 @@ import {
   type InsertFileLock,
   type FilePermission,
   type InsertFilePermission,
+  type AllowedPath,
+  type InsertAllowedPath,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, count, gte, like, ilike, isNull, isNotNull, lt, max, sql } from "drizzle-orm";
@@ -151,6 +154,15 @@ export interface IStorage {
   // Share operations
   shareFile(fileId: string, isPublic: boolean, userId: string): Promise<File>;
   getPublicFileUrl(fileId: string): string;
+
+  // Allowed paths operations
+  getAllowedPaths(type?: 'allowed' | 'blocked'): Promise<AllowedPath[]>;
+  getAllowedPath(id: string): Promise<AllowedPath | undefined>;
+  createAllowedPath(path: InsertAllowedPath): Promise<AllowedPath>;
+  updateAllowedPath(id: string, updates: Partial<Omit<InsertAllowedPath, 'addedBy'>>): Promise<AllowedPath>;
+  deleteAllowedPath(id: string): Promise<void>;
+  checkPathAllowed(path: string): Promise<boolean>;
+  getActivePaths(type: 'allowed' | 'blocked'): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1325,6 +1337,106 @@ export class DatabaseStorage implements IStorage {
 
   getPublicFileUrl(fileId: string): string {
     return `/api/files/${fileId}/download?public=true`;
+  }
+
+  // ===============================
+  // ALLOWED PATHS OPERATIONS
+  // ===============================
+
+  async getAllowedPaths(type?: 'allowed' | 'blocked'): Promise<AllowedPath[]> {
+    const conditions = [eq(allowedPaths.isActive, true)];
+    
+    if (type) {
+      conditions.push(eq(allowedPaths.type, type));
+    }
+
+    return await db
+      .select()
+      .from(allowedPaths)
+      .where(and(...conditions))
+      .orderBy(desc(allowedPaths.createdAt));
+  }
+
+  async getAllowedPath(id: string): Promise<AllowedPath | undefined> {
+    const [allowedPath] = await db
+      .select()
+      .from(allowedPaths)
+      .where(eq(allowedPaths.id, id));
+    
+    return allowedPath;
+  }
+
+  async createAllowedPath(pathData: InsertAllowedPath): Promise<AllowedPath> {
+    const [allowedPath] = await db
+      .insert(allowedPaths)
+      .values(pathData)
+      .returning();
+    
+    return allowedPath;
+  }
+
+  async updateAllowedPath(id: string, updates: Partial<Omit<InsertAllowedPath, 'addedBy'>>): Promise<AllowedPath> {
+    const [allowedPath] = await db
+      .update(allowedPaths)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(allowedPaths.id, id))
+      .returning();
+    
+    if (!allowedPath) {
+      throw new Error('Allowed path not found');
+    }
+    
+    return allowedPath;
+  }
+
+  async deleteAllowedPath(id: string): Promise<void> {
+    await db.delete(allowedPaths).where(eq(allowedPaths.id, id));
+  }
+
+  async checkPathAllowed(path: string): Promise<boolean> {
+    // First check if path is explicitly blocked
+    const [blockedPath] = await db
+      .select()
+      .from(allowedPaths)
+      .where(
+        and(
+          eq(allowedPaths.type, 'blocked'),
+          eq(allowedPaths.isActive, true),
+          like(allowedPaths.path, `${path}%`)
+        )
+      );
+
+    if (blockedPath) {
+      return false;
+    }
+
+    // Then check if path is allowed
+    const [allowedPath] = await db
+      .select()
+      .from(allowedPaths)
+      .where(
+        and(
+          eq(allowedPaths.type, 'allowed'),
+          eq(allowedPaths.isActive, true),
+          like(allowedPaths.path, `${path}%`)
+        )
+      );
+
+    return !!allowedPath;
+  }
+
+  async getActivePaths(type: 'allowed' | 'blocked'): Promise<string[]> {
+    const paths = await db
+      .select({ path: allowedPaths.path })
+      .from(allowedPaths)
+      .where(
+        and(
+          eq(allowedPaths.type, type),
+          eq(allowedPaths.isActive, true)
+        )
+      );
+
+    return paths.map(p => p.path);
   }
 }
 

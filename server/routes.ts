@@ -12,7 +12,8 @@ import {
   insertFileSchema,
   insertFilePermissionSchema,
   insertFileLockSchema,
-  insertFileBackupSchema 
+  insertFileBackupSchema,
+  insertAllowedPathSchema 
 } from "@shared/schema";
 import { z } from "zod";
 import { pm2Service } from "./services/pm2Service";
@@ -21,6 +22,7 @@ import { sslService } from "./services/sslService";
 import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
 import { FileManagerService } from "./services/fileManagerService";
+import { RealFileSystemService } from "./services/realFileSystemService";
 import { db } from "./db";
 import { files } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
@@ -30,6 +32,9 @@ const wsClients = new Set<WebSocket>();
 
 // File Manager Service instance
 const fileManagerService = new FileManagerService(storage);
+
+// Real File System Service instance
+const realFileSystemService = new RealFileSystemService(storage);
 
 // Unified CORS configuration for both HTTP and WebSocket
 function setupCORS(app: Express) {
@@ -1305,7 +1310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const content = result.data?.content || '';
       if (file.mimeType && !file.mimeType.startsWith('text/') && file.mimeType !== 'application/json') {
         // For binary files, create a buffer
-        res.setHeader('Content-Length', file.size.toString());
+        res.setHeader('Content-Length', (file.size || 0).toString());
         res.send(Buffer.from(content, 'binary'));
       } else {
         // For text files, send as string
@@ -1937,6 +1942,295 @@ export async function registerRoutes(app: Express): Promise<Server> {
       type: 'CONNECTED',
       message: 'Connected to server - Terminal ready'
     }));
+  });
+
+  // ===================================
+  // REAL FILE SYSTEM API ROUTES
+  // ===================================
+
+  // Browse directory contents
+  app.get('/api/real-files/browse', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: dirPath } = req.query;
+
+      if (!dirPath || typeof dirPath !== 'string') {
+        return res.status(400).json({ message: 'Path parameter is required' });
+      }
+
+      const result = await realFileSystemService.listDirectory(dirPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.message,
+          error: result.error 
+        });
+      }
+
+      res.json(result.data);
+    } catch (error) {
+      console.error("Error browsing real files directory:", error);
+      res.status(500).json({ message: "Failed to browse directory" });
+    }
+  });
+
+  // Get file or directory info
+  app.get('/api/real-files/info', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: filePath } = req.query;
+
+      if (!filePath || typeof filePath !== 'string') {
+        return res.status(400).json({ message: 'Path parameter is required' });
+      }
+
+      const result = await realFileSystemService.getFileInfo(filePath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.message,
+          error: result.error 
+        });
+      }
+
+      res.json(result.data);
+    } catch (error) {
+      console.error("Error getting real file info:", error);
+      res.status(500).json({ message: "Failed to get file info" });
+    }
+  });
+
+  // Read file content
+  app.get('/api/real-files/content', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: filePath, encoding = 'utf8' } = req.query;
+
+      if (!filePath || typeof filePath !== 'string') {
+        return res.status(400).json({ message: 'Path parameter is required' });
+      }
+
+      const result = await realFileSystemService.readFileContent(filePath, userId, encoding as BufferEncoding);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.message,
+          error: result.error 
+        });
+      }
+
+      res.json(result.data);
+    } catch (error) {
+      console.error("Error reading real file content:", error);
+      res.status(500).json({ message: "Failed to read file content" });
+    }
+  });
+
+  // Create file or directory
+  app.post('/api/real-files/create', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: itemPath, type, content, mode, recursive, overwrite } = req.body;
+
+      if (!itemPath || !type) {
+        return res.status(400).json({ message: 'Path and type are required' });
+      }
+
+      if (!['file', 'directory'].includes(type)) {
+        return res.status(400).json({ message: 'Type must be "file" or "directory"' });
+      }
+
+      let result;
+
+      if (type === 'directory') {
+        result = await realFileSystemService.createDirectory(itemPath, userId, {
+          recursive,
+          mode
+        });
+      } else {
+        result = await realFileSystemService.createFile(itemPath, userId, {
+          content,
+          mode,
+          overwrite
+        });
+      }
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.message,
+          error: result.error 
+        });
+      }
+
+      res.status(201).json(result.data);
+    } catch (error) {
+      console.error("Error creating real file/directory:", error);
+      res.status(500).json({ message: "Failed to create file/directory" });
+    }
+  });
+
+  // Delete file or directory
+  app.delete('/api/real-files/delete', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: itemPath } = req.body;
+
+      if (!itemPath) {
+        return res.status(400).json({ message: 'Path is required' });
+      }
+
+      const result = await realFileSystemService.deleteItem(itemPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.message,
+          error: result.error 
+        });
+      }
+
+      res.json({ message: result.message, data: result.data });
+    } catch (error) {
+      console.error("Error deleting real file/directory:", error);
+      res.status(500).json({ message: "Failed to delete file/directory" });
+    }
+  });
+
+  // Rename file or directory
+  app.put('/api/real-files/rename', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { oldPath, newPath } = req.body;
+
+      if (!oldPath || !newPath) {
+        return res.status(400).json({ message: 'Both oldPath and newPath are required' });
+      }
+
+      const result = await realFileSystemService.renameItem(oldPath, newPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.message,
+          error: result.error 
+        });
+      }
+
+      res.json(result.data);
+    } catch (error) {
+      console.error("Error renaming real file/directory:", error);
+      res.status(500).json({ message: "Failed to rename file/directory" });
+    }
+  });
+
+  // Copy file or directory
+  app.post('/api/real-files/copy', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { sourcePath, destinationPath } = req.body;
+
+      if (!sourcePath || !destinationPath) {
+        return res.status(400).json({ message: 'Both sourcePath and destinationPath are required' });
+      }
+
+      const result = await realFileSystemService.copyItem(sourcePath, destinationPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.message,
+          error: result.error 
+        });
+      }
+
+      res.status(201).json(result.data);
+    } catch (error) {
+      console.error("Error copying real file/directory:", error);
+      res.status(500).json({ message: "Failed to copy file/directory" });
+    }
+  });
+
+  // ===================================
+  // ALLOWED PATHS MANAGEMENT API ROUTES
+  // ===================================
+
+  // Get all allowed paths
+  app.get('/api/real-files/allowed-paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { type } = req.query;
+
+      const allowedPaths = await storage.getAllowedPaths(type as 'allowed' | 'blocked' | undefined);
+
+      res.json(allowedPaths);
+    } catch (error) {
+      console.error("Error fetching allowed paths:", error);
+      res.status(500).json({ message: "Failed to fetch allowed paths" });
+    }
+  });
+
+  // Create new allowed path
+  app.post('/api/real-files/allowed-paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const pathData = insertAllowedPathSchema.parse({
+        ...req.body,
+        addedBy: userId
+      });
+
+      const allowedPath = await storage.createAllowedPath(pathData);
+
+      res.status(201).json(allowedPath);
+    } catch (error) {
+      console.error("Error creating allowed path:", error);
+      res.status(500).json({ message: "Failed to create allowed path" });
+    }
+  });
+
+  // Update allowed path
+  app.put('/api/real-files/allowed-paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      // Remove addedBy from updates to prevent manipulation
+      delete updates.addedBy;
+
+      const allowedPath = await storage.updateAllowedPath(id, updates);
+
+      res.json(allowedPath);
+    } catch (error) {
+      console.error("Error updating allowed path:", error);
+      res.status(500).json({ message: "Failed to update allowed path" });
+    }
+  });
+
+  // Delete allowed path
+  app.delete('/api/real-files/allowed-paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+
+      await storage.deleteAllowedPath(id);
+
+      res.json({ message: 'Allowed path deleted successfully' });
+    } catch (error) {
+      console.error("Error deleting allowed path:", error);
+      res.status(500).json({ message: "Failed to delete allowed path" });
+    }
+  });
+
+  // Check if path is allowed (utility endpoint)
+  app.post('/api/real-files/check-path', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { path: checkPath } = req.body;
+
+      if (!checkPath) {
+        return res.status(400).json({ message: 'Path is required' });
+      }
+
+      const isAllowed = await storage.checkPathAllowed(checkPath);
+
+      res.json({ path: checkPath, isAllowed });
+    } catch (error) {
+      console.error("Error checking path:", error);
+      res.status(500).json({ message: "Failed to check path" });
+    }
   });
 
   return server;
