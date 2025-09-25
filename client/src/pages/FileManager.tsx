@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
@@ -163,7 +163,7 @@ export default function FileManager() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date' | 'type'>('name');
+  const [sortBy, setSortBy] = useState<'none' | 'name' | 'size' | 'date' | 'type'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [storageSection, setStorageSection] = useState('main');
   const [showMainLibraries, setShowMainLibraries] = useState(true);
@@ -233,10 +233,55 @@ export default function FileManager() {
     }
   }, [realFilesError, isRealFilesLoading, fileSystemMode]);
 
-  // Get current files based on mode
-  const currentFiles = fileSystemMode === 'database' 
-    ? (searchQuery ? databaseSearchResults : databaseFiles)
-    : (realFilesData?.items || []);
+  // Get current files based on mode with sorting
+  const currentFiles = useMemo(() => {
+    const files = fileSystemMode === 'database' 
+      ? (searchQuery ? databaseSearchResults : databaseFiles)
+      : (realFilesData?.items || []);
+
+    // If no sort is selected, return files as-is
+    if (sortBy === 'none') {
+      return files;
+    }
+
+    // Create a copy to avoid mutating original array
+    const sortedFiles = [...files];
+
+    // Apply sorting based on sortBy and sortOrder
+    sortedFiles.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name, 'ar');
+          break;
+        case 'size':
+          const aSize = 'size' in a ? a.size : 0;
+          const bSize = 'size' in b ? b.size : 0;
+          comparison = aSize - bSize;
+          break;
+        case 'date':
+          const aDate = 'modified' in a ? new Date(a.modified).getTime() : 
+                       'updatedAt' in a ? new Date(a.updatedAt).getTime() : 0;
+          const bDate = 'modified' in b ? new Date(b.modified).getTime() : 
+                       'updatedAt' in b ? new Date(b.updatedAt).getTime() : 0;
+          comparison = aDate - bDate;
+          break;
+        case 'type':
+          const aType = 'type' in a ? a.type : 'extension' in a ? ((a as any).extension || '') : '';
+          const bType = 'type' in b ? b.type : 'extension' in b ? ((b as any).extension || '') : '';
+          comparison = String(aType).localeCompare(String(bType), 'ar');
+          break;
+        default:
+          return 0;
+      }
+
+      // Apply sort order
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return sortedFiles;
+  }, [fileSystemMode, searchQuery, databaseSearchResults, databaseFiles, realFilesData?.items, sortBy, sortOrder]);
   
   const isLoading = fileSystemMode === 'database' 
     ? (searchQuery ? isDatabaseSearching : isDatabaseLoading)
@@ -1853,16 +1898,101 @@ export default function FileManager() {
                     </Button>
                   </div>
                   
-                  {/* Sort Options */}
-                  <div className="flex items-center gap-2">
+                  {/* Advanced Sort Options */}
+                  <div className="flex items-center gap-1">
+                    {/* No Sort Option */}
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                      className="touch-manipulation"
-                      data-testid="button-sort-order"
+                      variant={sortBy === 'none' ? 'default' : 'outline'}
+                      onClick={() => setSortBy('none')}
+                      className="touch-manipulation text-xs"
+                      data-testid="button-sort-none"
                     >
-                      {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                      بدون فرز
+                    </Button>
+                    
+                    {/* Name Sort */}
+                    <Button
+                      size="sm"
+                      variant={sortBy === 'name' ? 'default' : 'outline'}
+                      onClick={() => {
+                        if (sortBy === 'name') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortBy('name');
+                          setSortOrder('asc');
+                        }
+                      }}
+                      className="touch-manipulation text-xs flex items-center gap-1"
+                      data-testid="button-sort-name"
+                    >
+                      الاسم
+                      {sortBy === 'name' && (
+                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
+                      )}
+                    </Button>
+
+                    {/* Size Sort */}
+                    <Button
+                      size="sm"
+                      variant={sortBy === 'size' ? 'default' : 'outline'}
+                      onClick={() => {
+                        if (sortBy === 'size') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortBy('size');
+                          setSortOrder('asc');
+                        }
+                      }}
+                      className="touch-manipulation text-xs flex items-center gap-1"
+                      data-testid="button-sort-size"
+                    >
+                      الحجم
+                      {sortBy === 'size' && (
+                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
+                      )}
+                    </Button>
+
+                    {/* Date Sort */}
+                    <Button
+                      size="sm"
+                      variant={sortBy === 'date' ? 'default' : 'outline'}
+                      onClick={() => {
+                        if (sortBy === 'date') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortBy('date');
+                          setSortOrder('asc');
+                        }
+                      }}
+                      className="touch-manipulation text-xs flex items-center gap-1"
+                      data-testid="button-sort-date"
+                    >
+                      التاريخ
+                      {sortBy === 'date' && (
+                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
+                      )}
+                    </Button>
+
+                    {/* Type Sort */}
+                    <Button
+                      size="sm"
+                      variant={sortBy === 'type' ? 'default' : 'outline'}
+                      onClick={() => {
+                        if (sortBy === 'type') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortBy('type');
+                          setSortOrder('asc');
+                        }
+                      }}
+                      className="touch-manipulation text-xs flex items-center gap-1"
+                      data-testid="button-sort-type"
+                    >
+                      النوع
+                      {sortBy === 'type' && (
+                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
+                      )}
                     </Button>
                   </div>
                 </div>
