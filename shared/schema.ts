@@ -10,6 +10,9 @@ import {
   integer,
   boolean,
   pgEnum,
+  unique,
+  check,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -46,6 +49,12 @@ export const users = pgTable("users", {
 
 // Application status enum
 export const appStatusEnum = pgEnum('app_status', ['running', 'stopped', 'error', 'starting']);
+
+// File management enums
+export const fileTypeEnum = pgEnum('file_type', ['file', 'folder']);
+export const permissionLevelEnum = pgEnum('permission_level', ['read', 'write', 'delete', 'admin']);
+export const auditActionEnum = pgEnum('audit_action', ['create', 'update', 'delete', 'copy', 'move', 'rename', 'share', 'access', 'restore']);
+export const lockTypeEnum = pgEnum('lock_type', ['read', 'write', 'exclusive']);
 
 // Applications table
 export const applications = pgTable("applications", {
@@ -128,10 +137,153 @@ export const systemLogs = pgTable("system_logs", {
   metadata: jsonb("metadata"),
 });
 
+// Files table for tracking files and folders
+export const files = pgTable("files", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  type: fileTypeEnum("type").notNull(),
+  path: text("path").notNull(),
+  parentId: varchar("parent_id"),
+  filePath: text("file_path"), // Physical file path on disk for better security and performance
+  size: integer("size").default(0), // Size in bytes
+  mimeType: varchar("mime_type"),
+  content: text("content"), // Only for small sensitive text files, encrypted
+  checksum: varchar("checksum"), // File integrity check
+  ownerId: varchar("owner_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  isPublic: boolean("is_public").default(false),
+  tags: text("tags").array().default(sql`'{}'::text[]`),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("IDX_files_path").on(table.path),
+  index("IDX_files_parent").on(table.parentId),
+  index("IDX_files_owner").on(table.ownerId),
+  index("IDX_files_type").on(table.type),
+  index("IDX_files_owner_parent").on(table.ownerId, table.parentId), // Composite index for performance
+  unique("UQ_files_owner_parent_name").on(table.ownerId, table.parentId, table.name), // Prevent duplicate names in same folder
+  foreignKey({
+    columns: [table.parentId],
+    foreignColumns: [table.id],
+    name: "FK_files_parent",
+  }).onDelete("cascade"), // Cascade delete when parent folder is deleted
+]);
+
+// File trash table for deleted files
+export const fileTrash = pgTable("file_trash", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  originalFileId: varchar("original_file_id").notNull(),
+  originalPath: text("original_path").notNull(),
+  name: varchar("name").notNull(),
+  type: fileTypeEnum("type").notNull(),
+  filePath: text("file_path"), // Physical file path for deleted files
+  size: integer("size").default(0),
+  mimeType: varchar("mime_type"),
+  content: text("content"), // Only for small sensitive text files, encrypted
+  checksum: varchar("checksum"),
+  ownerId: varchar("owner_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  deletedBy: varchar("deleted_by").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  deletedAt: timestamp("deleted_at").defaultNow(),
+  metadata: jsonb("metadata").default({}),
+}, (table) => [
+  index("IDX_file_trash_owner").on(table.ownerId),
+  index("IDX_file_trash_deleted_by").on(table.deletedBy),
+  index("IDX_file_trash_deleted_at").on(table.deletedAt),
+  index("IDX_file_trash_owner_deleted").on(table.ownerId, table.deletedAt), // Composite index for performance
+]);
+
+// File backups table for file versions
+export const fileBackups = pgTable("file_backups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileId: varchar("file_id").references(() => files.id, { onDelete: "cascade" }).notNull(),
+  version: integer("version").notNull(),
+  name: varchar("name").notNull(),
+  filePath: text("file_path"), // Physical backup file path on disk
+  size: integer("size").default(0),
+  mimeType: varchar("mime_type"),
+  content: text("content"), // Only for small sensitive text files, encrypted
+  checksum: varchar("checksum"),
+  comment: text("comment"), // Version comment
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  metadata: jsonb("metadata").default({}),
+}, (table) => [
+  index("IDX_file_backups_file").on(table.fileId),
+  index("IDX_file_backups_version").on(table.fileId, table.version),
+  index("IDX_file_backups_created_by").on(table.createdBy),
+  unique("UQ_file_backups_file_version").on(table.fileId, table.version), // Prevent duplicate versions
+]);
+
+// File audit logs table for tracking operations
+export const fileAuditLogs = pgTable("file_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileId: varchar("file_id").references(() => files.id, { onDelete: "set null" }), // Can be null for system-wide operations
+  action: auditActionEnum("action").notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  details: text("details"), // Additional operation details
+  oldValue: jsonb("old_value"), // Previous state
+  newValue: jsonb("new_value"), // New state
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  sessionId: varchar("session_id"),
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => [
+  index("IDX_audit_logs_file").on(table.fileId),
+  index("IDX_audit_logs_user").on(table.userId),
+  index("IDX_audit_logs_action").on(table.action),
+  index("IDX_audit_logs_timestamp").on(table.timestamp),
+  index("IDX_audit_logs_user_timestamp").on(table.userId, table.timestamp), // Composite index for performance
+]);
+
+// File locks table for preventing conflicts
+export const fileLocks = pgTable("file_locks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileId: varchar("file_id").references(() => files.id, { onDelete: "cascade" }).notNull(),
+  lockType: lockTypeEnum("lock_type").notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  sessionId: varchar("session_id"),
+  reason: text("reason"), // Why the file is locked
+  expiresAt: timestamp("expires_at"), // When the lock expires
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("IDX_file_locks_file").on(table.fileId),
+  index("IDX_file_locks_user").on(table.userId),
+  index("IDX_file_locks_expires").on(table.expiresAt),
+  unique("UQ_file_locks_file_active").on(table.fileId, table.lockType), // Prevent multiple active locks of same type on same file
+]);
+
+// File permissions table for access control
+export const filePermissions = pgTable("file_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileId: varchar("file_id").references(() => files.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }), // Can be null for role-based permissions
+  userRole: userRoleEnum("user_role"), // Role-based permission
+  permission: permissionLevelEnum("permission").notNull(),
+  grantedBy: varchar("granted_by").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  expiresAt: timestamp("expires_at"), // When permission expires
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("IDX_file_permissions_file").on(table.fileId),
+  index("IDX_file_permissions_user").on(table.userId),
+  index("IDX_file_permissions_role").on(table.userRole),
+  index("IDX_file_permissions_granted_by").on(table.grantedBy),
+  unique("UQ_file_permissions_file_user").on(table.fileId, table.userId, table.permission), // Prevent duplicate user permissions
+  unique("UQ_file_permissions_file_role").on(table.fileId, table.userRole, table.permission), // Prevent duplicate role permissions
+  check("CHK_file_permissions_user_or_role", sql`(user_id IS NOT NULL AND user_role IS NULL) OR (user_id IS NULL AND user_role IS NOT NULL)`), // Ensure only one of userId or userRole is set
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   applications: many(applications),
   notifications: many(notifications),
+  files: many(files),
+  deletedFiles: many(fileTrash),
+  fileBackups: many(fileBackups),
+  auditLogs: many(fileAuditLogs),
+  fileLocks: many(fileLocks),
+  grantedPermissions: many(filePermissions, { relationName: "grantedPermissions" }),
+  receivedPermissions: many(filePermissions, { relationName: "receivedPermissions" }),
 }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
@@ -185,6 +337,87 @@ export const systemLogsRelations = relations(systemLogs, ({ one }) => ({
   }),
 }));
 
+// File management relations
+export const filesRelations = relations(files, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [files.ownerId],
+    references: [users.id],
+  }),
+  parent: one(files, {
+    fields: [files.parentId],
+    references: [files.id],
+    relationName: "parentChild",
+  }),
+  children: many(files, { relationName: "parentChild" }),
+  backups: many(fileBackups),
+  auditLogs: many(fileAuditLogs),
+  locks: many(fileLocks),
+  permissions: many(filePermissions),
+}));
+
+export const fileTrashRelations = relations(fileTrash, ({ one }) => ({
+  owner: one(users, {
+    fields: [fileTrash.ownerId],
+    references: [users.id],
+    relationName: "ownedDeletedFiles",
+  }),
+  deletedBy: one(users, {
+    fields: [fileTrash.deletedBy],
+    references: [users.id],
+    relationName: "deletedFiles",
+  }),
+}));
+
+export const fileBackupsRelations = relations(fileBackups, ({ one }) => ({
+  file: one(files, {
+    fields: [fileBackups.fileId],
+    references: [files.id],
+  }),
+  createdBy: one(users, {
+    fields: [fileBackups.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const fileAuditLogsRelations = relations(fileAuditLogs, ({ one }) => ({
+  file: one(files, {
+    fields: [fileAuditLogs.fileId],
+    references: [files.id],
+  }),
+  user: one(users, {
+    fields: [fileAuditLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const fileLocksRelations = relations(fileLocks, ({ one }) => ({
+  file: one(files, {
+    fields: [fileLocks.fileId],
+    references: [files.id],
+  }),
+  user: one(users, {
+    fields: [fileLocks.userId],
+    references: [users.id],
+  }),
+}));
+
+export const filePermissionsRelations = relations(filePermissions, ({ one }) => ({
+  file: one(files, {
+    fields: [filePermissions.fileId],
+    references: [files.id],
+  }),
+  user: one(users, {
+    fields: [filePermissions.userId],
+    references: [users.id],
+    relationName: "receivedPermissions",
+  }),
+  grantedBy: one(users, {
+    fields: [filePermissions.grantedBy],
+    references: [users.id],
+    relationName: "grantedPermissions",
+  }),
+}));
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -206,6 +439,25 @@ export type InsertNotification = typeof notifications.$inferInsert;
 
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type InsertSystemLog = typeof systemLogs.$inferInsert;
+
+// File management types
+export type File = typeof files.$inferSelect;
+export type InsertFile = typeof files.$inferInsert;
+
+export type FileTrash = typeof fileTrash.$inferSelect;
+export type InsertFileTrash = typeof fileTrash.$inferInsert;
+
+export type FileBackup = typeof fileBackups.$inferSelect;
+export type InsertFileBackup = typeof fileBackups.$inferInsert;
+
+export type FileAuditLog = typeof fileAuditLogs.$inferSelect;
+export type InsertFileAuditLog = typeof fileAuditLogs.$inferInsert;
+
+export type FileLock = typeof fileLocks.$inferSelect;
+export type InsertFileLock = typeof fileLocks.$inferInsert;
+
+export type FilePermission = typeof filePermissions.$inferSelect;
+export type InsertFilePermission = typeof filePermissions.$inferInsert;
 
 // Log entry type for application logs
 export interface LogEntry {
@@ -249,4 +501,37 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 export const insertSystemLogSchema = createInsertSchema(systemLogs).omit({
   id: true,
   timestamp: true,
+});
+
+// File management insert schemas
+export const insertFileSchema = createInsertSchema(files).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertFileTrashSchema = createInsertSchema(fileTrash).omit({
+  id: true,
+  deletedAt: true,
+});
+
+export const insertFileBackupSchema = createInsertSchema(fileBackups).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFileAuditLogSchema = createInsertSchema(fileAuditLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertFileLockSchema = createInsertSchema(fileLocks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFilePermissionSchema = createInsertSchema(filePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
