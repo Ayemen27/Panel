@@ -166,6 +166,7 @@ export default function FileManager() {
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'date' | 'type'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [storageSection, setStorageSection] = useState('main');
+  const [showMainLibraries, setShowMainLibraries] = useState(true);
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/' }
@@ -528,6 +529,13 @@ export default function FileManager() {
     const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
     setBreadcrumbs(newBreadcrumbs);
     
+    // If clicking on the first breadcrumb (home), return to main libraries
+    if (index === 0) {
+      setShowMainLibraries(true);
+      setStorageSection('main');
+      return;
+    }
+    
     if (fileSystemMode === 'database') {
       setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
     } else {
@@ -647,6 +655,26 @@ export default function FileManager() {
     }
   };
 
+  const getSectionTitle = (section: string): string => {
+    const titles: { [key: string]: string } = {
+      'main': 'الرئيسية',
+      'main-storage': 'التخزين الرئيسي',
+      'downloads': 'التحميلات',
+      'analysis': 'تحليل التخزين',
+      'pictures': 'الصور',
+      'music': 'الصوت',
+      'video': 'الفيديو',
+      'documents': 'الوثائق',
+      'apps': 'التطبيقات',
+      'recent': 'الملفات الحديثة',
+      'cloud': 'السحابة',
+      'remote': 'البعيد',
+      'network': 'الوصول من الشبكة',
+      'trash': 'سلة المحذوفات'
+    };
+    return titles[section] || 'التخزين الرئيسي';
+  };
+
   const getFileDetails = (item: FileItem) => {
     if (fileSystemMode === 'database') {
       const dbItem = item as DatabaseFileItem;
@@ -669,6 +697,250 @@ export default function FileManager() {
         tags: []
       };
     }
+  };
+
+  // Main Libraries Grid Component
+  const MainLibrariesGrid = () => {
+    const libraries = [
+      {
+        id: 'main-storage',
+        name: 'التخزين الرئيسي',
+        subtitle: '3.7 GB / 512 GB',
+        icon: HardDrive,
+        iconColor: 'text-gray-600',
+        bgColor: 'bg-gray-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('main-storage');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'التخزين الرئيسي', path: '/main-storage' }
+          ]);
+        }
+      },
+      {
+        id: 'downloads',
+        name: 'التحميلات',
+        subtitle: '45 GB (6110)',
+        icon: Download,
+        iconColor: 'text-orange-600',
+        bgColor: 'bg-orange-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('downloads');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'التحميلات', path: '/downloads' }
+          ]);
+        }
+      },
+      {
+        id: 'analysis',
+        name: 'تحليل التخزين',
+        subtitle: 'مستخدم 59%',
+        icon: Database,
+        iconColor: 'text-gray-600',
+        bgColor: 'bg-gray-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('analysis');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'تحليل التخزين', path: '/analysis' }
+          ]);
+        }
+      },
+      {
+        id: 'images',
+        name: 'صور',
+        subtitle: '9.2 GB (1165)',
+        icon: Image,
+        iconColor: 'text-purple-600',
+        bgColor: 'bg-purple-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('pictures');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'الصور', path: '/pictures' }
+          ]);
+        }
+      },
+      {
+        id: 'audio',
+        name: 'صوتي',
+        subtitle: '787 MB (78)',
+        icon: Music,
+        iconColor: 'text-teal-600',
+        bgColor: 'bg-teal-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('music');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'الصوت', path: '/music' }
+          ]);
+        }
+      },
+      {
+        id: 'video',
+        name: 'فيديو',
+        subtitle: '195 GB (1189)',
+        icon: Video,
+        iconColor: 'text-red-600',
+        bgColor: 'bg-red-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('video');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'الفيديو', path: '/video' }
+          ]);
+        }
+      },
+      {
+        id: 'documents',
+        name: 'وثائق',
+        subtitle: '4.9 GB (2113)',
+        icon: FileText,
+        iconColor: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('documents');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'الوثائق', path: '/documents' }
+          ]);
+        }
+      },
+      {
+        id: 'apps',
+        name: 'تطبيقات',
+        subtitle: '42 GB (159)',
+        icon: Smartphone,
+        iconColor: 'text-green-600',
+        bgColor: 'bg-green-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('apps');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'التطبيقات', path: '/apps' }
+          ]);
+        }
+      },
+      {
+        id: 'recent',
+        name: 'ملفات حديثة',
+        subtitle: '1.01 MB (216)',
+        icon: Clock,
+        iconColor: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('recent');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'الملفات الحديثة', path: '/recent' }
+          ]);
+        }
+      },
+      {
+        id: 'cloud',
+        name: 'سحابة',
+        subtitle: '',
+        icon: Cloud,
+        iconColor: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('cloud');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'السحابة', path: '/cloud' }
+          ]);
+        }
+      },
+      {
+        id: 'remote',
+        name: 'بعيد',
+        subtitle: '(0)',
+        icon: HardDrive,
+        iconColor: 'text-gray-600',
+        bgColor: 'bg-gray-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('remote');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'البعيد', path: '/remote' }
+          ]);
+        }
+      },
+      {
+        id: 'network',
+        name: 'الوصول من الشبكة',
+        subtitle: '',
+        icon: Cloud,
+        iconColor: 'text-green-600',
+        bgColor: 'bg-green-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('network');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'الوصول من الشبكة', path: '/network' }
+          ]);
+        }
+      },
+      {
+        id: 'trash',
+        name: 'سلة المحذوفات',
+        subtitle: '1.09 kB',
+        icon: Trash2,
+        iconColor: 'text-gray-600',
+        bgColor: 'bg-gray-100',
+        onClick: () => {
+          setShowMainLibraries(false);
+          setStorageSection('trash');
+          setBreadcrumbs([
+            { id: null, name: 'الرئيسية', path: '/' },
+            { id: null, name: 'سلة المحذوفات', path: '/trash' }
+          ]);
+        }
+      }
+    ];
+
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+          {libraries.map((library) => (
+            <div
+              key={library.id}
+              className="flex flex-col items-center text-center cursor-pointer p-4 sm:p-6 rounded-2xl hover:bg-gray-50 transition-colors duration-200 touch-manipulation"
+              onClick={library.onClick}
+              data-testid={`library-${library.id}`}
+            >
+              <div className={cn(
+                "w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl flex items-center justify-center mb-3 sm:mb-4",
+                library.bgColor
+              )}>
+                <library.icon className={cn("w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12", library.iconColor)} />
+              </div>
+              <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-1 leading-tight">
+                {library.name}
+              </h3>
+              {library.subtitle && (
+                <p className="text-xs sm:text-sm text-gray-500 leading-tight">
+                  {library.subtitle}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const CreateItemModal = () => {
@@ -1050,13 +1322,19 @@ export default function FileManager() {
           
           {/* Center: Title with Back Button */}
           <div className="flex items-center justify-center flex-1 mx-4">
-            {breadcrumbs.length > 1 && (
+            {(!showMainLibraries || breadcrumbs.length > 1) && (
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-8 w-8 p-0 text-white hover:bg-white/20 touch-manipulation mr-3"
                 onClick={() => {
-                  if (breadcrumbs.length > 1) {
+                  if (!showMainLibraries) {
+                    // Return to main libraries
+                    setShowMainLibraries(true);
+                    setStorageSection('main');
+                    setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
+                  } else if (breadcrumbs.length > 1) {
+                    // Normal breadcrumb navigation
                     const newBreadcrumbs = breadcrumbs.slice(0, -1);
                     setBreadcrumbs(newBreadcrumbs);
                     
@@ -1073,7 +1351,7 @@ export default function FileManager() {
               </Button>
             )}
             <h1 className="text-lg sm:text-xl font-semibold text-center">
-              التخزين الرئيسي
+              {showMainLibraries ? 'مدير الملفات +' : getSectionTitle(storageSection)}
             </h1>
           </div>
           
@@ -1425,60 +1703,144 @@ export default function FileManager() {
           </div>
         )}
 
-        {/* Search and Filters */}
-        <div className="flex items-center gap-2 px-2 sm:px-0">
-          <div className="flex-1 relative">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder={fileSystemMode === 'database' ? "البحث في الملفات..." : "البحث غير متوفر لملفات النظام"}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={fileSystemMode === 'real'}
-              className="pr-10 h-9 sm:h-10 text-sm"
-              data-testid="input-search"
-            />
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 w-9 sm:h-10 sm:w-10 p-0 touch-manipulation"
-            onClick={() => setShowFilters(!showFilters)}
-            data-testid="button-filters"
-          >
-            <Filter className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Filter Panel */}
-        {showFilters && (
-          <Card className="mt-2 sm:mt-4 p-2 sm:p-4 mx-2 sm:mx-0">
-            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                <Tags className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                الكل
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                <FileIcon className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                ملفات
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                <Folder className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                مجلدات
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                <Clock className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                حديث
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                <Star className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                مفضل
-              </Badge>
-              <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                <Users className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                مشترك
-              </Badge>
+        {/* Search and Filters - Only show when not in main libraries view */}
+        {!showMainLibraries && (
+          <>
+            <div className="flex items-center gap-2 px-2 sm:px-0">
+              <div className="flex-1 relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder={fileSystemMode === 'database' ? "البحث في الملفات..." : "البحث غير متوفر لملفات النظام"}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  disabled={fileSystemMode === 'real'}
+                  className="pr-10 h-9 sm:h-10 text-sm"
+                  data-testid="input-search"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 w-9 sm:h-10 sm:w-10 p-0 touch-manipulation"
+                onClick={() => setShowFilters(!showFilters)}
+                data-testid="button-filters"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
             </div>
-          </Card>
+
+            {/* Filter Panel */}
+            {showFilters && (
+              <Card className="mt-2 sm:mt-4 p-2 sm:p-4 mx-2 sm:mx-0">
+                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                    <Tags className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                    الكل
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                    <FileIcon className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                    ملفات
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                    <Folder className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                    مجلدات
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                    <Clock className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                    حديث
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                    <Star className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                    مفضل
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
+                    <Users className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                    مشترك
+                  </Badge>
+                </div>
+              </Card>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden">
+        {showMainLibraries ? (
+          /* Main Libraries Grid */
+          <MainLibrariesGrid />
+        ) : (
+          /* Files Content */
+          <ScrollArea className="h-full">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+                <span className="mr-2 text-muted-foreground">جاري التحميل...</span>
+              </div>
+            ) : currentFiles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+                <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
+                  <FolderOpen className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                  لا توجد ملفات
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  {searchQuery ? 'لم يتم العثور على ملفات تطابق البحث' : 'هذا المجلد فارغ'}
+                </p>
+              </div>
+            ) : (
+              <div className="p-2 sm:p-4">
+                {/* View Mode Controls */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={viewMode === 'grid' ? 'default' : 'outline'}
+                      onClick={() => setViewMode('grid')}
+                      className="touch-manipulation"
+                      data-testid="button-grid-view"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={viewMode === 'list' ? 'default' : 'outline'}
+                      onClick={() => setViewMode('list')}
+                      className="touch-manipulation"
+                      data-testid="button-list-view"
+                    >
+                      <List className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Sort Options */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="touch-manipulation"
+                      data-testid="button-sort-order"
+                    >
+                      {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Files Grid/List View */}
+                <div className={cn(
+                  viewMode === 'grid' 
+                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4"
+                    : "space-y-1"
+                )}>
+                  {currentFiles.map((item) => (
+                    <FileItem key={getItemKey(item)} item={item} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </ScrollArea>
         )}
       </div>
 
