@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -250,6 +251,9 @@ export default function FileManager() {
         <DialogContent className="sm:max-w-[425px]" data-testid="create-item-modal">
           <DialogHeader>
             <DialogTitle>إنشاء عنصر جديد</DialogTitle>
+            <DialogDescription>
+              اختر نوع العنصر الذي تريد إنشاؤه وأدخل اسمه
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -479,16 +483,14 @@ export default function FileManager() {
             >
               {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
             </Button>
-            <DialogTrigger asChild>
-              <Button 
-                size="sm"
-                onClick={() => setIsCreateModalOpen(true)}
-                data-testid="button-create-item"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                جديد
-              </Button>
-            </DialogTrigger>
+            <Button 
+              size="sm"
+              onClick={() => setIsCreateModalOpen(true)}
+              data-testid="button-create-item"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              جديد
+            </Button>
           </div>
         </div>
 
