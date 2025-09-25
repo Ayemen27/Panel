@@ -17,7 +17,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table for Replit Auth
+// Session storage table for authentication
 export const sessions = pgTable(
   "sessions",
   {
@@ -31,10 +31,12 @@ export const sessions = pgTable(
 // User roles enum
 export const userRoleEnum = pgEnum('user_role', ['admin', 'user', 'moderator', 'viewer']);
 
-// User storage table for Replit Auth with roles and permissions
+// User storage table with username/password authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username").unique(),
   email: varchar("email").unique(),
+  password: varchar("password").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -451,6 +453,7 @@ export const allowedPathsRelations = relations(allowedPaths, ({ one }) => ({
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
 
 export type Application = typeof applications.$inferSelect;
 export type InsertApplication = typeof applications.$inferInsert;
@@ -501,6 +504,12 @@ export interface LogEntry {
 }
 
 // Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertApplicationSchema = createInsertSchema(applications).omit({
   id: true,
   createdAt: true,
