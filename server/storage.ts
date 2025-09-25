@@ -232,8 +232,18 @@ export class DatabaseStorage implements IStorage {
     // Set FORCE_ADMIN_FOR_NEW_USERS=true in development to auto-assign admin role
     
     // Check if user already exists (only if ID is provided)
-    const existingUser = userData.id ? await this.getUser(userData.id) : null;
-    const isNewUser = !existingUser;
+    let existingUser = null;
+    let isNewUser = true;
+    
+    if (userData.id) {
+      try {
+        existingUser = await this.getUser(userData.id);
+        isNewUser = !existingUser;
+      } catch (error) {
+        // If error in getting user, treat as new user
+        isNewUser = true;
+      }
+    }
     
     // Prepare user data with potential admin role assignment
     let userDataToInsert = { ...userData };
@@ -270,13 +280,29 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    const [user] = await db
-      .insert(users)
-      .values(userDataToInsert)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          // For existing users, only update allowed fields, preserve role
+    if (isNewUser) {
+      // For new users, insert with all data including potential admin role
+      const [user] = await db
+        .insert(users)
+        .values(userDataToInsert)
+        .onConflictDoNothing()
+        .returning();
+      
+      // If conflict happened (user was created between check and insert), get the existing user
+      if (!user) {
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userData.id!));
+        return existingUser;
+      }
+      
+      return user;
+    } else {
+      // For existing users, only update allowed fields, preserve role
+      const [user] = await db
+        .update(users)
+        .set({
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
@@ -284,10 +310,11 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
           lastLogin: new Date(),
           // Note: role is intentionally NOT updated for existing users
-        },
-      })
-      .returning();
-    return user;
+        })
+        .where(eq(users.id, userData.id!))
+        .returning();
+      return user;
+    }
   }
 
   async updateUserRole(id: string, role: string): Promise<User> {
