@@ -189,15 +189,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/applications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
-      const applications = await storage.getApplications(userId);
+      const [applications, statusMap] = await Promise.all([
+        storage.getApplications(userId),
+        pm2Service.getAllApplicationStatuses()
+      ]);
 
-      // Get real-time status for each application
-      const appsWithStatus = await Promise.all(
-        applications.map(async (app) => {
-          const status = await pm2Service.getApplicationStatus(app.name);
-          return { ...app, status };
-        })
-      );
+      // Apply status from the batch fetch
+      const appsWithStatus = applications.map(app => {
+        const status = statusMap.get(app.name) || app.status || 'stopped';
+        return { ...app, status };
+      });
 
       res.json(appsWithStatus);
     } catch (error) {

@@ -230,15 +230,70 @@ export class PM2Service {
     }
   }
 
+  // Cache PM2 processes for 10 seconds to avoid multiple calls
+  private pm2ProcessCache: { data: PM2Process[], timestamp: number } | null = null;
+  private readonly CACHE_DURATION = 10000; // 10 seconds
+
+  async getAllApplicationStatuses(): Promise<Map<string, string>> {
+    const pm2Available = await this.checkPM2Availability();
+    const statusMap = new Map<string, string>();
+    
+    if (pm2Available) {
+      try {
+        const processes = await this.getCachedPM2Processes();
+        processes.forEach(process => {
+          statusMap.set(process.name, this.translatePM2Status(process.pm2_env.status));
+        });
+      } catch (error) {
+        console.warn('Failed to get PM2 processes:', error);
+      }
+    } else {
+      // Use fallback processes
+      this.fallbackProcesses.forEach((processInfo, name) => {
+        statusMap.set(name, processInfo.status);
+      });
+    }
+    
+    return statusMap;
+  }
+
+  private async getCachedPM2Processes(): Promise<PM2Process[]> {
+    const now = Date.now();
+    
+    if (this.pm2ProcessCache && (now - this.pm2ProcessCache.timestamp) < this.CACHE_DURATION) {
+      return this.pm2ProcessCache.data;
+    }
+    
+    const { stdout } = await execAsync(`pm2 jlist`);
+    const processes: PM2Process[] = JSON.parse(stdout);
+    
+    this.pm2ProcessCache = {
+      data: processes,
+      timestamp: now
+    };
+    
+    return processes;
+  }
+
+  private translatePM2Status(pm2Status: string): string {
+    switch (pm2Status) {
+      case 'online': return 'running';
+      case 'stopped': return 'stopped';
+      case 'errored': case 'error': return 'error';
+      case 'stopping': return 'stopping';
+      case 'launching': return 'starting';
+      default: return 'unknown';
+    }
+  }
+
   async getApplicationStatus(name: string): Promise<string> {
     const pm2Available = await this.checkPM2Availability();
     
     if (pm2Available) {
       try {
-        const { stdout } = await execAsync(`pm2 jlist`);
-        const processes: PM2Process[] = JSON.parse(stdout);
-        
+        const processes = await this.getCachedPM2Processes();
         const process = processes.find(p => p.name === name);
+        
         if (!process) {
           return 'stopped';
         }

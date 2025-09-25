@@ -207,6 +207,14 @@ export type InsertNotification = typeof notifications.$inferInsert;
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type InsertSystemLog = typeof systemLogs.$inferInsert;
 
+// Log entry type for application logs
+export interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
+  source: string;
+}
+
 // Insert schemas
 export const insertApplicationSchema = createInsertSchema(applications).omit({
   id: true,

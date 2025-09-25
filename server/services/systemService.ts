@@ -1,6 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
+import memoize from 'memoizee';
 
 const execAsync = promisify(exec);
 
@@ -33,33 +34,25 @@ export interface ProcessInfo {
 }
 
 export class SystemService {
+  // Cache static system info for 5 minutes
+  private getCachedSystemInfo = memoize(this._getSystemInfo.bind(this), { maxAge: 300000 });
+  
+  // Cache CPU cores count for 10 minutes (rarely changes)
+  private getCachedCpuCores = memoize(async () => {
+    const { stdout } = await execAsync("nproc");
+    return parseInt(stdout.trim());
+  }, { maxAge: 600000 });
+
   async getSystemStats(): Promise<SystemStats> {
     try {
-      // Get CPU usage
-      const { stdout: cpuInfo } = await execAsync("grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$3+$4+$5)} END {print usage}'");
-      const cpuUsage = parseFloat(cpuInfo.trim());
-      
-      // Get CPU cores
-      const { stdout: coreInfo } = await execAsync("nproc");
-      const cpuCores = parseInt(coreInfo.trim());
-      
-      // Get memory info
-      const memInfo = await fs.readFile('/proc/meminfo', 'utf8');
-      const memLines = memInfo.split('\n');
-      const memTotal = parseInt(memLines.find(line => line.startsWith('MemTotal:'))?.split(/\s+/)[1] || '0') * 1024;
-      const memFree = parseInt(memLines.find(line => line.startsWith('MemFree:'))?.split(/\s+/)[1] || '0') * 1024;
-      const memAvailable = parseInt(memLines.find(line => line.startsWith('MemAvailable:'))?.split(/\s+/)[1] || '0') * 1024;
-      const memUsed = memTotal - memAvailable;
-      const memUsage = (memUsed / memTotal) * 100;
-      
-      // Get disk usage
-      const { stdout: diskInfo } = await execAsync("df -B1 / | tail -1 | awk '{print $2,$3,$4}'");
-      const [diskTotal, diskUsed, diskFree] = diskInfo.trim().split(' ').map(Number);
-      const diskUsage = (diskUsed / diskTotal) * 100;
-      
-      // Get uptime
-      const { stdout: uptimeInfo } = await execAsync("cat /proc/uptime | awk '{print $1}'");
-      const uptime = parseFloat(uptimeInfo.trim());
+      // Parallelize all system calls for better performance
+      const [cpuUsage, cpuCores, memInfo, diskInfo, uptime] = await Promise.all([
+        this._getCpuUsage(),
+        this.getCachedCpuCores(),
+        this._getMemoryInfo(),
+        this._getDiskInfo(),
+        this._getUptime()
+      ]);
       
       return {
         cpu: {
@@ -67,22 +60,52 @@ export class SystemService {
           cores: cpuCores
         },
         memory: {
-          total: memTotal,
-          used: memUsed,
-          free: memFree,
-          usage: Math.round(memUsage * 100) / 100
+          total: memInfo.total,
+          used: memInfo.used,
+          free: memInfo.free,
+          usage: Math.round(memInfo.usage * 100) / 100
         },
         disk: {
-          total: diskTotal,
-          used: diskUsed,
-          free: diskFree,
-          usage: Math.round(diskUsage * 100) / 100
+          total: diskInfo.total,
+          used: diskInfo.used,
+          free: diskInfo.free,
+          usage: Math.round(diskInfo.usage * 100) / 100
         },
         uptime
       };
     } catch (error) {
       throw new Error(`Failed to get system stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  private async _getCpuUsage(): Promise<number> {
+    const { stdout } = await execAsync("grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$3+$4+$5)} END {print usage}'");
+    return parseFloat(stdout.trim());
+  }
+
+  private async _getMemoryInfo(): Promise<{total: number, used: number, free: number, usage: number}> {
+    const memInfo = await fs.readFile('/proc/meminfo', 'utf8');
+    const memLines = memInfo.split('\n');
+    const memTotal = parseInt(memLines.find(line => line.startsWith('MemTotal:'))?.split(/\s+/)[1] || '0') * 1024;
+    const memAvailable = parseInt(memLines.find(line => line.startsWith('MemAvailable:'))?.split(/\s+/)[1] || '0') * 1024;
+    const memFree = parseInt(memLines.find(line => line.startsWith('MemFree:'))?.split(/\s+/)[1] || '0') * 1024;
+    const memUsed = memTotal - memAvailable;
+    const memUsage = (memUsed / memTotal) * 100;
+    
+    return { total: memTotal, used: memUsed, free: memFree, usage: memUsage };
+  }
+
+  private async _getDiskInfo(): Promise<{total: number, used: number, free: number, usage: number}> {
+    const { stdout } = await execAsync("df -B1 / | tail -1 | awk '{print $2,$3,$4}'");
+    const [total, used, free] = stdout.trim().split(' ').map(Number);
+    const usage = (used / total) * 100;
+    
+    return { total, used, free, usage };
+  }
+
+  private async _getUptime(): Promise<number> {
+    const { stdout } = await execAsync("cat /proc/uptime | awk '{print $1}'");
+    return parseFloat(stdout.trim());
   }
 
   async getSystemInfo(): Promise<{
@@ -93,22 +116,36 @@ export class SystemService {
     uptime: number;
     loadAverage: number[];
   }> {
+    return this.getCachedSystemInfo();
+  }
+
+  private async _getSystemInfo(): Promise<{
+    hostname: string;
+    platform: string;
+    arch: string;
+    kernel: string;
+    uptime: number;
+    loadAverage: number[];
+  }> {
     try {
-      const { stdout: hostname } = await execAsync('hostname');
-      const { stdout: platform } = await execAsync('uname -s');
-      const { stdout: arch } = await execAsync('uname -m');
-      const { stdout: kernel } = await execAsync('uname -r');
-      const { stdout: uptimeInfo } = await execAsync("cat /proc/uptime | awk '{print $1}'");
-      const { stdout: loadInfo } = await execAsync("cat /proc/loadavg | awk '{print $1,$2,$3}'");
+      // Parallelize system info calls that don't change frequently
+      const [hostnameResult, platformResult, archResult, kernelResult, uptimeResult, loadResult] = await Promise.all([
+        execAsync('hostname'),
+        execAsync('uname -s'), 
+        execAsync('uname -m'),
+        execAsync('uname -r'),
+        execAsync("cat /proc/uptime | awk '{print $1}'"),
+        execAsync("cat /proc/loadavg | awk '{print $1,$2,$3}'")  
+      ]);
       
-      const uptime = parseFloat(uptimeInfo.trim());
-      const loadAverage = loadInfo.trim().split(' ').map(Number);
+      const uptime = parseFloat(uptimeResult.stdout.trim());
+      const loadAverage = loadResult.stdout.trim().split(' ').map(Number);
       
       return {
-        hostname: hostname.trim(),
-        platform: platform.trim(),
-        arch: arch.trim(),
-        kernel: kernel.trim(),
+        hostname: hostnameResult.stdout.trim(),
+        platform: platformResult.stdout.trim(),
+        arch: archResult.stdout.trim(),
+        kernel: kernelResult.stdout.trim(),
         uptime,
         loadAverage
       };

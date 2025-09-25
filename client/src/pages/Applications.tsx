@@ -37,7 +37,9 @@ export default function Applications() {
   const { data: applications, isLoading, error } = useQuery<Application[]>({
     queryKey: ["/api/applications"],
     enabled: isAuthenticated,
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time status
+    refetchInterval: 60000, // Refresh every 60 seconds
+    staleTime: 45000, // Data is considered fresh for 45 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   const startAppMutation = useMutation({

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
+import type { Application, LogEntry } from "@shared/schema";
 
 export default function ApplicationLogs() {
   const { id } = useParams<{ id: string }>();
@@ -15,15 +16,19 @@ export default function ApplicationLogs() {
     }
   };
 
-  const { data: logs, isLoading, refetch } = useQuery({
+  const { data: logs, isLoading, refetch } = useQuery<LogEntry[]>({
     queryKey: [`/api/applications/${id}/logs`],
     enabled: !!id,
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 20000, // Data is considered fresh for 20 seconds
+    gcTime: 180000, // Keep in cache for 3 minutes
   });
 
-  const { data: application } = useQuery({
+  const { data: application } = useQuery<Application>({
     queryKey: [`/api/applications/${id}`],
     enabled: !!id,
+    staleTime: 60000, // Data is considered fresh for 1 minute
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   const handleDownloadLogs = () => {
@@ -92,7 +97,9 @@ export default function ApplicationLogs() {
             <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm max-h-96 overflow-y-auto">
               {logs.map((log, index) => (
                 <div key={index} className="mb-1">
-                  {log}
+                  <span className="text-gray-500 mr-2">[{log.timestamp}]</span>
+                  <span className="text-yellow-400 mr-2">[{log.level.toUpperCase()}]</span>
+                  {log.message}
                 </div>
               ))}
             </div>

@@ -98,6 +98,18 @@ export const queryClient = new QueryClient({
 
         return response.json();
       },
+      // Set global defaults for better performance
+      staleTime: 30000, // 30 seconds - data is considered fresh
+      gcTime: 300000, // 5 minutes - keep data in cache
+      refetchOnWindowFocus: false, // Disable refetch on window focus
+      refetchOnReconnect: 'always', // Refetch when internet reconnects
+      retry: (failureCount, error) => {
+        // Don't retry on 401/403 errors
+        if (error.message.includes('401') || error.message.includes('403')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
     },
     mutations: {
       retry: false,
