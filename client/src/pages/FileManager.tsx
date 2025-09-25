@@ -187,18 +187,12 @@ export default function FileManager() {
       return result.data;
     },
     enabled: fileSystemMode === 'real',
-    retry: (failureCount, error) => {
+    retry: (failureCount, error: Error) => {
       // Don't retry on path validation errors
       if (error.message.includes('Path validation failed') || error.message.includes('Access denied')) {
         return false;
       }
       return failureCount < 2;
-    },
-    onError: (error) => {
-      setPathError(error.message);
-    },
-    onSuccess: () => {
-      setPathError(null);
     }
   });
 
@@ -207,6 +201,18 @@ export default function FileManager() {
     queryKey: ['/api/files/search', searchQuery],
     enabled: searchQuery.length > 0 && fileSystemMode === 'database',
   });
+
+  // Define isSearching variable for loading states
+  const isSearching = searchQuery.length > 0 && fileSystemMode === 'database' && isDatabaseSearching;
+
+  // Handle path errors for real files (since onError is not available in TanStack Query v5)
+  useEffect(() => {
+    if (realFilesError) {
+      setPathError(realFilesError.message);
+    } else if (!isRealFilesLoading && fileSystemMode === 'real') {
+      setPathError(null);
+    }
+  }, [realFilesError, isRealFilesLoading, fileSystemMode]);
 
   // Get current files based on mode
   const currentFiles = fileSystemMode === 'database' 
