@@ -57,9 +57,7 @@ function setupSSLConfig() {
     if (sslCert) {
       console.log('📜 [SSL] استخدام شهادة SSL من متغيرات البيئة');
       sslConfig.ca = sslCert;
-      // تعطيل التحقق للاختبار حتى مع وجود شهادة
-      sslConfig.rejectUnauthorized = false;
-      console.log('✅ [SSL] تم تحميل الشهادة - تعطيل التحقق للاختبار');
+      console.log('✅ [SSL] تم تحميل الشهادة - تفعيل التحقق الكامل');
     } else {
       // إذا لم توجد شهادة في متغيرات البيئة، تحقق من الملف
       const certPath = './pg_cert.pem';
@@ -68,13 +66,14 @@ function setupSSLConfig() {
         sslConfig.ca = fs.readFileSync(certPath);
         console.log('✅ [SSL] تم تحميل الشهادة من الملف - تفعيل التحقق الكامل');
       } else {
-        // للخوادم الخاصة المعروفة والموثوقة فقط أو الاختبار
-        console.log('🔧 [SSL] تعطيل التحقق للاختبار');
-        sslConfig.rejectUnauthorized = false;
+        // للاتصالات الخارجية، استخدم SSL مع التحقق الصارم
+        console.log('🔒 [SSL] تفعيل SSL مع التحقق الصارم للاتصالات الخارجية');
+        console.log('💡 [SSL] يُنصح بإضافة شهادة SSL للحصول على أمان أفضل');
         
+        // للخوادم الخاصة المعروفة والموثوقة، استخدم تحقق مخصص
         if (connectionString.includes('93.127.142.144') || 
             connectionString.includes('binarjoinanelytic.info')) {
-          console.log('⚠️ [SSL] خادم خاص موثوق - تعطيل التحقق مؤقتاً');
+          console.log('🏛️ [SSL] خادم خاص معروف - استخدام تحقق مخصص');
           
           // إضافة تحقق مخصص للخوادم الموثوقة
           sslConfig.checkServerIdentity = (hostname: string, cert: any) => {
@@ -106,8 +105,13 @@ const connectionString = createDatabaseUrl(); // Re-fetch to ensure we have the 
 const sslConfig = setupSSLConfig();
 
 // تكوين اتصال قاعدة البيانات
-// Remove SSL parameters from connection string to avoid conflicts
-const cleanConnectionString = connectionString.replace(/[?&]sslmode=[^&]*/g, '').replace(/[?&]ssl=[^&]*/g, '');
+// Remove SSL parameters from connection string to avoid conflicts with our SSL config
+const cleanConnectionString = connectionString
+  .replace(/[?&]sslmode=[^&]*/g, '')
+  .replace(/[?&]ssl=[^&]*/g, '')
+  .replace(/[?&]sslcert=[^&]*/g, '')
+  .replace(/[?&]sslkey=[^&]*/g, '')
+  .replace(/[?&]sslrootcert=[^&]*/g, '');
 
 export const pool = new Pool({ 
   connectionString: cleanConnectionString,
