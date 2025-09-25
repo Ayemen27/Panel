@@ -219,15 +219,63 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // DEVELOPMENT ONLY: Auto-assign admin role to new users
+    // WARNING: This feature should be REMOVED before production deployment
+    // Set FORCE_ADMIN_FOR_NEW_USERS=true in development to auto-assign admin role
+    
+    // Check if user already exists (only if ID is provided)
+    const existingUser = userData.id ? await this.getUser(userData.id) : null;
+    const isNewUser = !existingUser;
+    
+    // Prepare user data with potential admin role assignment
+    let userDataToInsert = { ...userData };
+    
+    // Apply admin role only to NEW users when environment variable is set
+    if (isNewUser && process.env.FORCE_ADMIN_FOR_NEW_USERS === 'true') {
+      userDataToInsert.role = 'admin';
+      
+      // Security logging: Log admin role assignment for audit trail
+      console.warn('🚨 SECURITY AUDIT: Auto-assigned admin role to new user', {
+        userId: userData.id,
+        email: userData.email,
+        timestamp: new Date().toISOString(),
+        reason: 'FORCE_ADMIN_FOR_NEW_USERS environment variable enabled',
+        environment: 'development'
+      });
+      
+      // Create audit log if the system logs are available
+      try {
+        await this.createSystemLog({
+          source: 'auth',
+          level: 'warn',
+          message: `Auto-assigned admin role to new user ${userData.email || userData.id}`,
+          metadata: {
+            userId: userData.id,
+            email: userData.email,
+            autoAssignReason: 'FORCE_ADMIN_FOR_NEW_USERS',
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        // Silently handle logging errors to not break user creation
+        console.error('Failed to create audit log for admin role assignment:', error);
+      }
+    }
+    
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values(userDataToInsert)
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          // For existing users, only update allowed fields, preserve role
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
           lastLogin: new Date(),
+          // Note: role is intentionally NOT updated for existing users
         },
       })
       .returning();
