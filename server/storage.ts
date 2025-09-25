@@ -6,6 +6,12 @@ import {
   nginxConfigs,
   notifications,
   systemLogs,
+  files,
+  fileTrash,
+  fileBackups,
+  fileAuditLogs,
+  fileLocks,
+  filePermissions,
   type User,
   type UpsertUser,
   type Application,
@@ -20,9 +26,21 @@ import {
   type InsertNotification,
   type SystemLog,
   type InsertSystemLog,
+  type File,
+  type InsertFile,
+  type FileTrash,
+  type InsertFileTrash,
+  type FileBackup,
+  type InsertFileBackup,
+  type FileAuditLog,
+  type InsertFileAuditLog,
+  type FileLock,
+  type InsertFileLock,
+  type FilePermission,
+  type InsertFilePermission,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, count, gte } from "drizzle-orm";
+import { eq, desc, and, or, count, gte, like, ilike, isNull, isNotNull, lt, max, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -85,9 +103,115 @@ export interface IStorage {
     expiringSoon: number;
     expired: number;
   }>;
+
+  // File CRUD operations
+  getFile(id: string, userId: string): Promise<File | undefined>;
+  getFiles(parentId: string | null, userId: string): Promise<File[]>;
+  createFile(file: InsertFile): Promise<File>;
+  updateFile(id: string, updates: Partial<InsertFile>, userId: string): Promise<File>;
+  deleteFile(id: string, userId: string): Promise<void>;
+  getUserFiles(userId: string, type?: 'file' | 'folder'): Promise<File[]>;
+
+  // Search and filtering operations
+  searchFiles(userId: string, query: string, filters?: { type?: 'file' | 'folder'; tags?: string[] }): Promise<File[]>;
+  getFileByPath(path: string, userId: string): Promise<File | undefined>;
+
+  // Trash operations
+  getTrashFiles(userId: string): Promise<FileTrash[]>;
+  moveToTrash(fileId: string, userId: string): Promise<FileTrash>;
+  restoreFromTrash(trashId: string, userId: string): Promise<File>;
+  permanentDelete(trashId: string, userId: string): Promise<void>;
+  emptyTrash(userId: string): Promise<void>;
+
+  // Backup operations
+  getFileBackups(fileId: string, userId?: string): Promise<FileBackup[]>;
+  createBackup(fileId: string, content: string, userId: string): Promise<FileBackup>;
+  restoreBackup(backupId: string, userId: string): Promise<File>;
+
+  // Permission operations
+  getFilePermissions(fileId: string, userId?: string): Promise<FilePermission[]>;
+  setFilePermission(permission: InsertFilePermission, userId: string): Promise<FilePermission>;
+  removeFilePermission(permissionId: string, userId: string): Promise<void>;
+  checkFilePermission(fileId: string, userId: string, permission: 'read' | 'write' | 'delete'): Promise<boolean>;
+
+  // Lock operations
+  lockFile(fileId: string, userId: string, lockType: 'read' | 'write' | 'exclusive', ttl?: number): Promise<FileLock>;
+  unlockFile(fileId: string, userId: string): Promise<void>;
+  getFileLocks(fileId: string): Promise<FileLock[]>;
+  isFileLocked(fileId: string): Promise<boolean>;
+
+  // Audit log operations
+  createAuditLog(log: InsertFileAuditLog): Promise<FileAuditLog>;
+  getFileAuditLogs(fileId?: string, userId?: string, limit?: number): Promise<FileAuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // Helper function to check user file access permissions
+  private async checkUserFileAccess(fileId: string, userId: string, requiredPermission: 'read' | 'write' | 'delete' | 'admin'): Promise<boolean> {
+    // First check if user owns the file
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(and(eq(files.id, fileId), eq(files.ownerId, userId)));
+    
+    if (file) {
+      return true; // Owner has all permissions
+    }
+    
+    // Check if user is admin
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    if (user?.role === 'admin') {
+      return true; // Admin has all permissions
+    }
+    
+    // Check explicit permissions
+    const [userPermission] = await db
+      .select()
+      .from(filePermissions)
+      .where(
+        and(
+          eq(filePermissions.fileId, fileId),
+          eq(filePermissions.userId, userId),
+          or(
+            eq(filePermissions.permission, requiredPermission),
+            eq(filePermissions.permission, 'admin')
+          ),
+          or(
+            isNull(filePermissions.expiresAt),
+            gte(filePermissions.expiresAt, new Date())
+          )
+        )
+      );
+    
+    return !!userPermission;
+  }
+
+  // Helper function to get next version number
+  private async getNextVersionNumber(fileId: string): Promise<number> {
+    const [result] = await db
+      .select({ maxVersion: max(fileBackups.version) })
+      .from(fileBackups)
+      .where(eq(fileBackups.fileId, fileId));
+    
+    return (result.maxVersion || 0) + 1;
+  }
+
+  // Helper function to clean expired locks
+  private async cleanExpiredLocks(fileId: string): Promise<void> {
+    await db
+      .delete(fileLocks)
+      .where(
+        and(
+          eq(fileLocks.fileId, fileId),
+          isNotNull(fileLocks.expiresAt),
+          lt(fileLocks.expiresAt, new Date())
+        )
+      );
+  }
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -397,6 +521,599 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       throw new Error(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  // File CRUD operations
+  async getFile(id: string, userId: string): Promise<File | undefined> {
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(and(eq(files.id, id), eq(files.ownerId, userId)));
+    return file;
+  }
+
+  async getFiles(parentId: string | null, userId: string): Promise<File[]> {
+    const conditions = [eq(files.ownerId, userId)];
+    if (parentId === null) {
+      conditions.push(isNull(files.parentId));
+    } else {
+      conditions.push(eq(files.parentId, parentId));
+    }
+    
+    return await db
+      .select()
+      .from(files)
+      .where(and(...conditions))
+      .orderBy(desc(files.createdAt));
+  }
+
+  async createFile(file: InsertFile): Promise<File> {
+    const [created] = await db.insert(files).values(file).returning();
+    return created;
+  }
+
+  async updateFile(id: string, updates: Partial<InsertFile>, userId: string): Promise<File> {
+    // Check if user has write permission for this file
+    const hasPermission = await this.checkUserFileAccess(id, userId, 'write');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to update this file');
+    }
+    
+    const [updated] = await db
+      .update(files)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(files.id, id))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('File not found or could not be updated');
+    }
+    
+    return updated;
+  }
+
+  async deleteFile(id: string, userId: string): Promise<void> {
+    // Check if user has delete permission for this file
+    const hasPermission = await this.checkUserFileAccess(id, userId, 'delete');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to delete this file');
+    }
+    
+    // Use transaction to ensure data consistency
+    await db.transaction(async (tx) => {
+      // Delete related records first to avoid foreign key constraints
+      await tx.delete(filePermissions).where(eq(filePermissions.fileId, id));
+      await tx.delete(fileLocks).where(eq(fileLocks.fileId, id));
+      await tx.delete(fileBackups).where(eq(fileBackups.fileId, id));
+      await tx.delete(fileAuditLogs).where(eq(fileAuditLogs.fileId, id));
+      
+      // Finally delete the file
+      const result = await tx.delete(files).where(eq(files.id, id));
+      
+      if (result.rowCount === 0) {
+        throw new Error('File not found or could not be deleted');
+      }
+    });
+  }
+
+  async getUserFiles(userId: string, type?: 'file' | 'folder'): Promise<File[]> {
+    const conditions = [eq(files.ownerId, userId)];
+    if (type) {
+      conditions.push(eq(files.type, type));
+    }
+    
+    return await db
+      .select()
+      .from(files)
+      .where(and(...conditions))
+      .orderBy(desc(files.createdAt));
+  }
+
+  // Search and filtering operations
+  async searchFiles(userId: string, query: string, filters?: { type?: 'file' | 'folder'; tags?: string[] }): Promise<File[]> {
+    const conditions = [eq(files.ownerId, userId)];
+    
+    // Add search query condition
+    if (query.trim()) {
+      conditions.push(
+        or(
+          ilike(files.name, `%${query}%`),
+          ilike(files.path, `%${query}%`)
+        )!
+      );
+    }
+    
+    // Add type filter
+    if (filters?.type) {
+      conditions.push(eq(files.type, filters.type));
+    }
+    
+    // Add tags filter - check if any of the provided tags exist in the file's tags array
+    if (filters?.tags && filters.tags.length > 0) {
+      // Use proper array operators for PostgreSQL text[] arrays
+      const tagConditions = filters.tags.map(tag => 
+        sql`${tag} = ANY(${files.tags})`
+      );
+      if (tagConditions.length > 0) {
+        conditions.push(or(...tagConditions)!);
+      }
+    }
+    
+    return await db
+      .select()
+      .from(files)
+      .where(and(...conditions))
+      .orderBy(desc(files.createdAt));
+  }
+
+  async getFileByPath(path: string, userId: string): Promise<File | undefined> {
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(and(eq(files.path, path), eq(files.ownerId, userId)));
+    return file;
+  }
+
+  // Trash operations
+  async getTrashFiles(userId: string): Promise<FileTrash[]> {
+    return await db
+      .select()
+      .from(fileTrash)
+      .where(eq(fileTrash.ownerId, userId))
+      .orderBy(desc(fileTrash.deletedAt));
+  }
+
+  async moveToTrash(fileId: string, userId: string): Promise<FileTrash> {
+    // Check if user has delete permission for this file
+    const hasPermission = await this.checkUserFileAccess(fileId, userId, 'delete');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to delete this file');
+    }
+    
+    // Get the file first
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(eq(files.id, fileId));
+      
+    if (!file) {
+      throw new Error('File not found');
+    }
+    
+    // Use transaction to ensure data consistency
+    return await db.transaction(async (tx) => {
+      // Create trash entry
+      const [trashEntry] = await tx
+        .insert(fileTrash)
+        .values({
+          originalFileId: file.id,
+          originalPath: file.path,
+          name: file.name,
+          type: file.type,
+          filePath: file.filePath,
+          size: file.size,
+          mimeType: file.mimeType,
+          content: file.content,
+          checksum: file.checksum,
+          ownerId: file.ownerId,
+          deletedBy: userId,
+          metadata: file.metadata,
+        })
+        .returning();
+      
+      // Delete related records first to avoid foreign key constraints
+      await tx.delete(filePermissions).where(eq(filePermissions.fileId, fileId));
+      await tx.delete(fileLocks).where(eq(fileLocks.fileId, fileId));
+      await tx.delete(fileBackups).where(eq(fileBackups.fileId, fileId));
+      await tx.delete(fileAuditLogs).where(eq(fileAuditLogs.fileId, fileId));
+      
+      // Finally delete the file
+      await tx.delete(files).where(eq(files.id, fileId));
+      
+      return trashEntry;
+    });
+  }
+
+  async restoreFromTrash(trashId: string, userId: string): Promise<File> {
+    // Get the trash entry with ownership check
+    const [trashEntry] = await db
+      .select()
+      .from(fileTrash)
+      .where(
+        and(
+          eq(fileTrash.id, trashId),
+          eq(fileTrash.ownerId, userId)
+        )
+      );
+    
+    if (!trashEntry) {
+      throw new Error('Trash entry not found or access denied');
+    }
+    
+    // Use transaction to ensure data consistency
+    return await db.transaction(async (tx) => {
+      // Check if a file with the same path already exists
+      const [existingFile] = await tx
+        .select()
+        .from(files)
+        .where(
+          and(
+            eq(files.path, trashEntry.originalPath),
+            eq(files.ownerId, userId)
+          )
+        );
+      
+      if (existingFile) {
+        throw new Error('A file with the same path already exists. Please remove or rename it first.');
+      }
+      
+      // Restore the file
+      const [restoredFile] = await tx
+        .insert(files)
+        .values({
+          name: trashEntry.name,
+          type: trashEntry.type,
+          path: trashEntry.originalPath,
+          filePath: trashEntry.filePath,
+          size: trashEntry.size,
+          mimeType: trashEntry.mimeType,
+          content: trashEntry.content,
+          checksum: trashEntry.checksum,
+          ownerId: trashEntry.ownerId,
+          metadata: trashEntry.metadata,
+        })
+        .returning();
+      
+      // Remove from trash
+      await tx.delete(fileTrash).where(eq(fileTrash.id, trashId));
+      
+      return restoredFile;
+    });
+  }
+
+  async permanentDelete(trashId: string, userId: string): Promise<void> {
+    // Check ownership before permanent deletion
+    const [trashEntry] = await db
+      .select()
+      .from(fileTrash)
+      .where(
+        and(
+          eq(fileTrash.id, trashId),
+          eq(fileTrash.ownerId, userId)
+        )
+      );
+    
+    if (!trashEntry) {
+      throw new Error('Trash entry not found or access denied');
+    }
+    
+    const result = await db.delete(fileTrash).where(eq(fileTrash.id, trashId));
+    if (result.rowCount === 0) {
+      throw new Error('Failed to permanently delete the file');
+    }
+  }
+
+  async emptyTrash(userId: string): Promise<void> {
+    await db.delete(fileTrash).where(eq(fileTrash.ownerId, userId));
+  }
+
+  // Backup operations
+  async getFileBackups(fileId: string, userId?: string): Promise<FileBackup[]> {
+    const conditions = [eq(fileBackups.fileId, fileId)];
+    
+    // If userId is provided, ensure user has access to the file
+    if (userId) {
+      const hasPermission = await this.checkUserFileAccess(fileId, userId, 'read');
+      if (!hasPermission) {
+        throw new Error('Access denied: You do not have permission to view backups for this file');
+      }
+    }
+    
+    return await db
+      .select()
+      .from(fileBackups)
+      .where(and(...conditions))
+      .orderBy(desc(fileBackups.version));
+  }
+
+  async createBackup(fileId: string, content: string, userId: string): Promise<FileBackup> {
+    // Check if user has write permission for this file
+    const hasPermission = await this.checkUserFileAccess(fileId, userId, 'write');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to create backup for this file');
+    }
+    
+    // Get the file first
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(eq(files.id, fileId));
+    
+    if (!file) {
+      throw new Error('File not found');
+    }
+    
+    // Get next version number automatically
+    const version = await this.getNextVersionNumber(fileId);
+    
+    const [backup] = await db
+      .insert(fileBackups)
+      .values({
+        fileId,
+        version,
+        name: file.name,
+        content,
+        size: content.length,
+        mimeType: file.mimeType,
+        checksum: file.checksum,
+        createdBy: userId,
+        metadata: file.metadata,
+      })
+      .returning();
+    
+    return backup;
+  }
+
+  async restoreBackup(backupId: string, userId: string): Promise<File> {
+    // Get the backup
+    const [backup] = await db
+      .select()
+      .from(fileBackups)
+      .where(eq(fileBackups.id, backupId));
+    
+    if (!backup) {
+      throw new Error('Backup not found');
+    }
+    
+    // Check if user has write permission for the file
+    const hasPermission = await this.checkUserFileAccess(backup.fileId, userId, 'write');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to restore this backup');
+    }
+    
+    // Update the file with backup content
+    const [restoredFile] = await db
+      .update(files)
+      .set({
+        content: backup.content,
+        size: backup.size,
+        checksum: backup.checksum,
+        updatedAt: new Date(),
+      })
+      .where(eq(files.id, backup.fileId))
+      .returning();
+    
+    if (!restoredFile) {
+      throw new Error('Failed to restore backup - file not found');
+    }
+    
+    return restoredFile;
+  }
+
+  // Permission operations
+  async getFilePermissions(fileId: string, userId?: string): Promise<FilePermission[]> {
+    // If userId is provided, ensure user has admin access or is the owner
+    if (userId) {
+      const hasPermission = await this.checkUserFileAccess(fileId, userId, 'admin');
+      if (!hasPermission) {
+        throw new Error('Access denied: You do not have permission to view file permissions');
+      }
+    }
+    
+    return await db
+      .select()
+      .from(filePermissions)
+      .where(eq(filePermissions.fileId, fileId))
+      .orderBy(desc(filePermissions.createdAt));
+  }
+
+  async setFilePermission(permission: InsertFilePermission, userId: string): Promise<FilePermission> {
+    // Check if user has admin permission for this file or is the owner
+    const hasPermission = await this.checkUserFileAccess(permission.fileId, userId, 'admin');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to set file permissions');
+    }
+    
+    const [created] = await db
+      .insert(filePermissions)
+      .values(permission)
+      .returning();
+    
+    return created;
+  }
+
+  async removeFilePermission(permissionId: string, userId: string): Promise<void> {
+    // Get the permission record first to check the file
+    const [permission] = await db
+      .select()
+      .from(filePermissions)
+      .where(eq(filePermissions.id, permissionId));
+    
+    if (!permission) {
+      throw new Error('Permission record not found');
+    }
+    
+    // Check if user has admin permission for this file or is the owner
+    const hasPermission = await this.checkUserFileAccess(permission.fileId, userId, 'admin');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to remove file permissions');
+    }
+    
+    const result = await db.delete(filePermissions).where(eq(filePermissions.id, permissionId));
+    if (result.rowCount === 0) {
+      throw new Error('Failed to remove permission');
+    }
+  }
+
+  async checkFilePermission(fileId: string, userId: string, permission: 'read' | 'write' | 'delete'): Promise<boolean> {
+    // First check if user owns the file
+    const file = await this.getFile(fileId, userId);
+    if (file) {
+      return true; // Owner has all permissions
+    }
+    
+    // Check explicit permissions
+    const [userPermission] = await db
+      .select()
+      .from(filePermissions)
+      .where(
+        and(
+          eq(filePermissions.fileId, fileId),
+          eq(filePermissions.userId, userId),
+          eq(filePermissions.permission, permission),
+          or(
+            isNull(filePermissions.expiresAt),
+            gte(filePermissions.expiresAt, new Date())
+          )
+        )
+      );
+    
+    if (userPermission) {
+      return true;
+    }
+    
+    // Check role-based permissions (would need user role lookup)
+    // For now, return false if no explicit permission found
+    return false;
+  }
+
+  // Lock operations
+  async lockFile(fileId: string, userId: string, lockType: 'read' | 'write' | 'exclusive', ttl?: number): Promise<FileLock> {
+    // Check if user has appropriate permission for this file
+    const requiredPermission = lockType === 'read' ? 'read' : 'write';
+    const hasPermission = await this.checkUserFileAccess(fileId, userId, requiredPermission);
+    if (!hasPermission) {
+      throw new Error(`Access denied: You do not have ${requiredPermission} permission for this file`);
+    }
+    
+    // Clean expired locks first
+    await this.cleanExpiredLocks(fileId);
+    
+    // Check if file is already locked with conflicting lock
+    const existingLocks = await this.getFileLocks(fileId);
+    
+    // Filter out expired locks
+    const activeLocks = existingLocks.filter(lock => 
+      !lock.expiresAt || lock.expiresAt > new Date()
+    );
+    
+    // Check for conflicts
+    const hasConflict = activeLocks.some(lock => {
+      // User can't have multiple locks of same type
+      if (lock.userId === userId && lock.lockType === lockType) {
+        throw new Error(`You already have a ${lockType} lock on this file`);
+      }
+      
+      // Exclusive locks conflict with everything
+      if (lock.lockType === 'exclusive' || lockType === 'exclusive') {
+        return true;
+      }
+      
+      // Write locks conflict with write/read locks
+      if (lock.lockType === 'write' && (lockType === 'write' || lockType === 'read')) {
+        return true;
+      }
+      
+      if (lockType === 'write' && (lock.lockType === 'write' || lock.lockType === 'read')) {
+        return true;
+      }
+      
+      return false;
+    });
+    
+    if (hasConflict) {
+      throw new Error('File is already locked with a conflicting lock type');
+    }
+    
+    const expiresAt = ttl ? new Date(Date.now() + ttl * 1000) : undefined;
+    
+    const [lock] = await db
+      .insert(fileLocks)
+      .values({
+        fileId,
+        lockType,
+        userId,
+        expiresAt,
+      })
+      .returning();
+    
+    return lock;
+  }
+
+  async unlockFile(fileId: string, userId: string): Promise<void> {
+    // Check if user has permission to access this file
+    const hasPermission = await this.checkUserFileAccess(fileId, userId, 'read');
+    if (!hasPermission) {
+      throw new Error('Access denied: You do not have permission to unlock this file');
+    }
+    
+    // Clean expired locks first
+    await this.cleanExpiredLocks(fileId);
+    
+    const result = await db
+      .delete(fileLocks)
+      .where(
+        and(
+          eq(fileLocks.fileId, fileId),
+          eq(fileLocks.userId, userId)
+        )
+      );
+      
+    if (result.rowCount === 0) {
+      throw new Error('No active lock found for this user on this file');
+    }
+  }
+
+  async getFileLocks(fileId: string): Promise<FileLock[]> {
+    return await db
+      .select()
+      .from(fileLocks)
+      .where(eq(fileLocks.fileId, fileId))
+      .orderBy(desc(fileLocks.createdAt));
+  }
+
+  async isFileLocked(fileId: string): Promise<boolean> {
+    const locks = await this.getFileLocks(fileId);
+    
+    // Check if any non-expired locks exist
+    const activeLocks = locks.filter(lock => 
+      !lock.expiresAt || lock.expiresAt > new Date()
+    );
+    
+    return activeLocks.length > 0;
+  }
+
+  // Audit log operations
+  async createAuditLog(log: InsertFileAuditLog): Promise<FileAuditLog> {
+    const [created] = await db.insert(fileAuditLogs).values(log).returning();
+    return created;
+  }
+
+  async getFileAuditLogs(fileId?: string, userId?: string, limit = 100): Promise<FileAuditLog[]> {
+    const conditions = [];
+    
+    if (fileId) {
+      conditions.push(eq(fileAuditLogs.fileId, fileId));
+    }
+    
+    if (userId) {
+      conditions.push(eq(fileAuditLogs.userId, userId));
+    }
+    
+    if (conditions.length > 0) {
+      return await db
+        .select()
+        .from(fileAuditLogs)
+        .where(and(...conditions))
+        .orderBy(desc(fileAuditLogs.timestamp))
+        .limit(limit);
+    }
+    
+    return await db
+      .select()
+      .from(fileAuditLogs)
+      .orderBy(desc(fileAuditLogs.timestamp))
+      .limit(limit);
   }
 }
 
