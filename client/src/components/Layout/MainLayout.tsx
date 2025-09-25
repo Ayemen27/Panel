@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { BottomNavigation } from "./BottomNavigation";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -25,10 +26,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
           showMenuButton={isMobile}
         />
         
-        <div className="flex-1 overflow-auto p-6">
+        <div className={`flex-1 overflow-auto p-6 ${isMobile ? 'pb-20' : ''}`}>
           {children}
         </div>
       </main>
+      
+      {/* Bottom Navigation for mobile only */}
+      <BottomNavigation />
     </div>
   );
 }
