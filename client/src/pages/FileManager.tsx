@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -59,13 +62,20 @@ import {
   Star,
   Clock,
   Tags,
-  Users
+  Users,
+  FolderOpen,
+  Shield,
+  Calendar,
+  Info,
+  Database,
+  HardDrive,
+  AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-// Types
-interface FileItem {
+// Types for Database Files
+interface DatabaseFileItem {
   id: string;
   name: string;
   type: 'file' | 'folder';
@@ -81,16 +91,55 @@ interface FileItem {
   updatedAt: string;
 }
 
+// Types for Real System Files
+interface RealFileItem {
+  name: string;
+  type: 'file' | 'directory';
+  path: string;
+  absolutePath: string;
+  size: number;
+  permissions: string;
+  owner?: string;
+  created: string;
+  modified: string;
+  isHidden: boolean;
+  extension?: string;
+  mimeType?: string;
+}
+
+interface DirectoryListing {
+  path: string;
+  items: RealFileItem[];
+  totalFiles: number;
+  totalDirectories: number;
+  totalSize: number;
+}
+
+// Unified File Item Type
+type FileItem = DatabaseFileItem | RealFileItem;
+
 interface BreadcrumbItem {
   id: string | null;
   name: string;
   path: string;
 }
 
+type FileSystemMode = 'database' | 'real';
+
 // File Manager Component
 export default function FileManager() {
   const { toast } = useToast();
+  
+  // File System Mode State
+  const [fileSystemMode, setFileSystemMode] = useState<FileSystemMode>('database');
+  
+  // Database Files State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  
+  // Real Files State
+  const [currentPath, setCurrentPath] = useState<string>('/');
+  
+  // Common State
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,38 +147,115 @@ export default function FileManager() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [pathError, setPathError] = useState<string | null>(null);
+  
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/' }
   ]);
+  
+  // Initialize real files with default allowed path
+  useEffect(() => {
+    if (fileSystemMode === 'real') {
+      // Set initial path to a safe default
+      const initialPath = process.env.NODE_ENV === 'development' ? '/workspace' : '/app';
+      setCurrentPath(initialPath);
+      setBreadcrumbs([{ id: null, name: 'الرئيسية', path: initialPath }]);
+    } else {
+      setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
+    }
+  }, [fileSystemMode]);
 
-  // Fetch files in current folder
-  const { data: files = [], isLoading, refetch } = useQuery<FileItem[]>({
+  // Fetch database files in current folder
+  const { data: databaseFiles = [], isLoading: isDatabaseLoading, refetch: refetchDatabase } = useQuery<DatabaseFileItem[]>({
     queryKey: ['/api/files', currentFolderId],
-    enabled: true,
+    enabled: fileSystemMode === 'database',
   });
 
-  // Search files
-  const { data: searchResults = [], isLoading: isSearching } = useQuery<FileItem[]>({
-    queryKey: ['/api/files/search', searchQuery],
-    enabled: searchQuery.length > 0,
+  // Fetch real files in current directory
+  const { data: realFilesData, isLoading: isRealFilesLoading, error: realFilesError, refetch: refetchRealFiles } = useQuery<DirectoryListing>({
+    queryKey: ['/api/real-files/browse', currentPath],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/real-files/browse', {
+        path: currentPath
+      });
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || result.message);
+      }
+      
+      return result.data;
+    },
+    enabled: fileSystemMode === 'real',
+    retry: (failureCount, error) => {
+      // Don't retry on path validation errors
+      if (error.message.includes('Path validation failed') || error.message.includes('Access denied')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    onError: (error) => {
+      setPathError(error.message);
+    },
+    onSuccess: () => {
+      setPathError(null);
+    }
   });
+
+  // Search database files
+  const { data: databaseSearchResults = [], isLoading: isDatabaseSearching } = useQuery<DatabaseFileItem[]>({
+    queryKey: ['/api/files/search', searchQuery],
+    enabled: searchQuery.length > 0 && fileSystemMode === 'database',
+  });
+
+  // Get current files based on mode
+  const currentFiles = fileSystemMode === 'database' 
+    ? (searchQuery ? databaseSearchResults : databaseFiles)
+    : (realFilesData?.items || []);
+  
+  const isLoading = fileSystemMode === 'database' 
+    ? (searchQuery ? isDatabaseSearching : isDatabaseLoading)
+    : isRealFilesLoading;
+  
+  const refetch = fileSystemMode === 'database' ? refetchDatabase : refetchRealFiles;
 
   // Create new file/folder mutation
   const createItemMutation = useMutation({
-    mutationFn: async (data: { name: string; type: 'file' | 'folder'; parentId?: string }) => {
-      const response = await apiRequest('POST', '/api/files', {
-        name: data.name,
-        type: data.type,
-        parentId: data.parentId || currentFolderId,
-        size: data.type === 'file' ? 0 : undefined, // Fixed: use undefined instead of null
-        isPublic: false,
-        tags: []
-      });
-      
-      return await response.json();
+    mutationFn: async (data: { name: string; type: 'file' | 'folder'; parentId?: string; content?: string }) => {
+      if (fileSystemMode === 'database') {
+        const response = await apiRequest('POST', '/api/files', {
+          name: data.name,
+          type: data.type,
+          parentId: data.parentId || currentFolderId,
+          size: data.type === 'file' ? 0 : undefined,
+          isPublic: false,
+          tags: []
+        });
+        return await response.json();
+      } else {
+        // Real file system
+        const itemPath = `${currentPath}/${data.name}`;
+        const response = await apiRequest('POST', '/api/real-files/create', {
+          path: itemPath,
+          type: data.type === 'folder' ? 'directory' : 'file',
+          content: data.content || '',
+          mode: data.type === 'folder' ? '0755' : '0644'
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message);
+        }
+        
+        return result;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      if (fileSystemMode === 'database') {
+        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
+      }
       toast({
         title: "تم الإنشاء",
         description: "تم إنشاء العنصر بنجاح",
@@ -147,15 +273,33 @@ export default function FileManager() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiRequest('DELETE', `/api/files/${id}`);
-      return await response.json();
+    mutationFn: async (itemPath: string) => {
+      if (fileSystemMode === 'database') {
+        const response = await apiRequest('DELETE', `/api/files/${itemPath}`);
+        return await response.json();
+      } else {
+        // Real file system
+        const response = await apiRequest('DELETE', '/api/real-files/delete', {
+          path: itemPath
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message);
+        }
+        
+        return result;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      if (fileSystemMode === 'database') {
+        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
+      }
       toast({
         title: "تم الحذف",
-        description: "تم نقل العنصر إلى سلة المهملات",
+        description: fileSystemMode === 'database' ? "تم نقل العنصر إلى سلة المهملات" : "تم حذف العنصر بنجاح",
       });
       setIsDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -171,32 +315,55 @@ export default function FileManager() {
 
   // Copy mutation
   const copyMutation = useMutation({
-    mutationFn: async ({ fileId, destinationFolderId }: { fileId: string; destinationFolderId?: string }) => {
-      const response = await apiRequest('POST', `/api/files/${fileId}/copy`, {
-        destinationFolderId: destinationFolderId || currentFolderId
-      });
-      return await response.json();
+    mutationFn: async ({ sourcePath, destinationPath }: { sourcePath: string; destinationPath?: string }) => {
+      if (fileSystemMode === 'database') {
+        const response = await apiRequest('POST', `/api/files/${sourcePath}/copy`, {
+          destinationFolderId: destinationPath || currentFolderId
+        });
+        return await response.json();
+      } else {
+        // Real file system
+        const destPath = destinationPath || currentPath;
+        const response = await apiRequest('POST', '/api/real-files/copy', {
+          sourcePath,
+          destinationPath: destPath
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message);
+        }
+        
+        return result;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/files', currentFolderId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      if (fileSystemMode === 'database') {
+        queryClient.invalidateQueries({ queryKey: ['/api/files', currentFolderId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
+      }
       toast({
         title: "تم النسخ",
-        description: "تم نسخ الملف بنجاح",
+        description: "تم نسخ العنصر بنجاح",
       });
     },
     onError: (error) => {
       toast({
         title: "خطأ",
-        description: "فشل في نسخ الملف",
+        description: "فشل في نسخ العنصر",
         variant: "destructive"
       });
     }
   });
 
-  // Share mutation
+  // Share mutation (only for database files)
   const shareMutation = useMutation({
     mutationFn: async ({ fileId, isPublic }: { fileId: string; isPublic: boolean }) => {
+      if (fileSystemMode !== 'database') {
+        throw new Error('المشاركة غير مدعومة في نظام الملفات الحقيقي');
+      }
       const response = await apiRequest('POST', `/api/files/${fileId}/share`, {
         isPublic
       });
@@ -216,69 +383,232 @@ export default function FileManager() {
     onError: (error) => {
       toast({
         title: "خطأ",
-        description: "فشل في تحديث إعدادات المشاركة",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Rename mutation (for real files)
+  const renameMutation = useMutation({
+    mutationFn: async ({ oldPath, newName }: { oldPath: string; newName: string }) => {
+      if (fileSystemMode === 'database') {
+        // For database files, use update endpoint
+        const response = await apiRequest('PUT', `/api/files/${oldPath}`, {
+          name: newName
+        });
+        return await response.json();
+      } else {
+        // Real file system
+        const directory = oldPath.substring(0, oldPath.lastIndexOf('/'));
+        const newPath = `${directory}/${newName}`;
+        const response = await apiRequest('PUT', '/api/real-files/rename', {
+          oldPath,
+          newPath
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message);
+        }
+        
+        return result;
+      }
+    },
+    onSuccess: () => {
+      if (fileSystemMode === 'database') {
+        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
+      }
+      toast({
+        title: "تم إعادة التسمية",
+        description: "تم إعادة تسمية العنصر بنجاح",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "فشل في إعادة التسمية",
         variant: "destructive"
       });
     }
   });
 
   // Handlers
-  const handleFolderClick = (folder: FileItem) => {
-    setCurrentFolderId(folder.id);
-    setBreadcrumbs([...breadcrumbs, { 
-      id: folder.id, 
-      name: folder.name, 
-      path: folder.path 
-    }]);
+  const handleFolderClick = (item: FileItem) => {
+    if (fileSystemMode === 'database') {
+      const dbItem = item as DatabaseFileItem;
+      setCurrentFolderId(dbItem.id);
+      setBreadcrumbs([...breadcrumbs, { 
+        id: dbItem.id, 
+        name: dbItem.name, 
+        path: dbItem.path 
+      }]);
+    } else {
+      const realItem = item as RealFileItem;
+      if (realItem.type === 'directory') {
+        setCurrentPath(realItem.absolutePath);
+        setBreadcrumbs([...breadcrumbs, { 
+          id: null, 
+          name: realItem.name, 
+          path: realItem.absolutePath 
+        }]);
+      }
+    }
   };
 
   const handleBreadcrumbClick = (index: number) => {
     const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
     setBreadcrumbs(newBreadcrumbs);
-    setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+    
+    if (fileSystemMode === 'database') {
+      setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+    } else {
+      setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
+    }
   };
 
-  const handleItemSelect = (id: string) => {
+  const handleItemSelect = (itemKey: string) => {
     setSelectedItems(prev => 
-      prev.includes(id) 
-        ? prev.filter(item => item !== id)
-        : [...prev, id]
+      prev.includes(itemKey) 
+        ? prev.filter(item => item !== itemKey)
+        : [...prev, itemKey]
     );
   };
 
-  const handleDeleteClick = (id: string) => {
-    setItemToDelete(id);
+  const handleDeleteClick = (itemKey: string) => {
+    setItemToDelete(itemKey);
     setIsDeleteDialogOpen(true);
   };
 
-  const displayFiles = searchQuery ? searchResults : files;
+  const handleFileSystemModeChange = (checked: boolean) => {
+    const newMode = checked ? 'real' : 'database';
+    setFileSystemMode(newMode);
+    setSelectedItems([]);
+    setSearchQuery('');
+    setPathError(null);
+  };
+
+  // Helper functions
+  const getItemKey = (item: FileItem): string => {
+    if (fileSystemMode === 'database') {
+      return (item as DatabaseFileItem).id;
+    } else {
+      return (item as RealFileItem).absolutePath;
+    }
+  };
+
+  const getItemName = (item: FileItem): string => {
+    return item.name;
+  };
+
+  const getItemType = (item: FileItem): 'file' | 'folder' => {
+    if (fileSystemMode === 'database') {
+      return (item as DatabaseFileItem).type;
+    } else {
+      return (item as RealFileItem).type === 'directory' ? 'folder' : 'file';
+    }
+  };
+
+  const getItemSize = (item: FileItem): number => {
+    return item.size;
+  };
+
+  const isItemPublic = (item: FileItem): boolean => {
+    if (fileSystemMode === 'database') {
+      return (item as DatabaseFileItem).isPublic;
+    }
+    return false; // Real files don't have public/private concept
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (file: FileItem) => {
-    if (file.type === 'folder') return Folder;
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-SA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getFileIcon = (item: FileItem) => {
+    if (getItemType(item) === 'folder') {
+      if (fileSystemMode === 'real') {
+        const realItem = item as RealFileItem;
+        return realItem.name.startsWith('.') ? FolderOpen : Folder;
+      }
+      return Folder;
+    }
     
-    const ext = file.name.split('.').pop()?.toLowerCase();
+    const name = getItemName(item);
+    const ext = name.split('.').pop()?.toLowerCase();
+    
     switch (ext) {
       case 'js':
       case 'ts':
       case 'jsx':
       case 'tsx':
         return FileIcon;
+      case 'json':
+        return Settings;
+      case 'md':
+      case 'txt':
+        return FileIcon;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'svg':
+        return FileIcon;
+      case 'pdf':
+        return FileIcon;
+      case 'zip':
+      case 'tar':
+      case 'gz':
+        return FileIcon;
       default:
         return FileIcon;
+    }
+  };
+
+  const getFileDetails = (item: FileItem) => {
+    if (fileSystemMode === 'database') {
+      const dbItem = item as DatabaseFileItem;
+      return {
+        created: formatDate(dbItem.createdAt),
+        modified: formatDate(dbItem.updatedAt),
+        permissions: null,
+        owner: null,
+        mimeType: dbItem.mimeType,
+        tags: dbItem.tags
+      };
+    } else {
+      const realItem = item as RealFileItem;
+      return {
+        created: formatDate(realItem.created),
+        modified: formatDate(realItem.modified),
+        permissions: realItem.permissions,
+        owner: realItem.owner,
+        mimeType: realItem.mimeType,
+        tags: []
+      };
     }
   };
 
   const CreateItemModal = () => {
     const [itemName, setItemName] = useState('');
     const [itemType, setItemType] = useState<'file' | 'folder'>('file');
+    const [fileContent, setFileContent] = useState('');
 
     const handleCreate = () => {
       if (!itemName.trim()) {
@@ -293,10 +623,12 @@ export default function FileManager() {
       createItemMutation.mutate({
         name: itemName.trim(),
         type: itemType,
-        parentId: currentFolderId || undefined
+        parentId: fileSystemMode === 'database' ? (currentFolderId || undefined) : undefined,
+        content: itemType === 'file' && fileSystemMode === 'real' ? fileContent : undefined
       });
       
       setItemName('');
+      setFileContent('');
     };
 
     return (
@@ -335,6 +667,15 @@ export default function FileManager() {
               onChange={(e) => setItemName(e.target.value)}
               data-testid="input-item-name"
             />
+            {itemType === 'file' && fileSystemMode === 'real' && (
+              <textarea
+                placeholder="محتوى الملف (اختياري)"
+                value={fileContent}
+                onChange={(e) => setFileContent(e.target.value)}
+                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                data-testid="textarea-file-content"
+              />
+            )}
             <div className="flex justify-end gap-2">
               <Button 
                 variant="outline" 
@@ -357,35 +698,81 @@ export default function FileManager() {
     );
   };
 
-  const FileItem = ({ file }: { file: FileItem }) => {
-    const Icon = getFileIcon(file);
-    const isSelected = selectedItems.includes(file.id);
+  const FileItem = ({ item }: { item: FileItem }) => {
+    const Icon = getFileIcon(item);
+    const itemKey = getItemKey(item);
+    const itemName = getItemName(item);
+    const itemType = getItemType(item);
+    const itemSize = getItemSize(item);
+    const details = getFileDetails(item);
+    const isSelected = selectedItems.includes(itemKey);
+    const isPublic = isItemPublic(item);
 
     const handleClick = () => {
-      if (file.type === 'folder') {
-        handleFolderClick(file);
+      if (itemType === 'folder') {
+        handleFolderClick(item);
       } else {
-        // Open file in editor
-        console.log('Open file:', file.name);
+        // Open file in editor or viewer
+        console.log('Open file:', itemName);
+        toast({
+          title: "فتح الملف",
+          description: `فتح ${itemName}`,
+        });
       }
     };
 
     const handleCopy = () => {
-      copyMutation.mutate({ fileId: file.id });
+      if (fileSystemMode === 'database') {
+        copyMutation.mutate({ sourcePath: itemKey });
+      } else {
+        const realItem = item as RealFileItem;
+        copyMutation.mutate({ sourcePath: realItem.absolutePath });
+      }
     };
 
     const handleShare = () => {
-      shareMutation.mutate({ fileId: file.id, isPublic: !file.isPublic });
+      if (fileSystemMode === 'database') {
+        shareMutation.mutate({ fileId: itemKey, isPublic: !isPublic });
+      } else {
+        toast({
+          title: "غير مدعوم",
+          description: "المشاركة غير متوفرة لملفات النظام",
+          variant: "destructive"
+        });
+      }
     };
 
     const handleDownload = () => {
-      window.open(`/api/files/${file.id}/download`, '_blank');
+      if (fileSystemMode === 'database') {
+        window.open(`/api/files/${itemKey}/download`, '_blank');
+      } else {
+        // For real files, we could implement download via content API
+        const realItem = item as RealFileItem;
+        window.open(`/api/real-files/content?path=${encodeURIComponent(realItem.absolutePath)}`, '_blank');
+      }
+    };
+
+    const handleRename = () => {
+      const newName = prompt('أدخل الاسم الجديد:', itemName);
+      if (newName && newName.trim() && newName !== itemName) {
+        if (fileSystemMode === 'real') {
+          const realItem = item as RealFileItem;
+          renameMutation.mutate({ oldPath: realItem.absolutePath, newName: newName.trim() });
+        } else {
+          // Database files use update mutation
+          // This would need to be implemented separately
+          toast({
+            title: "قريباً",
+            description: "سيتم إضافة إعادة التسمية لملفات قاعدة البيانات قريباً",
+          });
+        }
+      }
     };
 
     const handleEdit = () => {
-      if (file.type === 'file') {
+      if (itemType === 'file') {
         // TODO: Open file editor
-        console.log('Edit:', file.name);
+        console.log('Edit:', itemName);
         toast({
           title: "قريباً",
           description: "سيتم إضافة محرر الملفات قريباً",
@@ -393,20 +780,35 @@ export default function FileManager() {
       }
     };
 
+    // Context menu items based on file system mode
     const contextMenuItems = [
       { icon: Eye, label: 'فتح', onClick: handleClick },
-      { icon: Edit, label: 'تحرير', onClick: handleEdit, disabled: file.type === 'folder' },
-      { icon: Copy, label: 'نسخ', onClick: handleCopy, disabled: file.type === 'folder' },
-      { 
-        icon: Share, 
-        label: file.isPublic ? 'إلغاء المشاركة' : 'مشاركة', 
-        onClick: handleShare 
-      },
+      { icon: Edit, label: 'تحرير', onClick: handleEdit, disabled: itemType === 'folder' },
+      { icon: Copy, label: 'نسخ', onClick: handleCopy, disabled: itemType === 'folder' },
+      ...(fileSystemMode === 'database' ? [
+        { 
+          icon: Share, 
+          label: isPublic ? 'إلغاء المشاركة' : 'مشاركة', 
+          onClick: handleShare 
+        },
+      ] : [
+        { icon: Edit, label: 'إعادة تسمية', onClick: handleRename },
+      ]),
       { separator: true as const },
-      { icon: Download, label: 'تحميل', onClick: handleDownload, disabled: file.type === 'folder' },
-      { icon: History, label: 'الإصدارات', onClick: () => console.log('Versions:', file.name), disabled: file.type === 'folder' },
+      { icon: Download, label: 'تحميل', onClick: handleDownload, disabled: itemType === 'folder' },
+      ...(fileSystemMode === 'database' ? [
+        { icon: History, label: 'الإصدارات', onClick: () => console.log('Versions:', itemName), disabled: itemType === 'folder' },
+      ] : [
+        { icon: Info, label: 'خصائص', onClick: () => {
+          const realItem = item as RealFileItem;
+          toast({
+            title: 'خصائص الملف',
+            description: `الصلاحيات: ${realItem.permissions}${realItem.owner ? `\nالمالك: ${realItem.owner}` : ''}`,
+          });
+        }},
+      ]),
       { separator: true as const },
-      { icon: Trash2, label: 'حذف', onClick: () => handleDeleteClick(file.id), variant: 'destructive' as const },
+      { icon: Trash2, label: 'حذف', onClick: () => handleDeleteClick(itemKey), variant: 'destructive' as const },
     ];
 
     if (viewMode === 'grid') {
@@ -419,22 +821,45 @@ export default function FileManager() {
                 isSelected && "ring-2 ring-primary"
               )}
               onClick={handleClick}
-              data-testid={`card-file-${file.id}`}
+              data-testid={`card-file-${itemKey}`}
             >
               <div className="flex flex-col items-center gap-3">
-                <div className={cn(
-                  "w-12 h-12 rounded-lg flex items-center justify-center",
-                  file.type === 'folder' ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
-                )}>
-                  <Icon className="w-6 h-6" />
+                <div className="relative">
+                  <Icon className="w-8 h-8 text-muted-foreground" />
+                  {fileSystemMode === 'database' && isPublic && (
+                    <Badge className="absolute -top-1 -right-1 w-4 h-4 p-0 flex items-center justify-center text-xs">
+                      <Share className="w-2 h-2" />
+                    </Badge>
+                  )}
+                  {fileSystemMode === 'real' && (item as RealFileItem).isHidden && (
+                    <Badge variant="secondary" className="absolute -top-1 -right-1 w-4 h-4 p-0 flex items-center justify-center text-xs">
+                      <Eye className="w-2 h-2" />
+                    </Badge>
+                  )}
                 </div>
-                <div className="text-center space-y-1">
-                  <p className="text-sm font-medium truncate max-w-[120px]" title={file.name}>
-                    {file.name}
+                <div className="text-center w-full">
+                  <p className="font-medium text-sm truncate max-w-[120px] mx-auto" title={itemName}>
+                    {itemName}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {file.type === 'file' ? formatFileSize(file.size) : 'مجلد'}
-                  </p>
+                  <div className="flex flex-col gap-1 mt-2">
+                    <Badge variant="outline" className="text-xs mx-auto">
+                      {itemType === 'folder' ? 'مجلد' : formatFileSize(itemSize)}
+                    </Badge>
+                    {fileSystemMode === 'database' && isPublic && (
+                      <Badge variant="secondary" className="text-xs mx-auto">
+                        <Share className="w-3 h-3 mr-1" />
+                        عام
+                      </Badge>
+                    )}
+                    {fileSystemMode === 'real' && details.permissions && (
+                      <Badge variant="outline" className="text-xs mx-auto font-mono">
+                        {details.permissions}
+                      </Badge>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {details.modified}
+                    </p>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -469,24 +894,33 @@ export default function FileManager() {
               isSelected && "bg-primary/10 border border-primary/20"
             )}
             onClick={handleClick}
-            data-testid={`row-file-${file.id}`}
+            data-testid={`row-file-${itemKey}`}
           >
-            <div className={cn(
-              "w-8 h-8 rounded flex items-center justify-center flex-shrink-0",
-              file.type === 'folder' ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
-            )}>
+            <div className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0">
               <Icon className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{file.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {file.type === 'file' ? formatFileSize(file.size) : 'مجلد'}
-              </p>
+              <p className="text-sm font-medium truncate">{itemName}</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{itemType === 'file' ? formatFileSize(itemSize) : 'مجلد'}</span>
+                {fileSystemMode === 'real' && details.permissions && (
+                  <Badge variant="outline" className="text-xs font-mono">
+                    {details.permissions}
+                  </Badge>
+                )}
+                <span>{details.modified}</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              {file.tags.length > 0 && (
+              {fileSystemMode === 'database' && details.tags.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {file.tags[0]}
+                  {details.tags[0]}
+                </Badge>
+              )}
+              {fileSystemMode === 'database' && isPublic && (
+                <Badge variant="secondary" className="text-xs">
+                  <Share className="w-3 h-3 mr-1" />
+                  عام
                 </Badge>
               )}
               <Button
@@ -540,7 +974,12 @@ export default function FileManager() {
                 if (breadcrumbs.length > 1) {
                   const newBreadcrumbs = breadcrumbs.slice(0, -1);
                   setBreadcrumbs(newBreadcrumbs);
-                  setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+                  
+                  if (fileSystemMode === 'database') {
+                    setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+                  } else {
+                    setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
+                  }
                 }
               }}
               disabled={breadcrumbs.length <= 1}
@@ -549,6 +988,23 @@ export default function FileManager() {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <h1 className="text-xl font-bold">مدير الملفات</h1>
+            
+            {/* File System Mode Toggle */}
+            <div className="flex items-center gap-3 mr-4 p-2 bg-muted/50 rounded-lg" data-testid="file-system-toggle">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-blue-600" />
+                <Label className="text-sm font-medium">قاعدة البيانات</Label>
+              </div>
+              <Switch 
+                checked={fileSystemMode === 'real'}
+                onCheckedChange={handleFileSystemModeChange}
+                data-testid="switch-file-system"
+              />
+              <div className="flex items-center gap-2">
+                <HardDrive className="w-4 h-4 text-green-600" />
+                <Label className="text-sm font-medium">ملفات النظام</Label>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -598,14 +1054,41 @@ export default function FileManager() {
           ))}
         </div>
 
+        {/* Path Error Alert */}
+        {pathError && (
+          <Alert className="mb-4" data-testid="path-error-alert">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              <strong>خطأ في المسار:</strong> {pathError}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Real Files Info */}
+        {fileSystemMode === 'real' && realFilesData && (
+          <div className="mb-4 p-3 bg-muted/30 rounded-lg" data-testid="real-files-info">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex items-center gap-4">
+                <span>المسار: {currentPath}</span>
+                <span>إجمالي {realFilesData.totalFiles} ملف</span>
+                <span>{realFilesData.totalDirectories} مجلد</span>
+              </div>
+              <div>
+                إجمالي الحجم: {formatFileSize(realFilesData.totalSize)}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Search and Filters */}
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="البحث في الملفات..."
+              placeholder={fileSystemMode === 'database' ? "البحث في الملفات..." : "البحث غير متوفر لملفات النظام"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={fileSystemMode === 'real'}
               className="pr-10"
               data-testid="input-search"
             />
@@ -664,7 +1147,7 @@ export default function FileManager() {
                   <p className="text-muted-foreground">جاري التحميل...</p>
                 </div>
               </div>
-            ) : displayFiles.length === 0 ? (
+            ) : currentFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Folder className="w-8 h-8 text-muted-foreground" />
@@ -678,14 +1161,14 @@ export default function FileManager() {
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-                {displayFiles.map((file) => (
-                  <FileItem key={file.id} file={file} />
+                {currentFiles.map((item) => (
+                  <FileItem key={getItemKey(item)} item={item} />
                 ))}
               </div>
             ) : (
               <div className="space-y-2">
-                {displayFiles.map((file) => (
-                  <FileItem key={file.id} file={file} />
+                {currentFiles.map((item) => (
+                  <FileItem key={getItemKey(item)} item={item} />
                 ))}
               </div>
             )}
