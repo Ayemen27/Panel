@@ -12,6 +12,14 @@ if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
+if (!process.env.REPL_ID) {
+  throw new Error("Environment variable REPL_ID not provided");
+}
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error("Environment variable SESSION_SECRET not provided");
+}
+
 const getOidcConfig = memoize(
   async () => {
     return await client.discovery(
@@ -84,14 +92,17 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  // Get domains from environment and add localhost for development
+  // Get domains from environment
   const domains = process.env.REPLIT_DOMAINS!.split(",");
-  if (process.env.NODE_ENV === "development" && !domains.includes("localhost")) {
-    domains.push("localhost");
+  
+  // Add current replit domain if not already included
+  const currentDomain = "b8b13323-6a5b-47f1-9a28-3c84de1c3914-00-285mnlelrbyt3.pike.replit.dev";
+  if (!domains.includes(currentDomain)) {
+    domains.push(currentDomain);
   }
 
   for (const domain of domains) {
-    const protocol = domain === "localhost" && process.env.NODE_ENV === "development" ? "http" : "https";
+    const protocol = "https"; // Always use HTTPS for Replit
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
