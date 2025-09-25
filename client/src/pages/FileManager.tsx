@@ -143,7 +143,7 @@ export default function FileManager() {
   const { toast } = useToast();
   
   // File System Mode State
-  const [fileSystemMode, setFileSystemMode] = useState<FileSystemMode>('database');
+  const [fileSystemMode, setFileSystemMode] = useState<FileSystemMode>('real');
   
   // Database Files State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -1048,10 +1048,34 @@ export default function FileManager() {
             <Menu className="w-5 h-5" />
           </Button>
           
-          {/* Center: Title */}
-          <h1 className="text-lg sm:text-xl font-semibold text-center flex-1 mx-4">
-            التخزين الرئيسي
-          </h1>
+          {/* Center: Title with Back Button */}
+          <div className="flex items-center justify-center flex-1 mx-4">
+            {breadcrumbs.length > 1 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20 touch-manipulation mr-3"
+                onClick={() => {
+                  if (breadcrumbs.length > 1) {
+                    const newBreadcrumbs = breadcrumbs.slice(0, -1);
+                    setBreadcrumbs(newBreadcrumbs);
+                    
+                    if (fileSystemMode === 'database') {
+                      setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+                    } else {
+                      setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
+                    }
+                  }
+                }}
+                data-testid="button-back-header"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            )}
+            <h1 className="text-lg sm:text-xl font-semibold text-center">
+              التخزين الرئيسي
+            </h1>
+          </div>
           
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2">
@@ -1059,7 +1083,10 @@ export default function FileManager() {
               size="sm"
               variant="ghost"
               className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-              onClick={() => setShowFilters(!showFilters)}
+              onClick={() => {
+                const searchInput = document.querySelector('[data-testid="input-search"]') as HTMLInputElement;
+                searchInput?.focus();
+              }}
               data-testid="button-search"
             >
               <Search className="w-5 h-5" />
@@ -1088,7 +1115,7 @@ export default function FileManager() {
 
       {/* Sidebar */}
       <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
-        <SheetContent side="right" className="w-80 p-0 bg-white">
+        <SheetContent side="left" className="w-80 p-0 bg-white" data-testid="sidebar">
           <div className="flex flex-col h-full">
             {/* Sidebar Header */}
             <div className="bg-teal-600 text-white p-4 flex items-center justify-between">
@@ -1120,7 +1147,11 @@ export default function FileManager() {
               <div className="grid grid-cols-3 gap-4 p-4">
                 {/* Video */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50" 
-                     onClick={() => setStorageSection('video')}>
+                     onClick={() => {
+                       setStorageSection('video');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-video">
                   <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-2">
                     <Video className="w-6 h-6 text-red-600" />
                   </div>
@@ -1130,7 +1161,11 @@ export default function FileManager() {
 
                 {/* Recent Files */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('recent')}>
+                     onClick={() => {
+                       setStorageSection('recent');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-recent">
                   <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
                     <Clock className="w-6 h-6 text-blue-600" />
                   </div>
@@ -1140,7 +1175,11 @@ export default function FileManager() {
 
                 {/* Network Access */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('network')}>
+                     onClick={() => {
+                       setStorageSection('network');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-network">
                   <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
                     <Cloud className="w-6 h-6 text-green-600" />
                   </div>
@@ -1149,7 +1188,11 @@ export default function FileManager() {
 
                 {/* Documents */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('documents')}>
+                     onClick={() => {
+                       setStorageSection('documents');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-documents">
                   <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
                     <FileText className="w-6 h-6 text-blue-600" />
                   </div>
@@ -1159,7 +1202,11 @@ export default function FileManager() {
 
                 {/* Apps */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('apps')}>
+                     onClick={() => {
+                       setStorageSection('apps');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-apps">
                   <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
                     <Smartphone className="w-6 h-6 text-green-600" />
                   </div>
@@ -1169,7 +1216,11 @@ export default function FileManager() {
 
                 {/* Pictures */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('pictures')}>
+                     onClick={() => {
+                       setStorageSection('pictures');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-pictures">
                   <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2">
                     <Image className="w-6 h-6 text-purple-600" />
                   </div>
@@ -1179,7 +1230,11 @@ export default function FileManager() {
 
                 {/* Music */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('music')}>
+                     onClick={() => {
+                       setStorageSection('music');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-music">
                   <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center mb-2">
                     <Music className="w-6 h-6 text-teal-600" />
                   </div>
@@ -1189,7 +1244,11 @@ export default function FileManager() {
 
                 {/* Cloud */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('cloud')}>
+                     onClick={() => {
+                       setStorageSection('cloud');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-cloud">
                   <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
                     <Cloud className="w-6 h-6 text-blue-600" />
                   </div>
@@ -1198,7 +1257,11 @@ export default function FileManager() {
 
                 {/* Remote */}
                 <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('remote')}>
+                     onClick={() => {
+                       setStorageSection('remote');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-remote">
                   <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2">
                     <HardDrive className="w-6 h-6 text-gray-600" />
                   </div>
@@ -1210,7 +1273,11 @@ export default function FileManager() {
               {/* Trash */}
               <div className="border-t p-4">
                 <div className="flex items-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => setStorageSection('trash')}>
+                     onClick={() => {
+                       setStorageSection('trash');
+                       setShowSidebar(false);
+                     }}
+                     data-testid="sidebar-trash">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
                     <Trash2 className="w-5 h-5 text-gray-600" />
                   </div>
@@ -1263,6 +1330,20 @@ export default function FileManager() {
               </Button>
             </div>
 
+            {/* File System Mode Toggle */}
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">نوع نظام الملفات</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">قاعدة البيانات</Label>
+                <Switch 
+                  checked={fileSystemMode === 'real'}
+                  onCheckedChange={handleFileSystemModeChange}
+                  data-testid="switch-file-system-mobile"
+                />
+                <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
+              </div>
+            </div>
+            
             {/* Create New */}
             <Button 
               onClick={() => {
