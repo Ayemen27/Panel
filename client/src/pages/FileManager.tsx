@@ -1419,64 +1419,29 @@ export default function FileManager() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* New Black Header */}
-      <div className="bg-gray-900 text-white p-3 sm:p-4">
+      {/* File Manager Header */}
+      <div className="bg-gray-900 dark:bg-black text-white p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          {/* Left: Menu Button */}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-            onClick={() => setShowSidebar(true)}
-            data-testid="button-menu"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-          
-          {/* Center: Title with Back Button */}
-          <div className="flex items-center justify-center flex-1 mx-4">
-            {(!showMainLibraries || breadcrumbs.length > 1) && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0 text-white hover:bg-white/20 touch-manipulation mr-3"
-                onClick={() => {
-                  if (!showMainLibraries) {
-                    // Return to main libraries
-                    setShowMainLibraries(true);
-                    setStorageSection('main');
-                    setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
-                  } else if (breadcrumbs.length > 1) {
-                    // Normal breadcrumb navigation
-                    const newBreadcrumbs = breadcrumbs.slice(0, -1);
-                    setBreadcrumbs(newBreadcrumbs);
-                    
-                    // If returning to home, show main libraries
-                    if (newBreadcrumbs.length === 1) {
-                      setShowMainLibraries(true);
-                      setStorageSection('main');
-                      return;
-                    }
-                    
-                    if (fileSystemMode === 'database') {
-                      setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
-                    } else {
-                      setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
-                    }
-                  }
-                }}
-                data-testid="button-back-header"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            )}
-            <h1 className="text-lg sm:text-xl font-semibold text-center">
-              {showMainLibraries ? 'مدير الملفات +' : getSectionTitle(storageSection)}
-            </h1>
-          </div>
-          
-          {/* Right: Action Buttons */}
+          {/* Left: Action Icons */}
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              onClick={() => setShowSidebar(true)}
+              data-testid="button-menu"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              onClick={() => setShowFilters(!showFilters)}
+              data-testid="button-filter-toggle"
+            >
+              <Filter className="w-5 h-5" />
+            </Button>
             <Button
               size="sm"
               variant="ghost"
@@ -1493,19 +1458,42 @@ export default function FileManager() {
               size="sm"
               variant="ghost"
               className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-              onClick={() => setShowFilters(!showFilters)}
-              data-testid="button-filter-toggle"
+              onClick={() => setIsCreateModalOpen(true)}
+              data-testid="button-add"
             >
-              <Filter className="w-5 h-5" />
+              <Plus className="w-5 h-5" />
             </Button>
+          </div>
+          
+          {/* Center: Title */}
+          <div className="flex items-center justify-center flex-1 mx-4">
+            <h1 className="text-lg sm:text-xl font-semibold text-center">
+              مدير الملفات +
+            </h1>
+          </div>
+          
+          {/* Right: Home Icon */}
+          <div className="flex items-center">
             <Button
               size="sm"
               variant="ghost"
               className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-              onClick={() => setShowMobileMenu(true)}
-              data-testid="button-more"
+              onClick={() => {
+                // Navigate to main screen/home
+                setShowMainLibraries(true);
+                setStorageSection('main');
+                setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
+                setActiveTab('files');
+                if (fileSystemMode === 'database') {
+                  setCurrentFolderId(null);
+                } else {
+                  const initialPath = process.env.NODE_ENV === 'development' ? '/workspace' : '/app';
+                  setCurrentPath(initialPath);
+                }
+              }}
+              data-testid="button-home"
             >
-              <MoreVertical className="w-5 h-5" />
+              <Home className="w-5 h-5" />
             </Button>
           </div>
         </div>
