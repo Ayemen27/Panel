@@ -70,7 +70,18 @@ import {
   Info,
   Database,
   HardDrive,
-  AlertTriangle
+  AlertTriangle,
+  Menu,
+  SortAsc,
+  SortDesc,
+  Camera,
+  Video,
+  Music,
+  FileText,
+  Image,
+  Smartphone,
+  BookOpen,
+  Cloud
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -151,6 +162,10 @@ export default function FileManager() {
   const [pathError, setPathError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date' | 'type'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [storageSection, setStorageSection] = useState('main');
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/' }
@@ -1019,133 +1034,268 @@ export default function FileManager() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Header */}
-      <div className="border-b border-border bg-card p-2 sm:p-4">
-        <div className="flex items-center justify-between mb-2 sm:mb-4">
-          <div className="flex items-center gap-1 sm:gap-2">
+      {/* New Black Header */}
+      <div className="bg-gray-900 text-white p-3 sm:p-4">
+        <div className="flex items-center justify-between">
+          {/* Left: Menu Button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+            onClick={() => setShowSidebar(true)}
+            data-testid="button-menu"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+          
+          {/* Center: Title */}
+          <h1 className="text-lg sm:text-xl font-semibold text-center flex-1 mx-4">
+            التخزين الرئيسي
+          </h1>
+          
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 w-8 p-0 touch-manipulation"
-              onClick={() => {
-                if (breadcrumbs.length > 1) {
-                  const newBreadcrumbs = breadcrumbs.slice(0, -1);
-                  setBreadcrumbs(newBreadcrumbs);
-                  
-                  if (fileSystemMode === 'database') {
-                    setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
-                  } else {
-                    setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
-                  }
-                }
-              }}
-              disabled={breadcrumbs.length <= 1}
-              data-testid="button-back"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              onClick={() => setShowFilters(!showFilters)}
+              data-testid="button-search"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <Search className="w-5 h-5" />
             </Button>
-            <h1 className="text-lg sm:text-xl font-bold">مدير الملفات</h1>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              onClick={() => setShowFilters(!showFilters)}
+              data-testid="button-filter-toggle"
+            >
+              <Filter className="w-5 h-5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              onClick={() => setShowMobileMenu(true)}
+              data-testid="button-more"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
+        <SheetContent side="right" className="w-80 p-0 bg-white">
+          <div className="flex flex-col h-full">
+            {/* Sidebar Header */}
+            <div className="bg-teal-600 text-white p-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">التخزين الرئيسي</h2>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                onClick={() => setShowSidebar(false)}
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </div>
             
-            {/* File System Mode Toggle */}
-            <div className="hidden md:flex items-center gap-3 mr-4 p-2 bg-muted/50 rounded-lg" data-testid="file-system-toggle">
-              <div className="flex items-center gap-2">
-                <Database className="w-4 h-4 text-blue-600" />
-                <Label className="text-sm font-medium">قاعدة البيانات</Label>
+            {/* Storage Usage */}
+            <div className="p-4 border-b">
+              <div className="mb-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">مستخدم 59%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                  <div className="bg-gray-700 h-2 rounded-full" style={{ width: '59%' }}></div>
+                </div>
               </div>
-              <Switch 
-                checked={fileSystemMode === 'real'}
-                onCheckedChange={handleFileSystemModeChange}
-                data-testid="switch-file-system"
-              />
-              <div className="flex items-center gap-2">
-                <HardDrive className="w-4 h-4 text-green-600" />
-                <Label className="text-sm font-medium">ملفات النظام</Label>
+            </div>
+            
+            {/* Storage Categories */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-3 gap-4 p-4">
+                {/* Video */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50" 
+                     onClick={() => setStorageSection('video')}>
+                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-2">
+                    <Video className="w-6 h-6 text-red-600" />
+                  </div>
+                  <span className="text-xs font-medium">فيديو</span>
+                  <span className="text-xs text-gray-500">195 GB (1189)</span>
+                </div>
+
+                {/* Recent Files */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('recent')}>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                    <Clock className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <span className="text-xs font-medium">ملفات حديثة</span>
+                  <span className="text-xs text-gray-500">1.01 MB (216)</span>
+                </div>
+
+                {/* Network Access */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('network')}>
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                    <Cloud className="w-6 h-6 text-green-600" />
+                  </div>
+                  <span className="text-xs font-medium">الوصول من الشبكة</span>
+                </div>
+
+                {/* Documents */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('documents')}>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                    <FileText className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <span className="text-xs font-medium">وثائق</span>
+                  <span className="text-xs text-gray-500">4.9 GB (2113)</span>
+                </div>
+
+                {/* Apps */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('apps')}>
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                    <Smartphone className="w-6 h-6 text-green-600" />
+                  </div>
+                  <span className="text-xs font-medium">تطبيقات</span>
+                  <span className="text-xs text-gray-500">42 GB (159)</span>
+                </div>
+
+                {/* Pictures */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('pictures')}>
+                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2">
+                    <Image className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <span className="text-xs font-medium">صور</span>
+                  <span className="text-xs text-gray-500">9.2 GB (1165)</span>
+                </div>
+
+                {/* Music */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('music')}>
+                  <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center mb-2">
+                    <Music className="w-6 h-6 text-teal-600" />
+                  </div>
+                  <span className="text-xs font-medium">صوتي</span>
+                  <span className="text-xs text-gray-500">787 MB (78)</span>
+                </div>
+
+                {/* Cloud */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('cloud')}>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                    <Cloud className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <span className="text-xs font-medium">سحابة</span>
+                </div>
+
+                {/* Remote */}
+                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('remote')}>
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                    <HardDrive className="w-6 h-6 text-gray-600" />
+                  </div>
+                  <span className="text-xs font-medium">بعيد</span>
+                  <span className="text-xs text-gray-500">(0)</span>
+                </div>
+              </div>
+
+              {/* Trash */}
+              <div className="border-t p-4">
+                <div className="flex items-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                     onClick={() => setStorageSection('trash')}>
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                    <Trash2 className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium block">سلة المحذوفات</span>
+                    <span className="text-xs text-gray-500">1.09 kB</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 p-0 touch-manipulation"
-              onClick={handlePullToRefresh}
-              disabled={isRefreshing}
-              data-testid="button-refresh"
-            >
-              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 p-0 touch-manipulation hidden sm:flex"
-              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-              data-testid="button-view-mode"
-            >
-              {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
-            </Button>
-            <Button 
-              size="sm"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="h-8 touch-manipulation"
-              data-testid="button-create-item"
-            >
-              <Plus className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">جديد</span>
-            </Button>
-            
-            {/* Mobile Menu */}
-            <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu}>
-              <SheetTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0 touch-manipulation md:hidden"
-                  data-testid="button-mobile-menu"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-80">
-                <SheetHeader>
-                  <SheetTitle>إعدادات مدير الملفات</SheetTitle>
-                </SheetHeader>
-                <div className="space-y-4 mt-6">
-                  {/* File System Mode Toggle for Mobile */}
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">نوع نظام الملفات</Label>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground">قاعدة البيانات</Label>
-                      <Switch 
-                        checked={fileSystemMode === 'real'}
-                        onCheckedChange={handleFileSystemModeChange}
-                        data-testid="switch-mobile-file-system"
-                      />
-                      <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
-                    </div>
-                  </div>
-                  
-                  {/* View Mode Toggle for Mobile */}
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">عرض الملفات</Label>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                      className="touch-manipulation"
-                    >
-                      {viewMode === 'grid' ? (
-                        <><List className="w-4 h-4 mr-2" />قائمة</>
-                      ) : (
-                        <><Grid3X3 className="w-4 h-4 mr-2" />شبكة</>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
+        </SheetContent>
+      </Sheet>
 
+      {/* Options Menu */}
+      <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu}>
+        <SheetContent side="left" className="w-80">
+          <SheetHeader>
+            <SheetTitle>إعدادات مدير الملفات</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-6">
+            {/* File System Mode Toggle for Mobile */}
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">نوع نظام الملفات</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">قاعدة البيانات</Label>
+                <Switch 
+                  checked={fileSystemMode === 'real'}
+                  onCheckedChange={handleFileSystemModeChange}
+                  data-testid="switch-mobile-file-system"
+                />
+                <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
+              </div>
+            </div>
+            
+            {/* View Mode Toggle for Mobile */}
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">عرض الملفات</Label>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="touch-manipulation"
+              >
+                {viewMode === 'grid' ? (
+                  <><List className="w-4 h-4 mr-2" />قائمة</>
+                ) : (
+                  <><Grid3X3 className="w-4 h-4 mr-2" />شبكة</>
+                )}
+              </Button>
+            </div>
+
+            {/* Create New */}
+            <Button 
+              onClick={() => {
+                setIsCreateModalOpen(true);
+                setShowMobileMenu(false);
+              }}
+              className="w-full touch-manipulation"
+              data-testid="button-create-mobile"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              إنشاء جديد
+            </Button>
+
+            {/* Refresh */}
+            <Button 
+              variant="outline"
+              onClick={() => {
+                handlePullToRefresh();
+                setShowMobileMenu(false);
+              }}
+              disabled={isRefreshing}
+              className="w-full touch-manipulation"
+              data-testid="button-refresh-mobile"
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+              تحديث
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Breadcrumbs */}
+      <div className="border-b border-border bg-card p-2 sm:p-4">
         {/* Breadcrumbs */}
         <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-4 overflow-x-auto scrollbar-hide px-2 sm:px-0">
           {breadcrumbs.map((crumb, index) => (
@@ -1250,90 +1400,6 @@ export default function FileManager() {
           </Card>
         )}
       </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="p-2 sm:p-4">
-            {isLoading || isSearching ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">جاري التحميل...</p>
-                </div>
-              </div>
-            ) : currentFiles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Folder className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <p className="text-lg font-medium mb-2">لا توجد ملفات</p>
-                <p className="text-muted-foreground mb-4">ابدأ بإنشاء ملف أو مجلد جديد</p>
-                <Button onClick={() => setIsCreateModalOpen(true)} data-testid="button-create-empty">
-                  <Plus className="w-4 h-4 mr-2" />
-                  إنشاء جديد
-                </Button>
-              </div>
-            ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-4">
-                {currentFiles.map((item) => (
-                  <FileItem key={getItemKey(item)} item={item} />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-1 sm:space-y-2">
-                {currentFiles.map((item) => (
-                  <FileItem key={getItemKey(item)} item={item} />
-                ))}
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      </div>
-
-      {/* Selection Info */}
-      {selectedItems.length > 0 && (
-        <div className="border-t border-border bg-card p-2 sm:p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              تم تحديد {selectedItems.length} عنصر
-            </p>
-            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
-              <Button size="sm" variant="outline" className="touch-manipulation h-8 flex-shrink-0" data-testid="button-copy-selected">
-                <Copy className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                <span className="hidden sm:inline">نسخ</span>
-              </Button>
-              <Button size="sm" variant="outline" className="touch-manipulation h-8 flex-shrink-0" data-testid="button-share-selected">
-                <Share className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                <span className="hidden sm:inline">مشاركة</span>
-              </Button>
-              <Button 
-                size="sm" 
-                variant="destructive"
-                className="touch-manipulation h-8 flex-shrink-0"
-                onClick={() => {
-                  if (selectedItems.length === 1) {
-                    handleDeleteClick(selectedItems[0]);
-                  }
-                }}
-                data-testid="button-delete-selected"
-              >
-                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                <span className="hidden sm:inline">حذف</span>
-              </Button>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                className="touch-manipulation h-8 flex-shrink-0"
-                onClick={() => setSelectedItems([])}
-                data-testid="button-clear-selection"
-              >
-                إلغاء التحديد
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modals & Dialogs */}
       <CreateItemModal />
