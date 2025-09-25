@@ -55,6 +55,7 @@ export const fileTypeEnum = pgEnum('file_type', ['file', 'folder']);
 export const permissionLevelEnum = pgEnum('permission_level', ['read', 'write', 'delete', 'admin']);
 export const auditActionEnum = pgEnum('audit_action', ['create', 'update', 'delete', 'copy', 'move', 'rename', 'share', 'access', 'restore']);
 export const lockTypeEnum = pgEnum('lock_type', ['read', 'write', 'exclusive']);
+export const pathTypeEnum = pgEnum('path_type', ['allowed', 'blocked']);
 
 // Applications table
 export const applications = pgTable("applications", {
@@ -273,6 +274,27 @@ export const filePermissions = pgTable("file_permissions", {
   check("CHK_file_permissions_user_or_role", sql`(user_id IS NOT NULL AND user_role IS NULL) OR (user_id IS NULL AND user_role IS NOT NULL)`), // Ensure only one of userId or userRole is set
 ]);
 
+// Allowed paths table for file manager access control
+export const allowedPaths = pgTable("allowed_paths", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  path: text("path").notNull(),
+  type: pathTypeEnum("type").notNull(),
+  description: text("description"),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  addedBy: varchar("added_by").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("IDX_allowed_paths_path").on(table.path),
+  index("IDX_allowed_paths_type").on(table.type),
+  index("IDX_allowed_paths_added_by").on(table.addedBy),
+  index("IDX_allowed_paths_active").on(table.isActive),
+  index("IDX_allowed_paths_default").on(table.isDefault),
+  index("IDX_allowed_paths_type_active").on(table.type, table.isActive), // Composite index for performance
+  unique("UQ_allowed_paths_path_type").on(table.path, table.type), // Prevent duplicate path-type combinations
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   applications: many(applications),
@@ -284,6 +306,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   fileLocks: many(fileLocks),
   grantedPermissions: many(filePermissions, { relationName: "grantedPermissions" }),
   receivedPermissions: many(filePermissions, { relationName: "receivedPermissions" }),
+  allowedPaths: many(allowedPaths),
 }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
@@ -418,6 +441,13 @@ export const filePermissionsRelations = relations(filePermissions, ({ one }) => 
   }),
 }));
 
+export const allowedPathsRelations = relations(allowedPaths, ({ one }) => ({
+  addedBy: one(users, {
+    fields: [allowedPaths.addedBy],
+    references: [users.id],
+  }),
+}));
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -458,6 +488,9 @@ export type InsertFileLock = typeof fileLocks.$inferInsert;
 
 export type FilePermission = typeof filePermissions.$inferSelect;
 export type InsertFilePermission = typeof filePermissions.$inferInsert;
+
+export type AllowedPath = typeof allowedPaths.$inferSelect;
+export type InsertAllowedPath = typeof allowedPaths.$inferInsert;
 
 // Log entry type for application logs
 export interface LogEntry {
@@ -531,6 +564,12 @@ export const insertFileLockSchema = createInsertSchema(fileLocks).omit({
 });
 
 export const insertFilePermissionSchema = createInsertSchema(filePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAllowedPathSchema = createInsertSchema(allowedPaths).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
