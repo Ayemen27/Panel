@@ -8,7 +8,11 @@ import {
   insertDomainSchema, 
   insertSslCertificateSchema,
   insertNginxConfigSchema,
-  insertNotificationSchema 
+  insertNotificationSchema,
+  insertFileSchema,
+  insertFilePermissionSchema,
+  insertFileLockSchema,
+  insertFileBackupSchema 
 } from "@shared/schema";
 import { z } from "zod";
 import { pm2Service } from "./services/pm2Service";
@@ -16,9 +20,13 @@ import { nginxService } from "./services/nginxService";
 import { sslService } from "./services/sslService";
 import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
+import { FileManagerService } from "./services/fileManagerService";
 
 // WebSocket clients store
 const wsClients = new Set<WebSocket>();
+
+// File Manager Service instance
+const fileManagerService = new FileManagerService(storage);
 
 // Unified CORS configuration for both HTTP and WebSocket
 function setupCORS(app: Express) {
@@ -681,6 +689,499 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error resolving notification:", error);
       res.status(500).json({ message: "Failed to resolve notification" });
+    }
+  });
+
+  // ==========================================
+  // FILE MANAGEMENT API ROUTES
+  // ==========================================
+  
+  // File CRUD Operations
+  app.get('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { parentId, type } = req.query;
+      
+      const files = await storage.getFiles(
+        parentId as string || null, 
+        userId
+      );
+      
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      res.status(500).json({ message: "Failed to fetch files" });
+    }
+  });
+
+  app.get('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      const file = await storage.getFile(id, userId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      res.json(file);
+    } catch (error) {
+      console.error("Error fetching file:", error);
+      res.status(500).json({ message: "Failed to fetch file" });
+    }
+  });
+
+  app.get('/api/files/:id/content', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      // Check if file exists and user has permission
+      const file = await storage.getFile(id, userId);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check read permission
+      const hasPermission = await storage.checkFilePermission(id, userId, 'read');
+      if (!hasPermission) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Use FileManagerService to read file content safely
+      const result = await fileManagerService.readFile(file.path, userId);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+      
+      res.json({ 
+        content: result.data.content,
+        mimeType: result.data.mimeType,
+        size: result.data.size
+      });
+    } catch (error) {
+      console.error("Error reading file content:", error);
+      res.status(500).json({ message: "Failed to read file content" });
+    }
+  });
+
+  app.post('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const fileData = insertFileSchema.parse({
+        ...req.body,
+        ownerId: userId
+      });
+
+      const file = await storage.createFile(fileData);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: file.id,
+        action: 'create',
+        userId,
+        details: `Created ${file.type}: ${file.name}`,
+        newValue: { name: file.name, type: file.type, path: file.path }
+      });
+
+      res.status(201).json(file);
+    } catch (error) {
+      console.error("Error creating file:", error);
+      res.status(400).json({ message: "Failed to create file" });
+    }
+  });
+
+  app.put('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      const updates = req.body;
+
+      // Get current file for audit log
+      const currentFile = await storage.getFile(id, userId);
+      if (!currentFile) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      const updatedFile = await storage.updateFile(id, updates, userId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: id,
+        action: 'update',
+        userId,
+        details: `Updated file: ${updatedFile.name}`,
+        oldValue: currentFile,
+        newValue: updatedFile
+      });
+
+      res.json(updatedFile);
+    } catch (error) {
+      console.error("Error updating file:", error);
+      res.status(400).json({ message: "Failed to update file" });
+    }
+  });
+
+  app.post('/api/files/:id/content', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      const { content, backup = true, saveAction = 'none' } = req.body;
+
+      const file = await storage.getFile(id, userId);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      // Check write permission
+      const hasPermission = await storage.checkFilePermission(id, userId, 'write');
+      if (!hasPermission) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Create backup if requested
+      if (backup) {
+        await storage.createBackup(id, content, userId);
+      }
+
+      // Use FileManagerService to write file safely
+      const result = await fileManagerService.writeFile(file.path, content, userId);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      // Update file metadata
+      await storage.updateFile(id, { 
+        size: Buffer.byteLength(content, 'utf8'),
+        checksum: result.data?.checksum
+      }, userId);
+
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: id,
+        action: 'update',
+        userId,
+        details: `Updated file content: ${file.name}`,
+        newValue: { size: Buffer.byteLength(content, 'utf8') }
+      });
+
+      res.json({ 
+        message: "File saved successfully",
+        backup: backup ? "created" : "skipped",
+        checksum: result.data?.checksum
+      });
+    } catch (error) {
+      console.error("Error saving file content:", error);
+      res.status(500).json({ message: "Failed to save file content" });
+    }
+  });
+
+  app.delete('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      const { permanent = false } = req.query;
+
+      if (permanent === 'true') {
+        // Permanent delete - only for admins
+        const user = await storage.getUser(userId);
+        if (user?.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required for permanent delete" });
+        }
+        
+        await storage.deleteFile(id, userId);
+        
+        res.json({ message: "File permanently deleted" });
+      } else {
+        // Move to trash
+        const trashItem = await storage.moveToTrash(id, userId);
+        
+        res.json({ 
+          message: "File moved to trash",
+          trashId: trashItem.id
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      res.status(500).json({ message: "Failed to delete file" });
+    }
+  });
+
+  // Search and Filter
+  app.get('/api/files/search', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { q, type, tags } = req.query;
+      
+      const filters: any = {};
+      if (type) filters.type = type as 'file' | 'folder';
+      if (tags) filters.tags = (tags as string).split(',');
+      
+      const files = await storage.searchFiles(userId, q as string || '', filters);
+      
+      res.json(files);
+    } catch (error) {
+      console.error("Error searching files:", error);
+      res.status(500).json({ message: "Failed to search files" });
+    }
+  });
+
+  // Trash Operations
+  app.get('/api/files/trash', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const trashFiles = await storage.getTrashFiles(userId);
+      
+      res.json(trashFiles);
+    } catch (error) {
+      console.error("Error fetching trash files:", error);
+      res.status(500).json({ message: "Failed to fetch trash files" });
+    }
+  });
+
+  app.post('/api/files/trash/:trashId/restore', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { trashId } = req.params;
+      
+      const restoredFile = await storage.restoreFromTrash(trashId, userId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: restoredFile.id,
+        action: 'restore',
+        userId,
+        details: `Restored from trash: ${restoredFile.name}`
+      });
+      
+      res.json({ 
+        message: "File restored successfully",
+        file: restoredFile
+      });
+    } catch (error) {
+      console.error("Error restoring file:", error);
+      res.status(500).json({ message: "Failed to restore file" });
+    }
+  });
+
+  app.delete('/api/files/trash/:trashId', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { trashId } = req.params;
+      
+      await storage.permanentDelete(trashId, userId);
+      
+      res.json({ message: "File permanently deleted" });
+    } catch (error) {
+      console.error("Error permanently deleting file:", error);
+      res.status(500).json({ message: "Failed to permanently delete file" });
+    }
+  });
+
+  app.delete('/api/files/trash', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      
+      await storage.emptyTrash(userId);
+      
+      res.json({ message: "Trash emptied successfully" });
+    } catch (error) {
+      console.error("Error emptying trash:", error);
+      res.status(500).json({ message: "Failed to empty trash" });
+    }
+  });
+
+  // Backup Operations
+  app.get('/api/files/:id/backups', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      const backups = await storage.getFileBackups(id, userId);
+      
+      res.json(backups);
+    } catch (error) {
+      console.error("Error fetching file backups:", error);
+      res.status(500).json({ message: "Failed to fetch file backups" });
+    }
+  });
+
+  app.post('/api/files/:id/backup', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      const { content } = req.body;
+      
+      const backup = await storage.createBackup(id, content, userId);
+      
+      res.status(201).json(backup);
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      res.status(500).json({ message: "Failed to create backup" });
+    }
+  });
+
+  app.post('/api/files/backups/:backupId/restore', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { backupId } = req.params;
+      
+      const restoredFile = await storage.restoreBackup(backupId, userId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: restoredFile.id,
+        action: 'restore',
+        userId,
+        details: `Restored from backup: ${restoredFile.name}`
+      });
+      
+      res.json({ 
+        message: "File restored from backup successfully",
+        file: restoredFile
+      });
+    } catch (error) {
+      console.error("Error restoring from backup:", error);
+      res.status(500).json({ message: "Failed to restore from backup" });
+    }
+  });
+
+  // Permission Operations
+  app.get('/api/files/:id/permissions', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      const permissions = await storage.getFilePermissions(id, userId);
+      
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching file permissions:", error);
+      res.status(500).json({ message: "Failed to fetch file permissions" });
+    }
+  });
+
+  app.post('/api/files/:id/permissions', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      const permissionData = insertFilePermissionSchema.parse({
+        ...req.body,
+        fileId: id,
+        grantedBy: userId
+      });
+
+      const permission = await storage.setFilePermission(permissionData, userId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: id,
+        action: 'share',
+        userId,
+        details: `Granted ${permission.permission} permission`,
+        newValue: permission
+      });
+      
+      res.status(201).json(permission);
+    } catch (error) {
+      console.error("Error setting file permission:", error);
+      res.status(400).json({ message: "Failed to set file permission" });
+    }
+  });
+
+  app.delete('/api/files/permissions/:permissionId', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { permissionId } = req.params;
+      
+      await storage.removeFilePermission(permissionId, userId);
+      
+      res.json({ message: "Permission removed successfully" });
+    } catch (error) {
+      console.error("Error removing file permission:", error);
+      res.status(500).json({ message: "Failed to remove file permission" });
+    }
+  });
+
+  // Lock Operations
+  app.get('/api/files/:id/locks', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      
+      const locks = await storage.getFileLocks(id);
+      
+      res.json(locks);
+    } catch (error) {
+      console.error("Error fetching file locks:", error);
+      res.status(500).json({ message: "Failed to fetch file locks" });
+    }
+  });
+
+  app.post('/api/files/:id/lock', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      const { lockType = 'write', ttl } = req.body;
+      
+      const lock = await storage.lockFile(id, userId, lockType, ttl);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: id,
+        action: 'access',
+        userId,
+        details: `Applied ${lockType} lock`,
+        newValue: lock
+      });
+      
+      res.status(201).json(lock);
+    } catch (error) {
+      console.error("Error locking file:", error);
+      res.status(400).json({ message: "Failed to lock file" });
+    }
+  });
+
+  app.delete('/api/files/:id/lock', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { id } = req.params;
+      
+      await storage.unlockFile(id, userId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        fileId: id,
+        action: 'access',
+        userId,
+        details: 'Removed file lock'
+      });
+      
+      res.json({ message: "File unlocked successfully" });
+    } catch (error) {
+      console.error("Error unlocking file:", error);
+      res.status(500).json({ message: "Failed to unlock file" });
+    }
+  });
+
+  // Audit Log Operations
+  app.get('/api/files/audit', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { fileId, limit } = req.query;
+      
+      const logs = await storage.getFileAuditLogs(
+        fileId as string,
+        userId,
+        parseInt(limit as string) || 50
+      );
+      
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
     }
   });
 
