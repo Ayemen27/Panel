@@ -177,7 +177,7 @@ export function ApplicationTable({
                     </TableCell>
                     <TableCell>
                       <StatusBadge 
-                        status={app.status} 
+                        status={app.status || 'stopped'} 
                         data-testid={`app-status-${app.id!}`}
                       />
                     </TableCell>

@@ -26,6 +26,7 @@ const Logs = lazy(() => import("@/pages/Logs"));
 const Terminal = lazy(() => import("@/pages/Terminal"));
 const HealthCheck = lazy(() => import("@/pages/HealthCheck"));
 const FileManager = lazy(() => import("@/pages/FileManager"));
+const PathManager = lazy(() => import("@/pages/PathManager"));
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
@@ -140,6 +141,15 @@ function Router() {
               <Suspense fallback={<PageLoader />}>
                 <FileManager />
               </Suspense>
+            </MainLayout>
+          </Route>
+          <Route path="/admin/paths">
+            <MainLayout>
+              <AdminOnly>
+                <Suspense fallback={<PageLoader />}>
+                  <PathManager />
+                </Suspense>
+              </AdminOnly>
             </MainLayout>
           </Route>
         </>

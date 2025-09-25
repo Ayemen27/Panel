@@ -178,6 +178,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin paths management routes
+  app.get('/api/admin/paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { type } = req.query;
+
+      const allowedPaths = await storage.getAllowedPaths(type as 'allowed' | 'blocked' | undefined);
+
+      res.json(allowedPaths);
+    } catch (error) {
+      console.error("Error fetching admin paths:", error);
+      res.status(500).json({ message: "Failed to fetch admin paths" });
+    }
+  });
+
+  app.post('/api/admin/paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const pathData = insertAllowedPathSchema.parse({
+        ...req.body,
+        addedBy: userId
+      });
+
+      const allowedPath = await storage.createAllowedPath(pathData);
+
+      res.status(201).json(allowedPath);
+    } catch (error) {
+      console.error("Error creating admin path:", error);
+      res.status(500).json({ message: "Failed to create admin path" });
+    }
+  });
+
+  app.put('/api/admin/paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      // Remove addedBy from updates to prevent manipulation
+      delete updates.addedBy;
+
+      const allowedPath = await storage.updateAllowedPath(id, updates);
+
+      res.json(allowedPath);
+    } catch (error) {
+      console.error("Error updating admin path:", error);
+      res.status(500).json({ message: "Failed to update admin path" });
+    }
+  });
+
+  app.delete('/api/admin/paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+
+      await storage.deleteAllowedPath(id);
+
+      res.json({ message: 'Admin path deleted successfully' });
+    } catch (error) {
+      console.error("Error deleting admin path:", error);
+      res.status(500).json({ message: "Failed to delete admin path" });
+    }
+  });
+
   // Dashboard stats route
   app.get('/api/dashboard/stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
