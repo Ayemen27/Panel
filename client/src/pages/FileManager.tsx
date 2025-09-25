@@ -1499,6 +1499,56 @@ export default function FileManager() {
         </div>
       </div>
 
+      {/* Top Navigation Tabs */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-around px-4 py-3">
+          {/* Files Tab */}
+          <button
+            onClick={() => setActiveTab('files')}
+            className={cn(
+              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
+              activeTab === 'files' 
+                ? "text-primary bg-primary/10" 
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            )}
+            data-testid="tab-files"
+          >
+            <FileIcon className="w-6 h-6 mb-1" />
+            <span className="text-xs">الملفات</span>
+          </button>
+
+          {/* Favorites Tab */}
+          <button
+            onClick={() => setActiveTab('favorites')}
+            className={cn(
+              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
+              activeTab === 'favorites' 
+                ? "text-primary bg-primary/10" 
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            )}
+            data-testid="tab-favorites"
+          >
+            <Star className="w-6 h-6 mb-1" />
+            <span className="text-xs">النجمة</span>
+          </button>
+
+          {/* Recent Tab */}
+          <button
+            onClick={() => setActiveTab('recent')}
+            className={cn(
+              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
+              activeTab === 'recent' 
+                ? "text-primary bg-primary/10" 
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            )}
+            data-testid="tab-recent"
+          >
+            <Clock className="w-6 h-6 mb-1" />
+            <span className="text-xs">التاريخ</span>
+          </button>
+        </div>
+      </div>
+
       {/* Sidebar */}
       <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
         <SheetContent side="left" className="w-80 p-0 bg-white" data-testid="sidebar">
@@ -2066,58 +2116,6 @@ export default function FileManager() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bottom Navigation Tabs */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50">
-        <div className="flex items-center justify-around px-4 py-2">
-          {/* Files Tab */}
-          <button
-            onClick={() => setActiveTab('files')}
-            className={cn(
-              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
-              activeTab === 'files' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            )}
-            data-testid="tab-files"
-          >
-            <FileIcon className="w-6 h-6 mb-1" />
-            <span className="text-xs">الملفات</span>
-          </button>
-
-          {/* Favorites Tab */}
-          <button
-            onClick={() => setActiveTab('favorites')}
-            className={cn(
-              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
-              activeTab === 'favorites' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            )}
-            data-testid="tab-favorites"
-          >
-            <Star className="w-6 h-6 mb-1" />
-            <span className="text-xs">النجمة</span>
-          </button>
-
-          {/* Recent Tab */}
-          <button
-            onClick={() => setActiveTab('recent')}
-            className={cn(
-              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
-              activeTab === 'recent' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            )}
-            data-testid="tab-recent"
-          >
-            <Clock className="w-6 h-6 mb-1" />
-            <span className="text-xs">التاريخ</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Bottom padding to account for fixed tabs */}
-      <div className="h-20"></div>
     </div>
   );
 }
