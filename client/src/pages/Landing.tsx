@@ -10,10 +10,14 @@ import {
   FileText, 
   Settings,
   ArrowRight,
-  Check
+  Check,
+  LogIn
 } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const [, navigate] = useLocation();
+  
   const features = [
     {
       icon: Server,
@@ -84,11 +88,11 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 className="text-lg px-8 py-6"
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => navigate("/auth")}
                 data-testid="button-login"
               >
+                <LogIn className="w-5 h-5 ml-2" />
                 تسجيل الدخول
-                <ArrowRight className="w-5 h-5 mr-2" />
               </Button>
               
               <div className="flex items-center gap-2 text-muted-foreground">

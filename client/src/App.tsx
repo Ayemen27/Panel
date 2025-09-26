@@ -13,6 +13,7 @@ import { AdminOnly, ModeratorAndAbove } from "@/components/auth/RoleGuard";
 
 // Critical components loaded immediately
 import Landing from "@/pages/Landing";
+import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Dashboard";
 import Applications from "@/pages/Applications";
 
@@ -56,10 +57,15 @@ function Router() {
   return (
     <Switch>
       {!isAuthenticated ? (
-        // المستخدم غير مسجل دخول - إظهار صفحة Landing لأي route
-        <Route>
-          <Landing />
-        </Route>
+        // المستخدم غير مسجل دخول - إظهار صفحات عامة
+        <>
+          <Route path="/auth">
+            <AuthPage />
+          </Route>
+          <Route>
+            <Landing />
+          </Route>
+        </>
       ) : (
         // المستخدم مسجل دخول - إظهار الصفحات المحمية
         <>
