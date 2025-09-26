@@ -628,57 +628,6 @@ export default function FileManager() {
     }
   };
 
-  // Create new file/folder mutation
-  const createItemMutation = useMutation({
-    mutationFn: async (data: { name: string; type: 'file' | 'folder'; parentId?: string; content?: string }) => {
-      if (fileSystemMode === 'database') {
-        const response = await apiRequest('POST', '/api/files', {
-          name: data.name,
-          type: data.type,
-          parentId: data.parentId || currentFolderId,
-          size: data.type === 'file' ? 0 : undefined,
-          isPublic: false,
-          tags: []
-        });
-        return await response.json();
-      } else {
-        // Real file system
-        const itemPath = `${currentPath}/${data.name}`;
-        const response = await apiRequest('POST', '/api/real-files/create', {
-          path: itemPath,
-          type: data.type === 'folder' ? 'directory' : 'file',
-          content: data.content || '',
-          mode: data.type === 'folder' ? '0755' : '0644'
-        });
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error || result.message);
-        }
-        
-        return result;
-      }
-    },
-    onSuccess: () => {
-      if (fileSystemMode === 'database') {
-        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
-      }
-      toast({
-        title: "تم الإنشاء",
-        description: "تم إنشاء العنصر بنجاح",
-      });
-      setIsCreateModalOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -1482,7 +1431,12 @@ export default function FileManager() {
       { separator: true as const },
       { icon: Download, label: 'تحميل', onClick: handleDownload, disabled: itemType === 'folder' },
       ...(fileSystemMode === 'database' ? [
-        { icon: History, label: 'الإصدارات', onClick: () => console.log('Versions:', itemName), disabled: itemType === 'folder' },
+        { icon: History, label: 'الإصدارات', onClick: () => {
+          toast({
+            title: "قريباً",
+            description: "سيتم إضافة إدارة الإصدارات قريباً",
+          });
+        }, disabled: itemType === 'folder' },
       ] : [
         { icon: Info, label: 'خصائص', onClick: () => {
           const realItem = item as RealFileItem;
