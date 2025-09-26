@@ -273,36 +273,93 @@ export class PM2Service {
     try {
       const { stdout } = await execAsync(`pm2 jlist`);
       
-      // Clean and validate JSON output
+      // Clean and validate JSON output - handle PM2 update messages
       let cleanOutput = stdout.trim();
       
-      // Remove any non-JSON content that might be at the beginning or end
-      const jsonStart = cleanOutput.indexOf('[');
-      const jsonEnd = cleanOutput.lastIndexOf(']');
+      // Remove PM2 update messages and ASCII art
+      const lines = cleanOutput.split('\n');
+      const jsonLines: string[] = [];
+      let inJsonSection = false;
       
-      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-        cleanOutput = cleanOutput.substring(jsonStart, jsonEnd + 1);
+      for (const line of lines) {
+        // Skip PM2 update messages and status lines
+        if (line.includes('In-memory PM2 is out-of-date') ||
+            line.includes('$ pm2 update') ||
+            line.includes('PM2 version:') ||
+            line.includes('Local PM2 version:') ||
+            line.includes('>>>>') ||
+            line.match(/^[\s\-_\/\\|]+$/)) {
+          continue;
+        }
+        
+        // Look for JSON start
+        if (line.trim().startsWith('[')) {
+          inJsonSection = true;
+        }
+        
+        if (inJsonSection) {
+          jsonLines.push(line);
+        }
+      }
+      
+      // If we found JSON lines, join them back
+      if (jsonLines.length > 0) {
+        cleanOutput = jsonLines.join('\n').trim();
+      }
+      
+      // Fallback: Extract JSON using brackets if the above didn't work
+      if (!cleanOutput.startsWith('[')) {
+        const jsonStart = cleanOutput.indexOf('[');
+        const jsonEnd = cleanOutput.lastIndexOf(']');
+        
+        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+          cleanOutput = cleanOutput.substring(jsonStart, jsonEnd + 1);
+        }
       }
       
       // Try to parse JSON with better error handling
       let processes: PM2Process[] = [];
       
       try {
-        processes = JSON.parse(cleanOutput);
-        
-        // Validate that it's an array
-        if (!Array.isArray(processes)) {
-          console.warn('PM2 jlist did not return an array, falling back to empty array');
-          processes = [];
+        if (cleanOutput.trim()) {
+          processes = JSON.parse(cleanOutput);
+          
+          // Validate that it's an array
+          if (!Array.isArray(processes)) {
+            console.warn('PM2 jlist did not return an array, falling back to empty array');
+            processes = [];
+          }
         }
       } catch (parseError) {
         console.error('Failed to parse PM2 JSON output:', parseError);
         console.error('Raw output:', stdout);
+        console.error('Cleaned output:', cleanOutput);
         
-        // Try alternative command
+        // Try alternative command with force update
         try {
+          // Try updating PM2 first if needed
+          if (stdout.includes('In-memory PM2 is out-of-date')) {
+            console.log('Attempting PM2 update...');
+            try {
+              await execAsync('pm2 update');
+              console.log('PM2 updated successfully');
+            } catch (updateError) {
+              console.warn('PM2 update failed, continuing with current version');
+            }
+          }
+          
           const { stdout: altOutput } = await execAsync(`pm2 list --format json`);
-          processes = JSON.parse(altOutput.trim());
+          let altCleanOutput = altOutput.trim();
+          
+          // Clean alternative output too
+          const altJsonStart = altCleanOutput.indexOf('[');
+          const altJsonEnd = altCleanOutput.lastIndexOf(']');
+          
+          if (altJsonStart !== -1 && altJsonEnd !== -1 && altJsonEnd > altJsonStart) {
+            altCleanOutput = altCleanOutput.substring(altJsonStart, altJsonEnd + 1);
+          }
+          
+          processes = JSON.parse(altCleanOutput);
         } catch (altError) {
           console.error('Alternative PM2 command also failed:', altError);
           processes = [];
