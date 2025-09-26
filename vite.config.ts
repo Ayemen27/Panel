@@ -42,11 +42,11 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     hmr: {
-      // استخدام منفذ 24678 لـ HMR دائماً
       port: 24678,
       host: process.env.REPL_ID ? "0.0.0.0" : "localhost",
-      // إضافة إعدادات أمان إضافية
       clientPort: process.env.REPL_ID ? 443 : 24678,
+      // إصلاح مشكلة WebSocket URL
+      protocol: process.env.REPL_ID ? 'wss' : 'ws',
     },
     host: process.env.REPL_ID ? "0.0.0.0" : "localhost",
     port: 5173,

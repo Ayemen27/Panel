@@ -43,14 +43,24 @@ export function useWebSocket() {
           wsUrl.includes('NaN') || 
           wsUrl.includes('null') ||
           wsUrl === 'wss:///ws' ||
-          wsUrl === 'ws:///ws') {
+          wsUrl === 'ws:///ws' ||
+          wsUrl.length < 10) {
         console.error('❌ Invalid WebSocket URL detected:', wsUrl);
         console.error('❌ Environment config:', ENV_CONFIG);
         console.error('❌ Current location:', typeof window !== 'undefined' ? window.location : 'server');
-        return;
+        
+        // محاولة إنشاء URL احتياطي
+        if (typeof window !== 'undefined') {
+          const fallbackUrl = `wss://${window.location.hostname}/ws`;
+          console.log('🔄 Trying fallback URL:', fallbackUrl);
+          wsRef.current = new WebSocket(fallbackUrl);
+        } else {
+          return;
+        }
+      } else {
+        console.log('🔌 Connecting to WebSocket:', wsUrl);
+        wsRef.current = new WebSocket(wsUrl);
       }
-
-      console.log('🔌 Connecting to WebSocket:', wsUrl);
 
       wsRef.current = new WebSocket(wsUrl);
 

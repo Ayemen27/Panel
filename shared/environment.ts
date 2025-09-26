@@ -33,12 +33,20 @@ export function detectEnvironment(): EnvironmentConfig {
     processEnv.REPL_ID || 
     processEnv.REPLIT_DB_URL || 
     processEnv.REPL_SLUG ||
+    // في المتصفح، اكتشف Replit من النطاق
     (typeof window !== 'undefined' && window.location && (
       window.location.hostname.includes('replit.dev') ||
       window.location.hostname.includes('repl.co') ||
       window.location.hostname.includes('sisko.replit.dev') ||
       window.location.hostname.includes('pike.replit.dev') ||
       window.location.hostname.includes('worf.replit.dev')
+    )) ||
+    // في الخادم، تحقق من متغيرات النظام الإضافية
+    (typeof process !== 'undefined' && (
+      process.env.REPLIT_CLUSTER || 
+      process.env.REPLIT_ENVIRONMENT ||
+      process.env.NODE_ENV === 'development' && 
+      (process.env.HOSTNAME && process.env.HOSTNAME.includes('replit'))
     ))
   );
 
@@ -216,28 +224,33 @@ export function getWebSocketUrl(): string {
     // في المتصفح - استخدم الهوست الحالي مع البروتوكول المناسب
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
+    const port = window.location.port;
     
     // التحقق من صحة القيم
-    if (!host || host === 'undefined' || host === 'null') {
+    if (!host || host === 'undefined' || host === 'null' || host.length === 0) {
       console.warn('Invalid hostname detected, using fallback');
       return 'wss://localhost:6000/ws';
     }
     
-    // للنطاق المخصص أو Replit، استخدم المنفذ من النافذة
+    // للنطاق المخصص أو Replit، استخدم الهوست الحالي بدون منفذ إضافي
     if (host.includes('replit.dev') || host.includes('repl.co') || host === 'panel.binarjoinanelytic.info') {
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      // استخدم نفس المنفذ المستخدم في المتصفح أو المنفذ الافتراضي
+      const finalPort = port || (protocol === 'wss:' ? '443' : '80');
+      const wsUrl = finalPort === '443' || finalPort === '80' ? 
+        `${protocol}//${host}/ws` : 
+        `${protocol}//${host}:${finalPort}/ws`;
       console.log('Using Replit/Custom domain WebSocket URL:', wsUrl);
       return wsUrl;
     }
     
     // للتطوير المحلي
-    const port = ENV_CONFIG.websocket.port;
-    if (!port || port === 0 || isNaN(port)) {
+    const wsPort = ENV_CONFIG.websocket.port || 6000;
+    if (!wsPort || wsPort === 0 || isNaN(wsPort)) {
       console.warn('Invalid WebSocket port, using default 6000');
       return `${protocol}//${host}:6000/ws`;
     }
     
-    return `${protocol}//${host}:${port}/ws`;
+    return `${protocol}//${host}:${wsPort}/ws`;
   }
   
   // في الخادم - التحقق من صحة القيم
