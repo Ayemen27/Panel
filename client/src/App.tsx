@@ -57,13 +57,13 @@ function Router() {
   return (
     <Switch>
       {!isAuthenticated ? (
-        // المستخدم غير مسجل دخول - إظهار صفحات عامة
+        // المستخدم غير مسجل دخول - إظهار صفحة تسجيل الدخول فقط
         <>
-          <Route path="/auth">
+          <Route path="/">
             <AuthPage />
           </Route>
           <Route>
-            <Landing />
+            <AuthPage />
           </Route>
         </>
       ) : (
