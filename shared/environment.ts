@@ -158,13 +158,13 @@ export function detectEnvironment(): EnvironmentConfig {
       name: 'production',
       isReplit: false,
       host: '0.0.0.0',
-      port: parseInt(processEnv.PORT || '3000'),
+      port: parseInt(processEnv.PORT || '6000'),
       hmr: {
         port: 24678,
         host: 'localhost',
       },
       websocket: {
-        port: parseInt(processEnv.WS_PORT || processEnv.PORT || '3000'),
+        port: parseInt(processEnv.WS_PORT || processEnv.PORT || '6000'),
         host: '0.0.0.0',
         protocol: 'wss',
       },
@@ -184,13 +184,13 @@ export function detectEnvironment(): EnvironmentConfig {
     name: 'development',
     isReplit: false,
     host: 'localhost',
-    port: parseInt(processEnv.PORT || '3000'),
+    port: parseInt(processEnv.PORT || '6000'),
     hmr: {
       port: 24678,
       host: 'localhost',
     },
     websocket: {
-      port: parseInt(processEnv.WS_PORT || '8080'),
+      port: parseInt(processEnv.WS_PORT || processEnv.PORT || '6000'),
       host: 'localhost',
       protocol: 'ws',
     },
