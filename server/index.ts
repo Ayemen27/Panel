@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { setupAuth } from './replitAuth.js';
 
 // SSL certificate verification is enabled for security
 // If you encounter SSL issues with database connections, configure proper certificates
@@ -11,8 +10,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// تهيئة نظام المصادقة
-await setupAuth(app);
+// Authentication is now handled in registerRoutes
 
 app.use((req, res, next) => {
   const start = Date.now();
