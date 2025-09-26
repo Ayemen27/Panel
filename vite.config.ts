@@ -23,7 +23,11 @@ export default defineConfig({
     },
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     'process.env.PORT': JSON.stringify(process.env.PORT || '5000'),
-    'process.env.VITE_PORT': JSON.stringify(process.env.PORT || '5000')
+    'process.env.VITE_PORT': JSON.stringify(process.env.PORT || '5000'),
+    'import.meta.env.VITE_PORT': JSON.stringify(process.env.PORT || '5000')
+  },
+  env: {
+    VITE_PORT: process.env.PORT || '5000'
   },
   plugins: [
     react(),

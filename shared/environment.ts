@@ -38,11 +38,25 @@ export function detectEnvironment(): EnvironmentConfig {
     ? (import.meta?.env?.MODE || 'development')
     : (processEnv.NODE_ENV || 'development');
 
-  // قراءة المنفذ من متغيرات البيئة بشكل صحيح في المتصفح والخادم
+  // قراءة المنفذ من متغيرات البيئة بشكل تلقائي في المتصفح والخادم
   const getPortFromEnv = (): number => {
     if (typeof window !== 'undefined') {
-      // في المتصفح - قراءة من process.env المُعرّف في vite.config.ts
-      return parseInt((window as any).process?.env?.PORT || '5000', 10);
+      // في المتصفح - محاولة قراءة من مصادر متعددة
+      const windowProcess = (window as any).process?.env;
+      const importMetaEnv = import.meta?.env;
+      
+      // أولاً: محاولة قراءة من window.process.env
+      if (windowProcess?.PORT) {
+        return parseInt(windowProcess.PORT, 10);
+      }
+      
+      // ثانياً: محاولة قراءة من import.meta.env
+      if (importMetaEnv?.VITE_PORT) {
+        return parseInt(importMetaEnv.VITE_PORT, 10);
+      }
+      
+      // ثالثاً: استخدام القيمة الافتراضية
+      return 5000;
     } else {
       // في الخادم - قراءة من process.env مباشرة
       return parseInt(processEnv.PORT || '5000', 10);
