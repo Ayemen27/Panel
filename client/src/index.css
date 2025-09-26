@@ -53,6 +53,12 @@
   --ring: hsl(217, 91%, 60%);
 }
 
+@layer utilities {
+  .border-border {
+    border-color: var(--border);
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
