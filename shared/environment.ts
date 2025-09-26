@@ -77,6 +77,33 @@ export function detectEnvironment(): EnvironmentConfig {
   if (isReplit) {
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : '0.0.0.0';
     
+    // إنشاء قائمة CORS ديناميكية تدعم جميع نطاقات Replit
+    const corsOrigins = [
+      'https://*.replit.dev',
+      'https://*.repl.co', 
+      'https://replit.com',
+      'https://panel.binarjoinanelytic.info',
+      'http://panel.binarjoinanelytic.info'
+    ];
+
+    // إضافة النطاق الحالي إذا كان من Replit
+    if (typeof window !== 'undefined' && currentHost) {
+      const currentOrigin = `${window.location.protocol}//${currentHost}`;
+      if (currentHost.includes('replit.dev') || currentHost.includes('repl.co')) {
+        corsOrigins.push(currentOrigin);
+      }
+    }
+
+    // إضافة نطاقات التطوير إذا لزم الأمر  
+    if (isDevelopment) {
+      corsOrigins.push(
+        'http://localhost:3000',
+        'http://localhost:5173', 
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173'
+      );
+    }
+    
     return {
       name: 'replit',
       isReplit: true,
@@ -93,19 +120,7 @@ export function detectEnvironment(): EnvironmentConfig {
         protocol: 'wss',
       },
       cors: {
-        origin: [
-          'https://*.replit.dev',
-          'https://*.repl.co',
-          'https://replit.com',
-          'https://panel.binarjoinanelytic.info',
-          'http://panel.binarjoinanelytic.info',
-          ...(isDevelopment ? [
-            'http://localhost:3000',
-            'http://localhost:5173',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:5173'
-          ] : [])
-        ],
+        origin: corsOrigins,
         credentials: true,
       },
       database: {

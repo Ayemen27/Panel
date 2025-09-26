@@ -47,11 +47,18 @@ function setupCORS(app: Express) {
         // السماح بالطلبات بدون origin (مثل تطبيقات الموبايل)
         if (!origin) return callback(null, true);
 
-        const isAllowed = ENV_CONFIG.cors.origin.some(allowedOrigin => {
+        const allowedOrigins = ENV_CONFIG.cors.origin;
+
+        // التحقق من النطاقات المسموحة
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
           if (typeof allowedOrigin === 'string') {
-            return origin === allowedOrigin;
-          }
-          if (allowedOrigin instanceof RegExp) {
+            // مطابقة مباشرة أو wildcard
+            if (allowedOrigin.includes('*')) {
+              const pattern = allowedOrigin.replace(/\*/g, '.*');
+              return new RegExp(`^${pattern}$`).test(origin);
+            }
+            return allowedOrigin === origin;
+          } else if (allowedOrigin instanceof RegExp) {
             return allowedOrigin.test(origin);
           }
           return false;
@@ -60,7 +67,7 @@ function setupCORS(app: Express) {
         if (isAllowed) {
           callback(null, true);
         } else {
-          console.warn(`Security: Blocked request from unauthorized origin: ${origin}`);
+          console.log(`Security: Blocked request from unauthorized origin: ${origin}`);
           callback(new Error('Not allowed by CORS'));
         }
       },
@@ -1642,9 +1649,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const isAllowed = ENV_CONFIG.cors.origin.some(allowedOrigin => {
         if (typeof allowedOrigin === 'string') {
-          return origin === allowedOrigin;
-        }
-        if (allowedOrigin instanceof RegExp) {
+          // مطابقة مباشرة أو wildcard
+          if (allowedOrigin.includes('*')) {
+            const pattern = allowedOrigin.replace(/\*/g, '.*');
+            return new RegExp(`^${pattern}$`).test(origin);
+          }
+          return allowedOrigin === origin;
+        } else if (allowedOrigin instanceof RegExp) {
           return allowedOrigin.test(origin);
         }
         return false;
