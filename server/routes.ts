@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage.js";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, requireRole } from "./auth";
 import { 
   insertApplicationSchema, 
   insertDomainSchema, 
@@ -72,46 +72,17 @@ function setupCORS(app: Express) {
   });
 }
 
-// Enhanced authentication middleware for Replit OIDC with role-based access
+// Enhanced authentication middleware for custom auth system
 interface AuthenticatedRequest extends Request {
-  user?: any; // Replit OIDC user session
+  user?: any; // Custom authenticated user session
   body: any;
   params: any;
   query: any;
 }
 
-const requireRole = (roles: string[]) => {
-  return async (req: AuthenticatedRequest, res: any, next: any) => {
-    if (!req.user || !req.user.claims) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    try {
-      // Get user from database to check role
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user || !user.isActive) {
-        return res.status(401).json({ message: 'User not found or inactive' });
-      }
-
-      if (roles.length > 0 && !roles.includes(user.role || 'user')) {
-        return res.status(403).json({ message: 'Insufficient permissions' });
-      }
-
-      // Add user data to request for downstream use
-      req.user.dbUser = user;
-      next();
-    } catch (error) {
-      console.error('Role check error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  };
-};
-
-// Helper function to get user ID from Replit OIDC
+// Helper function to get user ID from custom auth
 const getUserId = (req: AuthenticatedRequest): string | null => {
-  return req.user?.claims?.sub || null;
+  return req.user?.id || null;
 };
 
 // Broadcast function for real-time updates
@@ -130,28 +101,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS first
   setupCORS(app);
 
-  // Setup Replit authentication
-  await setupAuth(app);
+  // Setup custom authentication
+  setupAuth(app);
 
-  // Auth routes for Replit OIDC
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      res.json(user);
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
+  // Auth routes are now handled in auth.ts
 
   // Admin routes with role-based access
-  app.get('/api/admin/users', isAuthenticated, requireRole(['admin']), async (req: any, res) => {
+  app.get('/api/admin/users', isAuthenticated, requireRole('admin'), async (req: any, res) => {
     try {
       const users = await storage.getUsersByRole('user');
       res.json(users);
@@ -161,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/users/:id/role', isAuthenticated, requireRole(['admin']), async (req: any, res) => {
+  app.patch('/api/admin/users/:id/role', isAuthenticated, requireRole('admin'), async (req: any, res) => {
     try {
       const { id } = req.params;
       const { role } = req.body;
@@ -179,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin paths management routes
-  app.get('/api/admin/paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.get('/api/admin/paths', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { type } = req.query;
 
@@ -192,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.post('/api/admin/paths', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
       const pathData = insertAllowedPathSchema.parse({
@@ -209,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/admin/paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.put('/api/admin/paths/:id', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -226,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/admin/paths/:id', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
 
@@ -240,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Migration route for adding default paths
-  app.post('/api/admin/setup-default-paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.post('/api/admin/setup-default-paths', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       // Import migration function dynamically
       const { addDefaultPaths } = await import('./migrations/001_add_default_paths.js');
@@ -731,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/nginx/reload', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.post('/api/nginx/reload', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       await nginxService.reloadNginx();
       const result = { success: true, message: 'Nginx reloaded successfully' };
@@ -1052,7 +1008,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/files/trash/:trashId', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/files/trash/:trashId', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
       const { trashId } = req.params;
@@ -1066,7 +1022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/files/trash', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/files/trash', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
       
@@ -1569,7 +1525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Database connection test
-  app.get('/api/db/test', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.get('/api/db/test', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       await storage.testConnection();
       res.json({ status: 'connected', message: 'Database connection successful' });
@@ -1583,7 +1539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Terminal commands (restricted)
-  app.post('/api/terminal/execute', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.post('/api/terminal/execute', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { command } = req.body;
 
@@ -2229,7 +2185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===================================
 
   // Get all allowed paths
-  app.get('/api/real-files/allowed-paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.get('/api/real-files/allowed-paths', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { type } = req.query;
 
@@ -2243,7 +2199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new allowed path
-  app.post('/api/real-files/allowed-paths', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.post('/api/real-files/allowed-paths', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
       const pathData = insertAllowedPathSchema.parse({
@@ -2261,7 +2217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update allowed path
-  app.put('/api/real-files/allowed-paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.put('/api/real-files/allowed-paths/:id', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -2279,7 +2235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete allowed path
-  app.delete('/api/real-files/allowed-paths/:id', isAuthenticated, requireRole(['admin']), async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/real-files/allowed-paths/:id', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
 
