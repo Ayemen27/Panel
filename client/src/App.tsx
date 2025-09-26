@@ -157,19 +157,14 @@ function Router() {
               </Suspense>
             </MainLayout>
           </Route>
-          <Route path="/files">
+          <Route path="/file-manager">
             <MainLayout>
               <Suspense fallback={<PageLoader />}>
                 <FileManager />
               </Suspense>
             </MainLayout>
           </Route>
-          <Route path="/file-manager">
-            <Suspense fallback={<PageLoader />}>
-              <FileManager />
-            </Suspense>
-          </Route>
-          <Route path="/admin/paths">
+          <Route path="/path-manager">
             <MainLayout>
               <AdminOnly>
                 <Suspense fallback={<PageLoader />}>
