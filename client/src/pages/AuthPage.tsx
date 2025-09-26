@@ -1,10 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, LogIn, UserPlus, Server, ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -128,7 +128,7 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* الجانب الأيسر - معلومات النظام */}
-        <div className="text-center lg:text-right">
+        <div className="text-center lg:text-right order-2 lg:order-1">
           <div className="mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
               <Server className="w-8 h-8 text-primary-foreground" />
@@ -142,27 +142,27 @@ export default function AuthPage() {
           </div>
 
           <div className="space-y-4 text-sm text-muted-foreground">
-            <div className="flex items-center justify-center lg:justify-start gap-2">
-              <ArrowRight className="w-4 h-4 text-primary" />
+            <div className="flex items-center justify-center lg:justify-end gap-2">
               <span>إدارة التطبيقات والنطاقات</span>
-            </div>
-            <div className="flex items-center justify-center lg:justify-start gap-2">
               <ArrowRight className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex items-center justify-center lg:justify-end gap-2">
               <span>شهادات SSL التلقائية</span>
-            </div>
-            <div className="flex items-center justify-center lg:justify-start gap-2">
               <ArrowRight className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex items-center justify-center lg:justify-end gap-2">
               <span>مراقبة النظام في الوقت الفعلي</span>
-            </div>
-            <div className="flex items-center justify-center lg:justify-start gap-2">
               <ArrowRight className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex items-center justify-center lg:justify-end gap-2">
               <span>واجهة عربية متكاملة</span>
+              <ArrowRight className="w-4 h-4 text-primary" />
             </div>
           </div>
         </div>
 
         {/* الجانب الأيمن - نماذج تسجيل الدخول */}
-        <div className="w-full max-w-md mx-auto">
+        <div className="w-full max-w-md mx-auto order-1 lg:order-2">
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login" className="flex items-center gap-2">
@@ -177,14 +177,14 @@ export default function AuthPage() {
 
             {/* تسجيل الدخول */}
             <TabsContent value="login">
-              <Card>
+              <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="text-center">
-                  <CardTitle>تسجيل الدخول</CardTitle>
+                  <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
                   <CardDescription>
                     أدخل بياناتك للوصول إلى لوحة التحكم
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="username">اسم المستخدم</Label>
@@ -194,6 +194,7 @@ export default function AuthPage() {
                         placeholder="أدخل اسم المستخدم"
                         disabled={loginMutation.isPending}
                         data-testid="input-username-login"
+                        className="h-12"
                       />
                       {loginForm.formState.errors.username && (
                         <p className="text-sm text-destructive">
@@ -212,6 +213,7 @@ export default function AuthPage() {
                           placeholder="أدخل كلمة المرور"
                           disabled={loginMutation.isPending}
                           data-testid="input-password-login"
+                          className="h-12 pl-12"
                         />
                         <Button
                           type="button"
@@ -237,7 +239,7 @@ export default function AuthPage() {
 
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full h-12 text-base"
                       disabled={loginMutation.isPending}
                       data-testid="button-login"
                     >
@@ -260,16 +262,16 @@ export default function AuthPage() {
 
             {/* إنشاء حساب جديد */}
             <TabsContent value="register">
-              <Card>
+              <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="text-center">
-                  <CardTitle>إنشاء حساب جديد</CardTitle>
+                  <CardTitle className="text-2xl">إنشاء حساب جديد</CardTitle>
                   <CardDescription>
                     املأ البيانات لإنشاء حسابك الجديد
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">الاسم الأول</Label>
                         <Input
@@ -278,7 +280,13 @@ export default function AuthPage() {
                           placeholder="الاسم الأول"
                           disabled={registerMutation.isPending}
                           data-testid="input-firstname"
+                          className="h-12"
                         />
+                        {registerForm.formState.errors.firstName && (
+                          <p className="text-sm text-destructive">
+                            {registerForm.formState.errors.firstName.message}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">الاسم الأخير</Label>
@@ -288,7 +296,13 @@ export default function AuthPage() {
                           placeholder="الاسم الأخير"
                           disabled={registerMutation.isPending}
                           data-testid="input-lastname"
+                          className="h-12"
                         />
+                        {registerForm.formState.errors.lastName && (
+                          <p className="text-sm text-destructive">
+                            {registerForm.formState.errors.lastName.message}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -301,6 +315,7 @@ export default function AuthPage() {
                         placeholder="example@domain.com"
                         disabled={registerMutation.isPending}
                         data-testid="input-email"
+                        className="h-12"
                       />
                       {registerForm.formState.errors.email && (
                         <p className="text-sm text-destructive">
@@ -317,6 +332,7 @@ export default function AuthPage() {
                         placeholder="اسم المستخدم"
                         disabled={registerMutation.isPending}
                         data-testid="input-username-register"
+                        className="h-12"
                       />
                       {registerForm.formState.errors.username && (
                         <p className="text-sm text-destructive">
@@ -335,6 +351,7 @@ export default function AuthPage() {
                           placeholder="أدخل كلمة المرور"
                           disabled={registerMutation.isPending}
                           data-testid="input-password-register"
+                          className="h-12 pl-12"
                         />
                         <Button
                           type="button"
@@ -368,6 +385,7 @@ export default function AuthPage() {
                           placeholder="أعد إدخال كلمة المرور"
                           disabled={registerMutation.isPending}
                           data-testid="input-confirm-password"
+                          className="h-12 pl-12"
                         />
                         <Button
                           type="button"
@@ -393,7 +411,7 @@ export default function AuthPage() {
 
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full h-12 text-base"
                       disabled={registerMutation.isPending}
                       data-testid="button-register"
                     >
