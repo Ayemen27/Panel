@@ -216,25 +216,43 @@ export function getWebSocketUrl(): string {
     // في المتصفح - استخدم الهوست الحالي مع البروتوكول المناسب
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = ENV_CONFIG.websocket.port;
+    
+    // التحقق من صحة القيم
+    if (!host || host === 'undefined' || host === 'null') {
+      console.warn('Invalid hostname detected, using fallback');
+      return 'wss://localhost:6000/ws';
+    }
     
     // للنطاق المخصص أو Replit، استخدم المنفذ من النافذة
-    if (host.includes('replit.dev') || host === 'panel.binarjoinanelytic.info') {
-      return `${protocol}//${window.location.host}/ws`;
+    if (host.includes('replit.dev') || host.includes('repl.co') || host === 'panel.binarjoinanelytic.info') {
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      console.log('Using Replit/Custom domain WebSocket URL:', wsUrl);
+      return wsUrl;
+    }
+    
+    // للتطوير المحلي
+    const port = ENV_CONFIG.websocket.port;
+    if (!port || port === 0 || isNaN(port)) {
+      console.warn('Invalid WebSocket port, using default 6000');
+      return `${protocol}//${host}:6000/ws`;
     }
     
     return `${protocol}//${host}:${port}/ws`;
   }
   
-  // في الخادم
-  return `${ENV_CONFIG.websocket.protocol}://${ENV_CONFIG.websocket.host}:${ENV_CONFIG.websocket.port}/ws`;
+  // في الخادم - التحقق من صحة القيم
+  const protocol = ENV_CONFIG.websocket.protocol || 'ws';
+  const host = ENV_CONFIG.websocket.host || 'localhost';
+  const port = ENV_CONFIG.websocket.port || 6000;
+  
+  return `${protocol}://${host}:${port}/ws`;
 }
 
 export function logEnvironmentInfo(): void {
   const isCustomDomain = typeof window !== 'undefined' && 
     window.location.hostname === 'panel.binarjoinanelytic.info';
   const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'server';
-    
+  
   console.log('🌍 Environment Configuration:');
   console.log(`📍 Environment: ${ENV_CONFIG.name}`);
   console.log(`🔧 Replit: ${ENV_CONFIG.isReplit}`);
@@ -251,4 +269,23 @@ export function logEnvironmentInfo(): void {
   console.log(`📡 API Base: ${getApiBaseUrl()}`);
   console.log(`🔌 WS URL: ${getWebSocketUrl()}`);
   console.log(`🔐 CORS Origins:`, ENV_CONFIG.cors.origin);
+  
+  // إضافة تشخيص للمشاكل الشائعة
+  const wsUrl = getWebSocketUrl();
+  if (wsUrl.includes('undefined') || wsUrl.includes('NaN')) {
+    console.error('❌ خطأ: WebSocket URL يحتوي على قيم غير صالحة!');
+  }
+  
+  if (typeof window !== 'undefined') {
+    console.log(`🌐 Current URL: ${window.location.href}`);
+    console.log(`🔒 Protocol: ${window.location.protocol}`);
+    console.log(`🏠 Hostname: ${window.location.hostname}`);
+    console.log(`🚪 Port: ${window.location.port}`);
+  }
+  
+  // التحقق من توفر process.env
+  const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
+  console.log(`🔧 NODE_ENV: ${processEnv.NODE_ENV || 'undefined'}`);
+  console.log(`🔧 PORT: ${processEnv.PORT || 'undefined'}`);
+  console.log(`🔧 REPL_ID: ${processEnv.REPL_ID ? 'defined' : 'undefined'}`);
 }

@@ -37,13 +37,20 @@ export function useWebSocket() {
       // Use the current domain for WebSocket connection with proper error handling
       const wsUrl = getWebSocketUrl();
 
-      if (!wsUrl || wsUrl.includes('undefined') || wsUrl.includes('NaN')) {
-        console.warn('Invalid WebSocket URL detected:', wsUrl);
-        console.warn('Environment config:', ENV_CONFIG);
+      // تحسين التحقق من صحة URL
+      if (!wsUrl || 
+          wsUrl.includes('undefined') || 
+          wsUrl.includes('NaN') || 
+          wsUrl.includes('null') ||
+          wsUrl === 'wss:///ws' ||
+          wsUrl === 'ws:///ws') {
+        console.error('❌ Invalid WebSocket URL detected:', wsUrl);
+        console.error('❌ Environment config:', ENV_CONFIG);
+        console.error('❌ Current location:', typeof window !== 'undefined' ? window.location : 'server');
         return;
       }
 
-      console.log('Connecting to WebSocket:', wsUrl);
+      console.log('🔌 Connecting to WebSocket:', wsUrl);
 
       wsRef.current = new WebSocket(wsUrl);
 

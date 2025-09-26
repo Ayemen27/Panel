@@ -45,6 +45,12 @@ export default defineConfig({
       // استخدام منفذ 24678 لـ HMR دائماً
       port: 24678,
       host: process.env.REPL_ID ? "0.0.0.0" : "localhost",
+      // إضافة إعدادات أمان إضافية
+      clientPort: process.env.REPL_ID ? 443 : 24678,
+    },
+    host: process.env.REPL_ID ? "0.0.0.0" : "localhost",
+    port: 5173,
+    strictPort: false,t",
     },
   },
 });
