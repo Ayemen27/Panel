@@ -27,12 +27,12 @@ export function useAuth() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
-  // التحقق من مصادقة Replit فقط
+  // التحقق من المصادقة الجديدة
   const { data: user, isLoading: isAuthLoading, error } = useQuery({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/user"],
     queryFn: async (): Promise<User | null> => {
       try {
-        const response = await fetch("/api/auth/user", {
+        const response = await fetch("/api/user", {
           credentials: "include",
         });
 
@@ -70,8 +70,19 @@ export function useAuth() {
   }, [isAuthenticated, user, isLoading, navigate]);
 
   const logout = async () => {
-    // تسجيل خروج Replit
-    window.location.href = "/api/logout";
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      queryClient.setQueryData(["/api/user"], null);
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // في حالة الخطأ، نقوم بتنظيف البيانات محلياً والتوجيه للصفحة الرئيسية
+      queryClient.setQueryData(["/api/user"], null);
+      navigate('/');
+    }
   };
 
   // Role checking helpers
