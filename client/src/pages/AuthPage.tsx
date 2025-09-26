@@ -72,7 +72,7 @@ export default function AuthPage() {
       return await res.json();
     },
     onSuccess: (user) => {
-      queryClient.setQueryData(["/api/auth/user"], user);
+      queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: `أهلاً بك ${user.firstName || user.username}`,
@@ -100,7 +100,7 @@ export default function AuthPage() {
       return await res.json();
     },
     onSuccess: (user) => {
-      queryClient.setQueryData(["/api/auth/user"], user);
+      queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "تم إنشاء الحساب بنجاح",
         description: `أهلاً بك ${user.firstName || user.username}`,
@@ -142,10 +142,10 @@ export default function AuthPage() {
               <Server className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent leading-tight">
-              لوحة إدارة Nginx
+              لوحة الإدارة الذكية
             </h1>
             <p className="text-xl lg:text-2xl text-blue-100 mb-8 leading-relaxed">
-              نظام إدارة شامل للخوادم والتطبيقات مع أمان متقدم
+              نظام إدارة شامل ومتطور للخوادم والتطبيقات
             </p>
           </div>
 
