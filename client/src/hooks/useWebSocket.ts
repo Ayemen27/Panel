@@ -37,7 +37,7 @@ export function useWebSocket() {
       // Use the current domain for WebSocket connection with proper error handling
       const wsUrl = getWebSocketUrl();
 
-      // تحسين التحقق من صحة URL
+      // تحسين التحقق من صحة URL مع fallback ذكي
       if (!wsUrl || 
           wsUrl.includes('undefined') || 
           wsUrl.includes('NaN') || 
@@ -49,10 +49,20 @@ export function useWebSocket() {
         console.error('❌ Environment config:', ENV_CONFIG);
         console.error('❌ Current location:', typeof window !== 'undefined' ? window.location : 'server');
         
-        // محاولة إنشاء URL احتياطي محسن
+        // محاولة إنشاء URL احتياطي ذكي
         if (typeof window !== 'undefined') {
           const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const fallbackUrl = `${protocol}//${window.location.hostname}/ws`;
+          const hostname = window.location.hostname;
+          
+          // تحديد المنفذ بناءً على البيئة
+          let fallbackUrl;
+          if (hostname.includes('replit.dev') || hostname.includes('repl.co')) {
+            fallbackUrl = `${protocol}//${hostname}/ws`;
+          } else {
+            const port = window.location.port || (protocol === 'wss:' ? '443' : '6000');
+            fallbackUrl = `${protocol}//${hostname}:${port}/ws`;
+          }
+          
           console.log('🔄 Trying fallback URL:', fallbackUrl);
           wsRef.current = new WebSocket(fallbackUrl);
         } else {

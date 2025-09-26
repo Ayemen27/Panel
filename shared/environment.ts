@@ -27,7 +27,11 @@ export interface EnvironmentConfig {
 export function detectEnvironment(): EnvironmentConfig {
   // Safe process access for browser/server compatibility
   const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
-  const nodeEnv = processEnv.NODE_ENV || 'development';
+  
+  // Use import.meta.env in browser, process.env on server
+  const nodeEnv = typeof window !== 'undefined' 
+    ? (import.meta?.env?.MODE || 'development')
+    : (processEnv.NODE_ENV || 'development');
   
   // تحسين اكتشاف Replit في المتصفح والخادم
   const isReplitBrowser = typeof window !== 'undefined' && window.location && (
@@ -92,12 +96,11 @@ export function detectEnvironment(): EnvironmentConfig {
     
     // إنشاء قائمة CORS ديناميكية مرنة لدعم جميع نطاقات Replit
     const corsOrigins: (string | RegExp)[] = [
-      // دعم جميع النطاقات الفرعية لـ Replit باستخدام Regex
+      // دعم شامل لجميع النطاقات الفرعية لـ Replit
       /^https:\/\/.*\.replit\.dev$/,
       /^https:\/\/.*\.repl\.co$/,
-      /^https:\/\/.*\.sisko\.replit\.dev$/,
-      /^https:\/\/.*\.pike\.replit\.dev$/,
-      /^https:\/\/.*\.worf\.replit\.dev$/,
+      /^http:\/\/.*\.replit\.dev$/,
+      /^http:\/\/.*\.repl\.co$/,
       'https://replit.com',
       'https://panel.binarjoinanelytic.info',
       'http://panel.binarjoinanelytic.info'
@@ -121,18 +124,22 @@ export function detectEnvironment(): EnvironmentConfig {
       );
     }
     
+    const serverPort = typeof window !== 'undefined' 
+      ? parseInt(window.location.port || '443')
+      : parseInt(processEnv.PORT || '6000');
+    
     return {
       name: 'replit',
       isReplit: true,
       host: '0.0.0.0',
-      port: parseInt(processEnv.PORT || '6000'),
+      port: serverPort,
       hmr: {
         port: 24678,
         host: currentHost,
         protocol: 'wss'
       },
       websocket: {
-        port: parseInt(processEnv.PORT || '6000'),
+        port: serverPort,
         host: currentHost,
         protocol: 'wss',
       },
@@ -223,28 +230,27 @@ export function getWebSocketUrl(): string {
     // في المتصفح - استخدم الهوست الحالي مع البروتوكول المناسب
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = window.location.port;
     
-    // التحقق من صحة القيم
+    // التحقق من صحة القيم مع fallback محسن
     if (!host || host === 'undefined' || host === 'null' || host.length === 0) {
       console.error('❌ Invalid hostname detected:', host);
-      // استخدام fallback أفضل
-      return protocol === 'wss:' ? 'wss://localhost:6000/ws' : 'ws://localhost:6000/ws';
+      return protocol === 'wss:' ? 'wss://0.0.0.0:6000/ws' : 'ws://0.0.0.0:6000/ws';
     }
     
-    // تحديد ما إذا كان هذا نطاق Replit
+    // تحديد ما إذا كان هذا نطاق Replit أو مخصص
     const isReplitDomain = host.includes('replit.dev') || host.includes('repl.co');
     const isCustomDomain = host === 'panel.binarjoinanelytic.info';
     
     if (isReplitDomain || isCustomDomain) {
       // لنطاقات Replit والنطاق المخصص، استخدم البروتوكول الآمن بدون منفذ
       const wsUrl = `${protocol}//${host}/ws`;
-      console.log('🔗 Using domain WebSocket URL:', wsUrl);
+      console.log('🔗 Using Replit/Custom domain WebSocket URL:', wsUrl);
       return wsUrl;
     }
     
-    // للتطوير المحلي، استخدم المنفذ المحدد
-    const wsPort = port || '6000';
+    // للتطوير المحلي، استخدم المنفذ الافتراضي أو المحدد
+    const currentPort = window.location.port;
+    const wsPort = currentPort || (protocol === 'wss:' ? '443' : '6000');
     const wsUrl = `${protocol}//${host}:${wsPort}/ws`;
     console.log('🏠 Using local WebSocket URL:', wsUrl);
     return wsUrl;
@@ -252,7 +258,7 @@ export function getWebSocketUrl(): string {
   
   // في الخادم
   const protocol = ENV_CONFIG.websocket.protocol || 'ws';
-  const host = ENV_CONFIG.websocket.host || 'localhost';
+  const host = ENV_CONFIG.websocket.host || '0.0.0.0';
   const port = ENV_CONFIG.websocket.port || 6000;
   
   return `${protocol}://${host}:${port}/ws`;
@@ -301,13 +307,18 @@ export function logEnvironmentInfo(): void {
     console.log(`🔍 Replit Domain Detected: ${isReplitDetected}`);
   }
   
-  // التحقق من توفر process.env
-  const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
-  console.log(`🔧 NODE_ENV: ${processEnv.NODE_ENV || 'undefined'}`);
-  console.log(`🔧 PORT: ${processEnv.PORT || 'undefined'}`);
-  console.log(`🔧 REPL_ID: ${processEnv.REPL_ID ? 'defined' : 'undefined'}`);
+  // التحقق من توفر process.env (server-side only)
+  if (typeof process !== 'undefined' && process.env) {
+    console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
+    console.log(`🔧 PORT: ${process.env.PORT || 'undefined'}`);
+    console.log(`🔧 REPL_ID: ${process.env.REPL_ID ? 'defined' : 'undefined'}`);
+  } else if (typeof window !== 'undefined' && import.meta?.env) {
+    console.log(`🔧 Browser MODE: ${import.meta.env.MODE || 'undefined'}`);
+    console.log(`🔧 Vite DEV: ${import.meta.env.DEV ? 'true' : 'false'}`);
+  }
   
   // معلومات إضافية للتشخيص
-  console.log(`🔧 Browser ENV: ${typeof window !== 'undefined' ? 'browser' : 'server'}`);
+  console.log(`🔧 Environment: ${typeof window !== 'undefined' ? 'browser' : 'server'}`);
   console.log(`🔧 Process Available: ${typeof process !== 'undefined'}`);
+  console.log(`🔧 Import.meta Available: ${typeof import.meta !== 'undefined'}`);
 }
