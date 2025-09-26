@@ -1,3 +1,7 @@
+// تحميل dotenv أولاً
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env' });
+
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import fs from 'fs';

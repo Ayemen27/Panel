@@ -1,4 +1,7 @@
-import 'dotenv/config'; // تحميل المتغيرات من ملف .env
+// تحميل متغيرات البيئة أولاً قبل أي شيء آخر
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env' });
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite.ts";

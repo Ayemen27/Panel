@@ -1,4 +1,10 @@
 
+// تحميل متغيرات البيئة من ملف .env
+import dotenv from 'dotenv';
+if (typeof process !== 'undefined' && process.env) {
+  dotenv.config({ path: '.env' });
+}
+
 export interface EnvironmentConfig {
   name: 'replit' | 'production' | 'development';
   isReplit: boolean;

@@ -1,6 +1,10 @@
 
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+
+// تحميل متغيرات البيئة من ملف .env فوراً
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 interface EnvironmentConfig {
   [key: string]: string | undefined;
