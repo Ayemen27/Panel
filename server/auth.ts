@@ -8,6 +8,7 @@ import { storage } from "./storage.js";
 import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import connectPg from "connect-pg-simple";
+import MemoryStore from "memorystore";
 
 declare global {
   namespace Express {
@@ -32,18 +33,37 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // أسبوع واحد
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
+  
+  let sessionStore;
+  
+  // Try to use PostgreSQL store with fallback to MemoryStore
+  try {
+    if (process.env.DATABASE_URL) {
+      const pgStore = connectPg(session);
+      sessionStore = new pgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: false,
+        ttl: sessionTtl,
+        tableName: "sessions",
+      });
+      console.log('Using PostgreSQL session store');
+    } else {
+      throw new Error('No DATABASE_URL provided');
+    }
+  } catch (error) {
+    console.warn('Failed to initialize PostgreSQL session store, falling back to MemoryStore:', error instanceof Error ? error.message : 'Unknown error');
+    // Fallback to MemoryStore
+    sessionStore = MemoryStore(session);
+    sessionStore = new sessionStore({
+      checkPeriod: sessionTtl, // prune expired entries every 24h
+    });
+    console.log('Using MemoryStore for sessions');
+  }
   
   const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
   
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
     store: sessionStore,
     resave: false,
     saveUninitialized: false,

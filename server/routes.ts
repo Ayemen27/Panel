@@ -1490,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System health check route (for HealthCheck page)
-  app.get('/api/system/health-check', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/system/health-check', async (req: AuthenticatedRequest, res) => {
     try {
       const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
