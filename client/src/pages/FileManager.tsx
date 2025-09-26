@@ -81,7 +81,8 @@ import {
   Image,
   Smartphone,
   BookOpen,
-  Cloud
+  Cloud,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -141,19 +142,19 @@ type FileSystemMode = 'database' | 'real';
 // File Manager Component
 export default function FileManager() {
   const { toast } = useToast();
-  
+
   // File System Mode State
   const [fileSystemMode, setFileSystemMode] = useState<FileSystemMode>('real');
-  
+
   // Database Files State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  
+
   // Real Files State
   const [currentPath, setCurrentPath] = useState<string>('/');
-  
+
   // Common State
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -167,13 +168,14 @@ export default function FileManager() {
   const [sortBy, setSortBy] = useState<'none' | 'name' | 'size' | 'date' | 'type'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [storageSection, setStorageSection] = useState('main');
-  const [showMainLibraries, setShowMainLibraries] = useState(true);
+  const [showMainLibraries, setShowMainLibraries] = useState(false);
   const [activeTab, setActiveTab] = useState<'files' | 'favorites' | 'recent'>('files');
-  
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
+
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/' }
   ]);
-  
+
   // Initialize real files with default allowed path
   useEffect(() => {
     if (fileSystemMode === 'real') {
@@ -200,11 +202,11 @@ export default function FileManager() {
         path: currentPath
       });
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || result.message);
       }
-      
+
       return result.data;
     },
     enabled: fileSystemMode === 'real',
@@ -257,7 +259,7 @@ export default function FileManager() {
         // Get recent files (last 7 days) and sort by date
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
+
         files = files.filter(file => {
           const fileDate = 'modified' in file ? new Date(file.modified) : 
                           'updatedAt' in file ? new Date(file.updatedAt) : new Date(0);
@@ -319,61 +321,12 @@ export default function FileManager() {
 
     return files;
   }, [fileSystemMode, searchQuery, databaseSearchResults, databaseFiles, realFilesData?.items, sortBy, sortOrder, activeTab]);
-  
+
   const isLoading = fileSystemMode === 'database' 
     ? (searchQuery ? isDatabaseSearching : isDatabaseLoading)
     : isRealFilesLoading;
-  
+
   const refetch = fileSystemMode === 'database' ? refetchDatabase : refetchRealFiles;
-
-  // Pull to refresh handler
-  const handlePullToRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [refetch]);
-
-  // Touch gesture handling
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 150;
-    const isRightSwipe = distance < -150;
-
-    if (isRightSwipe && breadcrumbs.length > 1) {
-      // Navigate back
-      const newBreadcrumbs = breadcrumbs.slice(0, -1);
-      setBreadcrumbs(newBreadcrumbs);
-      
-      // If returning to home, show main libraries
-      if (newBreadcrumbs.length === 1) {
-        setShowMainLibraries(true);
-        setStorageSection('main');
-        return;
-      }
-      
-      if (fileSystemMode === 'database') {
-        setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
-      } else {
-        setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
-      }
-    }
-  };
 
   // Create new file/folder mutation
   const createItemMutation = useMutation({
@@ -398,11 +351,11 @@ export default function FileManager() {
           mode: data.type === 'folder' ? '0755' : '0644'
         });
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message);
         }
-        
+
         return result;
       }
     },
@@ -417,6 +370,7 @@ export default function FileManager() {
         description: "تم إنشاء العنصر بنجاح",
       });
       setIsCreateModalOpen(false);
+      setShowCreateSheet(false);
     },
     onError: (error) => {
       toast({
@@ -439,11 +393,11 @@ export default function FileManager() {
           path: itemPath
         });
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message);
         }
-        
+
         return result;
       }
     },
@@ -464,128 +418,6 @@ export default function FileManager() {
       toast({
         title: "خطأ",
         description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Copy mutation
-  const copyMutation = useMutation({
-    mutationFn: async ({ sourcePath, destinationPath }: { sourcePath: string; destinationPath?: string }) => {
-      if (fileSystemMode === 'database') {
-        const response = await apiRequest('POST', `/api/files/${sourcePath}/copy`, {
-          destinationFolderId: destinationPath || currentFolderId
-        });
-        return await response.json();
-      } else {
-        // Real file system
-        const destPath = destinationPath || currentPath;
-        const response = await apiRequest('POST', '/api/real-files/copy', {
-          sourcePath,
-          destinationPath: destPath
-        });
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error || result.message);
-        }
-        
-        return result;
-      }
-    },
-    onSuccess: () => {
-      if (fileSystemMode === 'database') {
-        queryClient.invalidateQueries({ queryKey: ['/api/files', currentFolderId] });
-        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
-      }
-      toast({
-        title: "تم النسخ",
-        description: "تم نسخ العنصر بنجاح",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: "فشل في نسخ العنصر",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Share mutation (only for database files)
-  const shareMutation = useMutation({
-    mutationFn: async ({ fileId, isPublic }: { fileId: string; isPublic: boolean }) => {
-      if (fileSystemMode !== 'database') {
-        throw new Error('المشاركة غير مدعومة في نظام الملفات الحقيقي');
-      }
-      const response = await apiRequest('POST', `/api/files/${fileId}/share`, {
-        isPublic
-      });
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/files', currentFolderId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/files'] });
-      toast({
-        title: data.file.isPublic ? "تم جعل الملف عاماً" : "تم جعل الملف خاصاً",
-        description: data.publicUrl ? `الرابط العام: ${window.location.origin}${data.publicUrl}` : "الملف أصبح خاصاً",
-      });
-      if (data.publicUrl) {
-        navigator.clipboard.writeText(`${window.location.origin}${data.publicUrl}`);
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Rename mutation (for real files)
-  const renameMutation = useMutation({
-    mutationFn: async ({ oldPath, newName }: { oldPath: string; newName: string }) => {
-      if (fileSystemMode === 'database') {
-        // For database files, use update endpoint
-        const response = await apiRequest('PUT', `/api/files/${oldPath}`, {
-          name: newName
-        });
-        return await response.json();
-      } else {
-        // Real file system
-        const directory = oldPath.substring(0, oldPath.lastIndexOf('/'));
-        const newPath = `${directory}/${newName}`;
-        const response = await apiRequest('PUT', '/api/real-files/rename', {
-          oldPath,
-          newPath
-        });
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error || result.message);
-        }
-        
-        return result;
-      }
-    },
-    onSuccess: () => {
-      if (fileSystemMode === 'database') {
-        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
-      }
-      toast({
-        title: "تم إعادة التسمية",
-        description: "تم إعادة تسمية العنصر بنجاح",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: "فشل في إعادة التسمية",
         variant: "destructive"
       });
     }
@@ -617,14 +449,7 @@ export default function FileManager() {
   const handleBreadcrumbClick = (index: number) => {
     const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
     setBreadcrumbs(newBreadcrumbs);
-    
-    // If clicking on the first breadcrumb (home), return to main libraries
-    if (index === 0) {
-      setShowMainLibraries(true);
-      setStorageSection('main');
-      return;
-    }
-    
+
     if (fileSystemMode === 'database') {
       setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
     } else {
@@ -632,29 +457,9 @@ export default function FileManager() {
     }
   };
 
-  const handleItemSelect = (itemKey: string) => {
-    setSelectedItems(prev => 
-      prev.includes(itemKey) 
-        ? prev.filter(item => item !== itemKey)
-        : [...prev, itemKey]
-    );
-  };
-
   const handleDeleteClick = (itemKey: string) => {
     setItemToDelete(itemKey);
     setIsDeleteDialogOpen(true);
-  };
-
-  const handleFileSystemModeChange = (checked: boolean) => {
-    const newMode = checked ? 'real' : 'database';
-    setFileSystemMode(newMode);
-    setSelectedItems([]);
-    setSearchQuery('');
-    setPathError(null);
-    // Reset to main libraries view when changing file system mode
-    setShowMainLibraries(true);
-    setStorageSection('main');
-    setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
   };
 
   // Helper functions
@@ -682,13 +487,6 @@ export default function FileManager() {
     return item.size;
   };
 
-  const isItemPublic = (item: FileItem): boolean => {
-    if (fileSystemMode === 'database') {
-      return (item as DatabaseFileItem).isPublic;
-    }
-    return false; // Real files don't have public/private concept
-  };
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -702,361 +500,47 @@ export default function FileManager() {
     return date.toLocaleDateString('ar-SA', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: '2-digit'
     });
   };
 
   const getFileIcon = (item: FileItem) => {
     if (getItemType(item) === 'folder') {
-      if (fileSystemMode === 'real') {
-        const realItem = item as RealFileItem;
-        return realItem.name.startsWith('.') ? FolderOpen : Folder;
-      }
-      return Folder;
+      return '📁';
     }
-    
+
     const name = getItemName(item);
     const ext = name.split('.').pop()?.toLowerCase();
-    
+
     switch (ext) {
-      case 'js':
-      case 'ts':
-      case 'jsx':
-      case 'tsx':
-        return FileIcon;
-      case 'json':
-        return Settings;
-      case 'md':
       case 'txt':
-        return FileIcon;
+      case 'md':
+        return '📄';
       case 'png':
       case 'jpg':
       case 'jpeg':
       case 'gif':
       case 'svg':
-        return FileIcon;
+        return '🖼️';
       case 'pdf':
-        return FileIcon;
+        return '📄';
       case 'zip':
       case 'tar':
       case 'gz':
-        return FileIcon;
+        return '📦';
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+        return '🎬';
+      case 'mp3':
+      case 'wav':
+        return '🎵';
       default:
-        return FileIcon;
+        return '📄';
     }
   };
 
-  const getSectionTitle = (section: string): string => {
-    const titles: { [key: string]: string } = {
-      'main': 'الرئيسية',
-      'main-storage': 'التخزين الرئيسي',
-      'downloads': 'التحميلات',
-      'analysis': 'تحليل التخزين',
-      'pictures': 'الصور',
-      'music': 'الصوت',
-      'video': 'الفيديو',
-      'documents': 'الوثائق',
-      'apps': 'التطبيقات',
-      'recent': 'الملفات الحديثة',
-      'cloud': 'السحابة',
-      'remote': 'البعيد',
-      'network': 'الوصول من الشبكة',
-      'trash': 'سلة المحذوفات'
-    };
-    return titles[section] || 'التخزين الرئيسي';
-  };
-
-  const getFileDetails = (item: FileItem) => {
-    if (fileSystemMode === 'database') {
-      const dbItem = item as DatabaseFileItem;
-      return {
-        created: formatDate(dbItem.createdAt),
-        modified: formatDate(dbItem.updatedAt),
-        permissions: null,
-        owner: null,
-        mimeType: dbItem.mimeType,
-        tags: dbItem.tags
-      };
-    } else {
-      const realItem = item as RealFileItem;
-      return {
-        created: formatDate(realItem.created),
-        modified: formatDate(realItem.modified),
-        permissions: realItem.permissions,
-        owner: realItem.owner,
-        mimeType: realItem.mimeType,
-        tags: []
-      };
-    }
-  };
-
-  // Storage Statistics Types
-  interface StorageStats {
-    totalSpace: number;
-    usedSpace: number;
-    freeSpace: number;
-    usagePercentage: number;
-  }
-  
-  interface CategoryStats {
-    id: string;
-    name: string;
-    size: number;
-    fileCount: number;
-    icon: string;
-    iconColor: string;
-    bgColor: string;
-  }
-  
-  interface SystemStats {
-    mainStorage: StorageStats;
-    categories: CategoryStats[];
-    recentFiles: CategoryStats;
-    trash: CategoryStats;
-  }
-
-  // Fetch storage statistics
-  const { data: storageStats, isLoading: isStorageLoading } = useQuery<{ success: boolean; data: SystemStats }>({
-    queryKey: ['/api/storage/stats'],
-    enabled: showMainLibraries
-  });
-
-  // Helper function to format bytes
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
-  // Main Libraries Grid Component
-  const MainLibrariesGrid = () => {
-    // Get icon component from string name
-    const getIconComponent = (iconName: string) => {
-      const icons: { [key: string]: React.ComponentType<{ className?: string }> } = {
-        'HardDrive': HardDrive,
-        'Download': Download,
-        'Database': Database,
-        'Image': Image,
-        'Music': Music,
-        'Video': Video,
-        'FileText': FileText,
-        'Smartphone': Smartphone,
-        'Clock': Clock,
-        'Cloud': Cloud,
-        'Trash2': Trash2
-      };
-      return icons[iconName] || HardDrive;
-    };
-
-    if (isStorageLoading) {
-      return (
-        <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
-            {Array.from({ length: 12 }).map((_, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center text-center p-4 sm:p-6 rounded-2xl bg-gray-100 animate-pulse"
-              >
-                <div className="w-12 h-12 rounded-full bg-gray-300 mb-3"></div>
-                <div className="w-16 h-4 bg-gray-300 rounded mb-2"></div>
-                <div className="w-12 h-3 bg-gray-300 rounded"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    const stats = storageStats?.data;
-    if (!stats) {
-      return (
-        <div className="p-4 sm:p-6">
-          <div className="text-center text-gray-500">
-            فشل في تحميل إحصائيات التخزين
-          </div>
-        </div>
-      );
-    }
-
-    // Build libraries array from real data
-    const libraries = [
-      {
-        id: 'main-storage',
-        name: 'التخزين الرئيسي',
-        subtitle: `${formatBytes(stats.mainStorage.usedSpace)} / ${formatBytes(stats.mainStorage.totalSpace)}`,
-        icon: HardDrive,
-        iconColor: 'text-gray-600',
-        bgColor: 'bg-gray-100',
-        showProgress: true,
-        progress: stats.mainStorage.usagePercentage,
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('main-storage');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'التخزين الرئيسي', path: '/main-storage' }
-          ]);
-        }
-      },
-      ...stats.categories.map(category => ({
-        id: category.id,
-        name: category.name,
-        subtitle: `${formatBytes(category.size)} (${category.fileCount})`,
-        icon: getIconComponent(category.icon),
-        iconColor: category.iconColor,
-        bgColor: category.bgColor,
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection(category.id);
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: category.name, path: `/${category.id}` }
-          ]);
-        }
-      })),
-      {
-        id: 'analysis',
-        name: 'تحليل التخزين',
-        subtitle: `مستخدم ${stats.mainStorage.usagePercentage}%`,
-        icon: Database,
-        iconColor: 'text-gray-600',
-        bgColor: 'bg-gray-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('analysis');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'تحليل التخزين', path: '/analysis' }
-          ]);
-        }
-      },
-      {
-        id: 'recent',
-        name: stats.recentFiles.name,
-        subtitle: `${formatBytes(stats.recentFiles.size)} (${stats.recentFiles.fileCount})`,
-        icon: Clock,
-        iconColor: stats.recentFiles.iconColor,
-        bgColor: stats.recentFiles.bgColor,
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('recent');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'الملفات الحديثة', path: '/recent' }
-          ]);
-        }
-      },
-      {
-        id: 'cloud',
-        name: 'سحابة',
-        subtitle: '',
-        icon: Cloud,
-        iconColor: 'text-blue-600',
-        bgColor: 'bg-blue-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('cloud');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'السحابة', path: '/cloud' }
-          ]);
-        }
-      },
-      {
-        id: 'remote',
-        name: 'بعيد',
-        subtitle: '(0)',
-        icon: HardDrive,
-        iconColor: 'text-gray-600',
-        bgColor: 'bg-gray-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('remote');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'البعيد', path: '/remote' }
-          ]);
-        }
-      },
-      {
-        id: 'network',
-        name: 'الوصول من الشبكة',
-        subtitle: '',
-        icon: Cloud,
-        iconColor: 'text-green-600',
-        bgColor: 'bg-green-100',
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('network');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'الوصول من الشبكة', path: '/network' }
-          ]);
-        }
-      },
-      {
-        id: 'trash',
-        name: stats.trash.name,
-        subtitle: formatBytes(stats.trash.size),
-        icon: Trash2,
-        iconColor: stats.trash.iconColor,
-        bgColor: stats.trash.bgColor,
-        onClick: () => {
-          setShowMainLibraries(false);
-          setStorageSection('trash');
-          setBreadcrumbs([
-            { id: null, name: 'الرئيسية', path: '/' },
-            { id: null, name: 'سلة المحذوفات', path: '/trash' }
-          ]);
-        }
-      }
-    ];
-
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
-          {libraries.map((library) => (
-            <div
-              key={library.id}
-              className="flex flex-col items-center text-center cursor-pointer p-4 sm:p-6 rounded-2xl hover:bg-gray-50 transition-colors duration-200 touch-manipulation"
-              onClick={library.onClick}
-              data-testid={`library-${library.id}`}
-            >
-              <div className={cn(
-                "w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 shadow-sm",
-                library.bgColor
-              )}>
-                <library.icon className={cn("w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12", library.iconColor)} />
-              </div>
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 leading-tight">
-                {library.name}
-              </h3>
-              {library.subtitle && (
-                <p className="text-xs sm:text-sm text-gray-600 font-medium leading-tight">
-                  {library.subtitle}
-                </p>
-              )}
-              {(library as any).showProgress && (
-                <div className="w-full mt-2">
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div 
-                      className="bg-gray-700 h-1.5 rounded-full transition-all duration-300" 
-                      style={{ width: `${(library as any).progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
+  // Create Item Modal
   const CreateItemModal = () => {
     const [itemName, setItemName] = useState('');
     const [fileContent, setFileContent] = useState('');
@@ -1070,24 +554,32 @@ export default function FileManager() {
         });
         return;
       }
-      
+
       createItemMutation.mutate({
         name: itemName.trim(),
         type: itemType,
         parentId: fileSystemMode === 'database' ? (currentFolderId || undefined) : undefined,
         content: itemType === 'file' && fileSystemMode === 'real' ? fileContent : undefined
       });
-      
+
       setItemName('');
       setFileContent('');
     };
 
     return (
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="sm:max-w-[400px] mx-4 rounded-lg" data-testid="create-item-modal">
-          <div className="p-6">
+        <DialogContent className="w-[90vw] max-w-[400px] rounded-xl bg-white" data-testid="create-item-modal">
+          <div className="p-1">
             {/* Header */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-6 relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute left-0 top-0 h-6 w-6 p-0"
+                onClick={() => setIsCreateModalOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
               <h2 className="text-lg font-medium text-gray-900">
                 {itemType === 'folder' ? 'إنشاء مجلد' : 'إنشاء ملف'}
               </h2>
@@ -1099,7 +591,7 @@ export default function FileManager() {
                 placeholder={itemType === 'folder' ? 'اسم المجلد' : 'اسم الملف'}
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
-                className="w-full px-4 py-3 text-base border-2 border-teal-500 rounded-md focus:border-teal-600 focus:ring-0"
+                className="w-full px-4 py-3 text-base border-2 border-teal-500 rounded-lg focus:border-teal-600 focus:ring-0 text-right"
                 data-testid="input-item-name"
                 autoFocus
               />
@@ -1112,7 +604,7 @@ export default function FileManager() {
                   placeholder="محتوى الملف (اختياري)"
                   value={fileContent}
                   onChange={(e) => setFileContent(e.target.value)}
-                  className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-right"
                   data-testid="textarea-file-content"
                 />
               </div>
@@ -1131,7 +623,7 @@ export default function FileManager() {
               <Button 
                 onClick={handleCreate}
                 disabled={createItemMutation.isPending}
-                className="px-8 py-2 bg-teal-600 hover:bg-teal-700 text-white"
+                className="px-8 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg"
                 data-testid="button-create"
               >
                 {createItemMutation.isPending ? 'جاري الإنشاء...' : 'OK'}
@@ -1144,293 +636,82 @@ export default function FileManager() {
   };
 
   const FileItem = ({ item }: { item: FileItem }) => {
-    const Icon = getFileIcon(item);
     const itemKey = getItemKey(item);
     const itemName = getItemName(item);
     const itemType = getItemType(item);
     const itemSize = getItemSize(item);
-    const details = getFileDetails(item);
     const isSelected = selectedItems.includes(itemKey);
-    const isPublic = isItemPublic(item);
+    const icon = getFileIcon(item);
 
     const handleClick = () => {
       if (itemType === 'folder') {
         handleFolderClick(item);
-      } else {
-        // Open file in editor or viewer
-        console.log('Open file:', itemName);
-        toast({
-          title: "فتح الملف",
-          description: `فتح ${itemName}`,
-        });
       }
     };
 
-    const handleCopy = () => {
-      if (fileSystemMode === 'database') {
-        copyMutation.mutate({ sourcePath: itemKey });
-      } else {
-        const realItem = item as RealFileItem;
-        copyMutation.mutate({ sourcePath: realItem.absolutePath });
+    const getDateForItem = (item: FileItem) => {
+      if ('modified' in item) {
+        return formatDate(item.modified);
+      } else if ('updatedAt' in item) {
+        return formatDate(item.updatedAt);
       }
+      return '';
     };
 
-    const handleShare = () => {
-      if (fileSystemMode === 'database') {
-        shareMutation.mutate({ fileId: itemKey, isPublic: !isPublic });
-      } else {
-        toast({
-          title: "غير مدعوم",
-          description: "المشاركة غير متوفرة لملفات النظام",
-          variant: "destructive"
-        });
-      }
-    };
-
-    const handleDownload = () => {
-      if (fileSystemMode === 'database') {
-        window.open(`/api/files/${itemKey}/download`, '_blank');
-      } else {
-        // For real files, we could implement download via content API
-        const realItem = item as RealFileItem;
-        window.open(`/api/real-files/content?path=${encodeURIComponent(realItem.absolutePath)}`, '_blank');
-      }
-    };
-
-    const handleRename = () => {
-      const newName = prompt('أدخل الاسم الجديد:', itemName);
-      if (newName && newName.trim() && newName !== itemName) {
-        if (fileSystemMode === 'real') {
-          const realItem = item as RealFileItem;
-          renameMutation.mutate({ oldPath: realItem.absolutePath, newName: newName.trim() });
-        } else {
-          // Database files use update mutation
-          // This would need to be implemented separately
-          toast({
-            title: "قريباً",
-            description: "سيتم إضافة إعادة التسمية لملفات قاعدة البيانات قريباً",
-          });
-        }
-      }
-    };
-
-    const handleEdit = () => {
-      if (itemType === 'file') {
-        // TODO: Open file editor
-        console.log('Edit:', itemName);
-        toast({
-          title: "قريباً",
-          description: "سيتم إضافة محرر الملفات قريباً",
-        });
-      }
-    };
-
-    // Context menu items based on file system mode
-    const contextMenuItems = [
-      { icon: Eye, label: 'فتح', onClick: handleClick },
-      { icon: Edit, label: 'تحرير', onClick: handleEdit, disabled: itemType === 'folder' },
-      { icon: Copy, label: 'نسخ', onClick: handleCopy, disabled: itemType === 'folder' },
-      ...(fileSystemMode === 'database' ? [
-        { 
-          icon: Share, 
-          label: isPublic ? 'إلغاء المشاركة' : 'مشاركة', 
-          onClick: handleShare 
-        },
-      ] : [
-        { icon: Edit, label: 'إعادة تسمية', onClick: handleRename },
-      ]),
-      { separator: true as const },
-      { icon: Download, label: 'تحميل', onClick: handleDownload, disabled: itemType === 'folder' },
-      ...(fileSystemMode === 'database' ? [
-        { icon: History, label: 'الإصدارات', onClick: () => console.log('Versions:', itemName), disabled: itemType === 'folder' },
-      ] : [
-        { icon: Info, label: 'خصائص', onClick: () => {
-          const realItem = item as RealFileItem;
-          toast({
-            title: 'خصائص الملف',
-            description: `الصلاحيات: ${realItem.permissions}${realItem.owner ? `\nالمالك: ${realItem.owner}` : ''}`,
-          });
-        }},
-      ]),
-      { separator: true as const },
-      { icon: Trash2, label: 'حذف', onClick: () => handleDeleteClick(itemKey), variant: 'destructive' as const },
-    ];
-
-    if (viewMode === 'grid') {
-      return (
-        <ContextMenu>
-          <ContextMenuTrigger>
-            <Card
-              className={cn(
-                "p-4 cursor-pointer transition-all hover:shadow-md",
-                isSelected && "ring-2 ring-primary"
-              )}
-              onClick={handleClick}
-              data-testid={`card-file-${itemKey}`}
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  <Icon className="w-8 h-8 text-muted-foreground" />
-                  {fileSystemMode === 'database' && isPublic && (
-                    <Badge className="absolute -top-1 -right-1 w-4 h-4 p-0 flex items-center justify-center text-xs">
-                      <Share className="w-2 h-2" />
-                    </Badge>
-                  )}
-                  {fileSystemMode === 'real' && (item as RealFileItem).isHidden && (
-                    <Badge variant="secondary" className="absolute -top-1 -right-1 w-4 h-4 p-0 flex items-center justify-center text-xs">
-                      <Eye className="w-2 h-2" />
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-center w-full">
-                  <p className="font-medium text-sm truncate max-w-[120px] mx-auto" title={itemName}>
-                    {itemName}
-                  </p>
-                  <div className="flex flex-col gap-1 mt-2">
-                    <Badge variant="outline" className="text-xs mx-auto">
-                      {itemType === 'folder' ? 'مجلد' : formatFileSize(itemSize)}
-                    </Badge>
-                    {fileSystemMode === 'database' && isPublic && (
-                      <Badge variant="secondary" className="text-xs mx-auto">
-                        <Share className="w-3 h-3 mr-1" />
-                        عام
-                      </Badge>
-                    )}
-                    {fileSystemMode === 'real' && details.permissions && (
-                      <Badge variant="outline" className="text-xs mx-auto font-mono">
-                        {details.permissions}
-                      </Badge>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {details.modified}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            {contextMenuItems.map((item, index) => 
-              'separator' in item ? (
-                <ContextMenuSeparator key={index} />
-              ) : (
-                <ContextMenuItem
-                  key={index}
-                  onClick={item.onClick}
-                  className={item.variant === 'destructive' ? 'text-destructive focus:text-destructive' : ''}
-                >
-                  <item.icon className="w-4 h-4 mr-2" />
-                  {item.label}
-                </ContextMenuItem>
-              )
-            )}
-          </ContextMenuContent>
-        </ContextMenu>
-      );
-    }
-
-    // List view
     return (
-      <ContextMenu>
-        <ContextMenuTrigger>
-          <div
-            className={cn(
-              "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50",
-              isSelected && "bg-primary/10 border border-primary/20"
-            )}
-            onClick={handleClick}
-            data-testid={`row-file-${itemKey}`}
-          >
-            <div className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0">
-              <Icon className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{itemName}</p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{itemType === 'file' ? formatFileSize(itemSize) : 'مجلد'}</span>
-                {fileSystemMode === 'real' && details.permissions && (
-                  <Badge variant="outline" className="text-xs font-mono">
-                    {details.permissions}
-                  </Badge>
-                )}
-                <span>{details.modified}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {fileSystemMode === 'database' && details.tags.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {details.tags[0]}
-                </Badge>
-              )}
-              {fileSystemMode === 'database' && isPublic && (
-                <Badge variant="secondary" className="text-xs">
-                  <Share className="w-3 h-3 mr-1" />
-                  عام
-                </Badge>
-              )}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="w-8 h-8 p-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Show options menu
-                }}
-              >
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </div>
+      <div
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 border-b border-gray-100"
+        onClick={handleClick}
+        data-testid={`row-file-${itemKey}`}
+      >
+        <div className="text-2xl flex-shrink-0">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-medium text-gray-900 mb-1">{itemName}</p>
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <span>{itemType === 'file' ? formatFileSize(itemSize) : `${itemSize} عناصر`}</span>
+            <span>{getDateForItem(item)}</span>
           </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          {contextMenuItems.map((item, index) => 
-            'separator' in item ? (
-              <ContextMenuSeparator key={index} />
-            ) : (
-              <ContextMenuItem
-                key={index}
-                onClick={item.onClick}
-                disabled={item.disabled}
-                className={cn(
-                  item.variant === 'destructive' ? 'text-destructive focus:text-destructive' : '',
-                  item.disabled ? 'opacity-50 cursor-not-allowed' : ''
-                )}
-              >
-                <item.icon className="w-4 h-4 mr-2" />
-                {item.label}
-              </ContextMenuItem>
-            )
-          )}
-        </ContextMenuContent>
-      </ContextMenu>
+        </div>
+      </div>
     );
   };
 
   return (
-    <div 
-      className="h-screen w-full flex flex-col bg-background text-foreground"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="h-screen w-full flex flex-col bg-white">
       {/* File Manager Header */}
-      <div className="bg-gray-900 dark:bg-black text-white p-3 sm:p-4">
+      <div className="bg-black text-white p-4">
         <div className="flex items-center justify-between">
-          {/* Left: Action Icons */}
-          <div className="flex items-center gap-2">
+          {/* Left: Menu and Actions */}
+          <div className="flex items-center gap-4">
             <Button
               size="sm"
               variant="ghost"
-              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20"
               onClick={() => setShowSidebar(true)}
               data-testid="button-menu"
             >
               <Menu className="w-5 h-5" />
             </Button>
+            <h1 className="text-lg font-medium">+ مدير الملفات</h1>
+          </div>
+
+          {/* Right: Action Icons */}
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
               variant="ghost"
-              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20"
+              onClick={() => {}}
+              data-testid="button-search"
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20"
               onClick={() => setShowFilters(!showFilters)}
               data-testid="button-filter-toggle"
             >
@@ -1439,90 +720,17 @@ export default function FileManager() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-              onClick={() => {
-                const searchInput = document.querySelector('[data-testid="input-search"]') as HTMLInputElement;
-                searchInput?.focus();
-              }}
-              data-testid="button-search"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20"
+              onClick={() => setShowCreateSheet(true)}
+              data-testid="button-add"
             >
-              <Search className="w-5 h-5" />
+              <Plus className="w-5 h-5" />
             </Button>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-                  data-testid="button-add"
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="h-auto rounded-t-lg">
-                <div className="p-4">
-                  <h3 className="text-lg font-medium text-center mb-4 text-gray-900">جديد</h3>
-                  <div className="space-y-3">
-                    <Button
-                      onClick={() => {
-                        setItemType('file');
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="w-full flex items-center justify-start gap-4 h-14 bg-transparent border-0 text-gray-900 hover:bg-gray-50"
-                      variant="ghost"
-                      data-testid="button-create-file"
-                    >
-                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
-                        <FileIcon className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <span className="text-base">ملف</span>
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setItemType('folder');
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="w-full flex items-center justify-start gap-4 h-14 bg-transparent border-0 text-gray-900 hover:bg-gray-50"
-                      variant="ghost"
-                      data-testid="button-create-folder"
-                    >
-                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
-                        <Folder className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <span className="text-base">مجلد</span>
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-          
-          {/* Center: Title */}
-          <div className="flex items-center justify-center flex-1 mx-4">
-            <h1 className="text-lg sm:text-xl font-semibold text-center">
-              مدير الملفات +
-            </h1>
-          </div>
-          
-          {/* Right: Home Icon */}
-          <div className="flex items-center">
             <Button
               size="sm"
               variant="ghost"
-              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-              onClick={() => {
-                // Navigate to main screen/home
-                setShowMainLibraries(true);
-                setStorageSection('main');
-                setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
-                setActiveTab('files');
-                if (fileSystemMode === 'database') {
-                  setCurrentFolderId(null);
-                } else {
-                  const initialPath = process.env.NODE_ENV === 'development' ? '/workspace' : '/app';
-                  setCurrentPath(initialPath);
-                }
-              }}
+              className="h-10 w-10 p-0 text-white hover:bg-white/20"
+              onClick={() => {}}
               data-testid="button-home"
             >
               <Home className="w-5 h-5" />
@@ -1532,7 +740,7 @@ export default function FileManager() {
       </div>
 
       {/* Top Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-gray-100 border-b border-gray-200">
         <div className="flex items-center justify-around px-4 py-3">
           {/* Files Tab */}
           <button
@@ -1540,13 +748,13 @@ export default function FileManager() {
             className={cn(
               "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
               activeTab === 'files' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                ? "text-blue-600 bg-blue-50" 
+                : "text-gray-600 hover:text-gray-900"
             )}
             data-testid="tab-files"
           >
-            <FileIcon className="w-6 h-6 mb-1" />
-            <span className="text-xs">الملفات</span>
+            <Clock className="w-6 h-6 mb-1" />
+            <span className="text-xs">التاريخ</span>
           </button>
 
           {/* Favorites Tab */}
@@ -1555,8 +763,8 @@ export default function FileManager() {
             className={cn(
               "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
               activeTab === 'favorites' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                ? "text-blue-600 bg-blue-50" 
+                : "text-gray-600 hover:text-gray-900"
             )}
             data-testid="tab-favorites"
           >
@@ -1570,558 +778,130 @@ export default function FileManager() {
             className={cn(
               "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
               activeTab === 'recent' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                ? "text-blue-600 bg-blue-50" 
+                : "text-gray-600 hover:text-gray-900"
             )}
             data-testid="tab-recent"
           >
-            <Clock className="w-6 h-6 mb-1" />
-            <span className="text-xs">التاريخ</span>
+            <FileIcon className="w-6 h-6 mb-1" />
+            <span className="text-xs">الملفات</span>
           </button>
         </div>
       </div>
 
-      {/* Sidebar */}
-      <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
-        <SheetContent side="left" className="w-80 p-0 bg-white" data-testid="sidebar">
-          <div className="flex flex-col h-full">
-            {/* Sidebar Header */}
-            <div className="bg-teal-600 text-white p-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">التخزين الرئيسي</h2>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                onClick={() => setShowSidebar(false)}
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            {/* Storage Usage */}
-            <div className="p-4 border-b">
-              <div className="mb-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">مستخدم 59%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                  <div className="bg-gray-700 h-2 rounded-full" style={{ width: '59%' }}></div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Storage Categories */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-3 gap-4 p-4">
-                {/* Video */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50" 
-                     onClick={() => {
-                       setStorageSection('video');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-video">
-                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-2">
-                    <Video className="w-6 h-6 text-red-600" />
-                  </div>
-                  <span className="text-xs font-medium">فيديو</span>
-                  <span className="text-xs text-gray-500">195 GB (1189)</span>
-                </div>
-
-                {/* Recent Files */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('recent');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-recent">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-                    <Clock className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <span className="text-xs font-medium">ملفات حديثة</span>
-                  <span className="text-xs text-gray-500">1.01 MB (216)</span>
-                </div>
-
-                {/* Network Access */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('network');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-network">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
-                    <Cloud className="w-6 h-6 text-green-600" />
-                  </div>
-                  <span className="text-xs font-medium">الوصول من الشبكة</span>
-                </div>
-
-                {/* Documents */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('documents');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-documents">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-                    <FileText className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <span className="text-xs font-medium">وثائق</span>
-                  <span className="text-xs text-gray-500">4.9 GB (2113)</span>
-                </div>
-
-                {/* Apps */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('apps');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-apps">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
-                    <Smartphone className="w-6 h-6 text-green-600" />
-                  </div>
-                  <span className="text-xs font-medium">تطبيقات</span>
-                  <span className="text-xs text-gray-500">42 GB (159)</span>
-                </div>
-
-                {/* Pictures */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('pictures');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-pictures">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2">
-                    <Image className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <span className="text-xs font-medium">صور</span>
-                  <span className="text-xs text-gray-500">9.2 GB (1165)</span>
-                </div>
-
-                {/* Music */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('music');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-music">
-                  <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center mb-2">
-                    <Music className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <span className="text-xs font-medium">صوتي</span>
-                  <span className="text-xs text-gray-500">787 MB (78)</span>
-                </div>
-
-                {/* Cloud */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('cloud');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-cloud">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-                    <Cloud className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <span className="text-xs font-medium">سحابة</span>
-                </div>
-
-                {/* Remote */}
-                <div className="flex flex-col items-center text-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('remote');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-remote">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2">
-                    <HardDrive className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <span className="text-xs font-medium">بعيد</span>
-                  <span className="text-xs text-gray-500">(0)</span>
-                </div>
-              </div>
-
-              {/* Trash */}
-              <div className="border-t p-4">
-                <div className="flex items-center cursor-pointer p-3 rounded-lg hover:bg-gray-50"
-                     onClick={() => {
-                       setStorageSection('trash');
-                       setShowSidebar(false);
-                     }}
-                     data-testid="sidebar-trash">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
-                    <Trash2 className="w-5 h-5 text-gray-600" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium block">سلة المحذوفات</span>
-                    <span className="text-xs text-gray-500">1.09 kB</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Options Menu */}
-      <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu}>
-        <SheetContent side="left" className="w-80">
-          <SheetHeader>
-            <SheetTitle>إعدادات مدير الملفات</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-4 mt-6">
-            {/* File System Mode Toggle for Mobile */}
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">نوع نظام الملفات</Label>
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">قاعدة البيانات</Label>
-                <Switch 
-                  checked={fileSystemMode === 'real'}
-                  onCheckedChange={handleFileSystemModeChange}
-                  data-testid="switch-mobile-file-system"
-                />
-                <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
-              </div>
-            </div>
-            
-            {/* View Mode Toggle for Mobile */}
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">عرض الملفات</Label>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="touch-manipulation"
-              >
-                {viewMode === 'grid' ? (
-                  <><List className="w-4 h-4 mr-2" />قائمة</>
-                ) : (
-                  <><Grid3X3 className="w-4 h-4 mr-2" />شبكة</>
-                )}
-              </Button>
-            </div>
-
-            {/* File System Mode Toggle */}
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">نوع نظام الملفات</Label>
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">قاعدة البيانات</Label>
-                <Switch 
-                  checked={fileSystemMode === 'real'}
-                  onCheckedChange={handleFileSystemModeChange}
-                  data-testid="switch-file-system-mobile"
-                />
-                <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
-              </div>
-            </div>
-            
-            {/* Create New */}
-            <Button 
-              onClick={() => {
-                setIsCreateModalOpen(true);
-                setShowMobileMenu(false);
-              }}
-              className="w-full touch-manipulation"
-              data-testid="button-create-mobile"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              إنشاء جديد
-            </Button>
-
-            {/* Refresh */}
-            <Button 
-              variant="outline"
-              onClick={() => {
-                handlePullToRefresh();
-                setShowMobileMenu(false);
-              }}
-              disabled={isRefreshing}
-              className="w-full touch-manipulation"
-              data-testid="button-refresh-mobile"
-            >
-              <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
-              تحديث
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-
       {/* Breadcrumbs */}
-      <div className="border-b border-border bg-card p-2 sm:p-4">
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-4 overflow-x-auto scrollbar-hide px-2 sm:px-0">
-          {breadcrumbs.map((crumb, index) => (
-            <div key={crumb.id || 'root'} className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-1 text-xs sm:text-sm font-normal whitespace-nowrap touch-manipulation"
-                onClick={() => handleBreadcrumbClick(index)}
-                data-testid={`breadcrumb-${index}`}
-              >
-                {index === 0 ? <Home className="w-3 h-3 sm:w-4 sm:h-4" /> : (
-                  <span className="max-w-[80px] sm:max-w-none truncate">{crumb.name}</span>
-                )}
-              </Button>
-              {index < breadcrumbs.length - 1 && (
-                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
-              )}
-            </div>
-          ))}
+      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <Home className="w-4 h-4 text-gray-600" />
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-600">59% مستخدم</span>
         </div>
-
-        {/* Path Error Alert */}
-        {pathError && (
-          <Alert className="mb-4" data-testid="path-error-alert">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              <strong>خطأ في المسار:</strong> {pathError}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {/* Real Files Info */}
-        {fileSystemMode === 'real' && realFilesData && (
-          <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-muted/30 rounded-lg mx-2 sm:mx-0" data-testid="real-files-info">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-muted-foreground gap-1 sm:gap-0">
-              <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                <span className="truncate max-w-[200px] sm:max-w-none">المسار: {currentPath}</span>
-                <span>إجمالي {realFilesData.totalFiles} ملف</span>
-                <span>{realFilesData.totalDirectories} مجلد</span>
-              </div>
-              <div>
-                إجمالي الحجم: {formatFileSize(realFilesData.totalSize)}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Search and Filters - Only show when not in main libraries view */}
-        {!showMainLibraries && (
-          <>
-            <div className="flex items-center gap-2 px-2 sm:px-0">
-              <div className="flex-1 relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder={fileSystemMode === 'database' ? "البحث في الملفات..." : "البحث غير متوفر لملفات النظام"}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  disabled={fileSystemMode === 'real'}
-                  className="pr-10 h-9 sm:h-10 text-sm"
-                  data-testid="input-search"
-                />
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 w-9 sm:h-10 sm:w-10 p-0 touch-manipulation"
-                onClick={() => setShowFilters(!showFilters)}
-                data-testid="button-filters"
-              >
-                <Filter className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Filter Panel */}
-            {showFilters && (
-              <Card className="mt-2 sm:mt-4 p-2 sm:p-4 mx-2 sm:mx-0">
-                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                    <Tags className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                    الكل
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                    <FileIcon className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                    ملفات
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                    <Folder className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                    مجلدات
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                    <Clock className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                    حديث
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                    <Star className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                    مفضل
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer touch-manipulation h-8 px-2 text-xs">
-                    <Users className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                    مشترك
-                  </Badge>
-                </div>
-              </Card>
-            )}
-          </>
-        )}
       </div>
+
+      {/* Path Error Alert */}
+      {pathError && (
+        <Alert className="m-4" data-testid="path-error-alert">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>خطأ في المسار:</strong> {pathError}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        {showMainLibraries ? (
-          /* Main Libraries Grid */
-          <MainLibrariesGrid />
-        ) : (
-          /* Files Content */
-          <ScrollArea className="h-full">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-                <span className="mr-2 text-muted-foreground">جاري التحميل...</span>
+        <ScrollArea className="h-full">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+              <span className="mr-2 text-gray-500">جاري التحميل...</span>
+            </div>
+          ) : currentFiles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <FolderOpen className="w-8 h-8 text-gray-400" />
               </div>
-            ) : currentFiles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-                <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
-                  <FolderOpen className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                  لا توجد ملفات
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  {searchQuery ? 'لم يتم العثور على ملفات تطابق البحث' : 'هذا المجلد فارغ'}
-                </p>
-              </div>
-            ) : (
-              <div className="p-2 sm:p-4">
-                {/* View Mode Controls */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant={viewMode === 'grid' ? 'default' : 'outline'}
-                      onClick={() => setViewMode('grid')}
-                      className="touch-manipulation"
-                      data-testid="button-grid-view"
-                    >
-                      <Grid3X3 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={viewMode === 'list' ? 'default' : 'outline'}
-                      onClick={() => setViewMode('list')}
-                      className="touch-manipulation"
-                      data-testid="button-list-view"
-                    >
-                      <List className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  {/* Advanced Sort Options */}
-                  <div className="flex items-center gap-1">
-                    {/* No Sort Option */}
-                    <Button
-                      size="sm"
-                      variant={sortBy === 'none' ? 'default' : 'outline'}
-                      onClick={() => setSortBy('none')}
-                      className="touch-manipulation text-xs"
-                      data-testid="button-sort-none"
-                    >
-                      بدون فرز
-                    </Button>
-                    
-                    {/* Name Sort */}
-                    <Button
-                      size="sm"
-                      variant={sortBy === 'name' ? 'default' : 'outline'}
-                      onClick={() => {
-                        if (sortBy === 'name') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                        } else {
-                          setSortBy('name');
-                          setSortOrder('asc');
-                        }
-                      }}
-                      className="touch-manipulation text-xs flex items-center gap-1"
-                      data-testid="button-sort-name"
-                    >
-                      الاسم
-                      {sortBy === 'name' && (
-                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
-                      )}
-                    </Button>
-
-                    {/* Size Sort */}
-                    <Button
-                      size="sm"
-                      variant={sortBy === 'size' ? 'default' : 'outline'}
-                      onClick={() => {
-                        if (sortBy === 'size') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                        } else {
-                          setSortBy('size');
-                          setSortOrder('asc');
-                        }
-                      }}
-                      className="touch-manipulation text-xs flex items-center gap-1"
-                      data-testid="button-sort-size"
-                    >
-                      الحجم
-                      {sortBy === 'size' && (
-                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
-                      )}
-                    </Button>
-
-                    {/* Date Sort */}
-                    <Button
-                      size="sm"
-                      variant={sortBy === 'date' ? 'default' : 'outline'}
-                      onClick={() => {
-                        if (sortBy === 'date') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                        } else {
-                          setSortBy('date');
-                          setSortOrder('asc');
-                        }
-                      }}
-                      className="touch-manipulation text-xs flex items-center gap-1"
-                      data-testid="button-sort-date"
-                    >
-                      التاريخ
-                      {sortBy === 'date' && (
-                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
-                      )}
-                    </Button>
-
-                    {/* Type Sort */}
-                    <Button
-                      size="sm"
-                      variant={sortBy === 'type' ? 'default' : 'outline'}
-                      onClick={() => {
-                        if (sortBy === 'type') {
-                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                        } else {
-                          setSortBy('type');
-                          setSortOrder('asc');
-                        }
-                      }}
-                      className="touch-manipulation text-xs flex items-center gap-1"
-                      data-testid="button-sort-type"
-                    >
-                      النوع
-                      {sortBy === 'type' && (
-                        sortOrder === 'asc' ? <span>▲</span> : <span>▼</span>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Files Grid/List View */}
-                <div className={cn(
-                  viewMode === 'grid' 
-                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4"
-                    : "space-y-1"
-                )}>
-                  {currentFiles.map((item) => (
-                    <FileItem key={getItemKey(item)} item={item} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </ScrollArea>
-        )}
+              <h3 className="text-lg font-medium text-gray-500 mb-2">
+                لا توجد ملفات
+              </h3>
+              <p className="text-sm text-gray-400 max-w-sm">
+                {searchQuery ? 'لم يتم العثور على ملفات تطابق البحث' : 'هذا المجلد فارغ'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white">
+              {currentFiles.map((item) => (
+                <FileItem key={getItemKey(item)} item={item} />
+              ))}
+            </div>
+          )}
+        </ScrollArea>
       </div>
+
+      {/* Storage Info Footer */}
+      <div className="bg-gray-50 p-4 border-t border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <div className="text-3xl mb-1">⬇️</div>
+              <div className="text-xs text-gray-600">التحميلات</div>
+              <div className="text-xs text-gray-500">B (0) 0</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-1">💾</div>
+              <div className="text-xs text-gray-600">التخزين الرئيسي</div>
+              <div className="text-xs text-gray-500">GB / 49.1 GB 30.4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Create Sheet */}
+      <Sheet open={showCreateSheet} onOpenChange={setShowCreateSheet}>
+        <SheetContent side="bottom" className="h-auto rounded-t-xl bg-white">
+          <div className="p-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-medium text-gray-900">جديد</h3>
+            </div>
+            <div className="space-y-4">
+              <Button
+                onClick={() => {
+                  setItemType('file');
+                  setIsCreateModalOpen(true);
+                  setShowCreateSheet(false);
+                }}
+                className="w-full flex items-center justify-start gap-4 h-16 bg-transparent border-0 text-gray-900 hover:bg-gray-50 text-right"
+                variant="ghost"
+                data-testid="button-create-file"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <FileIcon className="w-6 h-6 text-gray-600" />
+                </div>
+                <span className="text-base">ملف</span>
+              </Button>
+              <Button
+                onClick={() => {
+                  setItemType('folder');
+                  setIsCreateModalOpen(true);
+                  setShowCreateSheet(false);
+                }}
+                className="w-full flex items-center justify-start gap-4 h-16 bg-transparent border-0 text-gray-900 hover:bg-gray-50 text-right"
+                variant="ghost"
+                data-testid="button-create-folder"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Folder className="w-6 h-6 text-gray-600" />
+                </div>
+                <span className="text-base">مجلد</span>
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Modals & Dialogs */}
       <CreateItemModal />
-      
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="mx-2 max-w-[calc(100vw-1rem)] sm:max-w-[425px]" data-testid="delete-confirmation-dialog">
           <AlertDialogHeader>
@@ -2131,9 +911,9 @@ export default function FileManager() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel className="w-full sm:w-auto touch-manipulation" data-testid="button-cancel-delete">إلغاء</AlertDialogCancel>
+            <AlertDialogCancel className="w-full sm:w-auto" data-testid="button-cancel-delete">إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              className="w-full sm:w-auto touch-manipulation"
+              className="w-full sm:w-auto"
               onClick={() => {
                 if (itemToDelete) {
                   deleteMutation.mutate(itemToDelete);
@@ -2147,7 +927,6 @@ export default function FileManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   );
 }
