@@ -30,6 +30,7 @@ const navigationItems = [
   { href: "/", label: "لوحة المعلومات", icon: BarChart3 },
   { href: "/health-check", label: "فحص النظام", icon: Activity },
   { href: "/file-manager", label: "إدارة الملفات", icon: Folder },
+  { href: "/path-manager", label: "إدارة المسارات", icon: Shield },
   { href: "/applications", label: "التطبيقات", icon: Box },
   { href: "/domains", label: "النطاقات", icon: Globe },
   { href: "/nginx", label: "Nginx", icon: Settings },

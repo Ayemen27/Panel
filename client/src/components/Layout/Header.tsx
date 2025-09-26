@@ -28,6 +28,7 @@ interface HeaderProps {
 
 const pageNames: Record<string, string> = {
   "/": "لوحة المعلومات",
+  "/path-manager": "إدارة المسارات المحمية",
   "/applications": "إدارة التطبيقات",
   "/domains": "إدارة النطاقات",
   "/nginx": "إعدادات Nginx",
