@@ -26,19 +26,16 @@ export interface EnvironmentConfig {
 
 export function detectEnvironment(): EnvironmentConfig {
   // Safe process access for browser/server compatibility
-  const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
+  const processEnv = typeof process !== 'undefined' ? process.env : {};
   const nodeEnv = processEnv.NODE_ENV || 'development';
   
   const isReplit = !!(
     processEnv.REPL_ID || 
     processEnv.REPLIT_DB_URL || 
     processEnv.REPL_SLUG ||
-    (typeof window !== 'undefined' && window.location && (
+    (typeof window !== 'undefined' && (
       window.location.hostname.includes('replit.dev') ||
-      window.location.hostname.includes('repl.co') ||
-      window.location.hostname.includes('sisko.replit.dev') ||
-      window.location.hostname.includes('pike.replit.dev') ||
-      window.location.hostname.includes('worf.replit.dev')
+      window.location.hostname.includes('repl.co')
     ))
   );
 

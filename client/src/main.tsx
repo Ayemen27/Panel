@@ -1,6 +1,18 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+
+// حماية شاملة من خطأ process في المتصفح
+if (typeof window !== 'undefined') {
+  if (!window.process) {
+    window.process = { env: {} } as any;
+  }
+  // التأكد من وجود global أيضاً
+  if (!window.global) {
+    window.global = window;
+  }
+}
+
 import { logEnvironmentInfo, ENV_CONFIG, getWebSocketUrl } from "@shared/environment";
 
 // تشخيص البيئة عند بداية التطبيق
