@@ -144,6 +144,11 @@ function Router() {
               </Suspense>
             </MainLayout>
           </Route>
+          <Route path="/file-manager">
+            <Suspense fallback={<PageLoader />}>
+              <FileManager />
+            </Suspense>
+          </Route>
           <Route path="/admin/paths">
             <MainLayout>
               <AdminOnly>

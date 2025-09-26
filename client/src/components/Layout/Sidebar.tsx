@@ -29,7 +29,7 @@ interface SidebarProps {
 const navigationItems = [
   { href: "/", label: "لوحة المعلومات", icon: BarChart3 },
   { href: "/health-check", label: "فحص النظام", icon: Activity },
-  { href: "/files", label: "إدارة الملفات", icon: Folder },
+  { href: "/file-manager", label: "إدارة الملفات", icon: Folder },
   { href: "/applications", label: "التطبيقات", icon: Box },
   { href: "/domains", label: "النطاقات", icon: Globe },
   { href: "/nginx", label: "Nginx", icon: Settings },
