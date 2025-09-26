@@ -150,7 +150,7 @@ export default function FileManager() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   
   // Real Files State
-  const [currentPath, setCurrentPath] = useState<string>('/');
+  const [currentPath, setCurrentPath] = useState<string>('/home/runner/workspace');
   
   // Common State
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -184,14 +184,15 @@ export default function FileManager() {
   const dragCounter = useRef(0);
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
-    { id: null, name: 'الرئيسية', path: '/' }
+    { id: null, name: 'الرئيسية', path: '/home/runner/workspace' }
   ]);
   
   // Initialize real files with default allowed path
   useEffect(() => {
     if (fileSystemMode === 'real') {
-      // Set initial path to a safe default
-      const initialPath = process.env.NODE_ENV === 'development' ? '/workspace' : '/app';
+      // Set initial path to a safe default from ALLOWED_PATHS
+      // Prefer Replit workspace for testing environment
+      const initialPath = '/home/runner/workspace';
       setCurrentPath(initialPath);
       setBreadcrumbs([{ id: null, name: 'الرئيسية', path: initialPath }]);
     } else {

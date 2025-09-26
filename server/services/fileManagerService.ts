@@ -24,7 +24,8 @@ const ALLOWED_PATHS = [
   '/etc/nginx/sites-available',
   '/var/www',
   '/home/administrator/Bot.v',
-  '/tmp/uploads'
+  '/tmp/uploads',
+  '/home/runner/workspace'
 ];
 
 // Maximum file size: 100MB
