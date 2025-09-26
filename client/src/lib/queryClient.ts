@@ -83,6 +83,11 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: async ({ queryKey, meta }) => {
         const url = queryKey[0] as string;
+        
+        // Validate URL before making request
+        if (!url || url.includes('undefined')) {
+          throw new Error('Invalid URL detected');
+        }
 
         const response = await fetch(url, {
           credentials: "include", // استخدام session cookies لـ Replit Auth

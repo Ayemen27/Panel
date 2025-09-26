@@ -193,9 +193,9 @@ export default function FileManager() {
       // Use current working directory for Replit environment
       const initialPath = process.env.NODE_ENV === 'development' ? '/home/runner' : process.cwd() || '/home/runner';
       setCurrentPath(initialPath);
-      setBreadcrumbs([{ id: null, name: 'الرئيسية', path: initialPath }]);
+      setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: initialPath }]);
     } else {
-      setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
+      setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: '/' }]);
     }
   }, [fileSystemMode]);
 
@@ -808,7 +808,7 @@ export default function FileManager() {
       if (realItem.type === 'directory') {
         setCurrentPath(realItem.absolutePath);
         setBreadcrumbs([...breadcrumbs, { 
-          id: null, 
+          id: `path-${realItem.absolutePath}-${Date.now()}`, 
           name: realItem.name, 
           path: realItem.absolutePath 
         }]);
@@ -2009,7 +2009,7 @@ export default function FileManager() {
         {/* Breadcrumbs */}
         <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-4 overflow-x-auto scrollbar-hide px-2 sm:px-0">
           {breadcrumbs.map((crumb, index) => (
-            <div key={crumb.id || 'root'} className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <div key={crumb.id || `breadcrumb-${index}`} className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"

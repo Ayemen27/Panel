@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -80,7 +79,7 @@ export function useAuth() {
     if (!isLoading && user && isAuthenticated) {
       const currentPath = window.location.pathname;
       console.log('Authenticated user detected, current path:', currentPath);
-      
+
       // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing أو auth
       if (currentPath === '/' || currentPath === '/login' || currentPath === '/auth') {
         console.log('Redirecting to dashboard...');
