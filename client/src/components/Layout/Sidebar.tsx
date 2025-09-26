@@ -77,7 +77,7 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                 <p className="text-xs text-muted-foreground">إدارة الخادم</p>
               </div>
             </div>
-            
+
             {isMobile && (
               <Button 
                 variant="ghost" 
@@ -90,13 +90,13 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
             )}
           </div>
         </div>
-        
+
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2" data-testid="navigation">
           {navigationItems.map((item) => {
             const isActive = location === item.href;
             const Icon = item.icon;
-            
+
             return (
               <Link key={item.href} href={item.href}>
                 <div
@@ -127,7 +127,7 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
             );
           })}
         </nav>
-        
+
         {/* Footer */}
         <div className="p-4 border-t border-border" data-testid="sidebar-footer">
           <div className="flex items-center gap-3 px-4 py-3">

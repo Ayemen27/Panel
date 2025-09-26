@@ -1414,7 +1414,7 @@ export default function FileManager() {
 
   return (
     <div 
-      className="h-full flex flex-col"
+      className="h-screen w-full flex flex-col bg-background text-foreground"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
