@@ -63,7 +63,49 @@ export function detectEnvironment(): EnvironmentConfig {
     }
   };
 
+  // قراءة منفذ WebSocket من متغيرات البيئة
+  const getWSPortFromEnv = (): number => {
+    if (typeof window !== 'undefined') {
+      const windowProcess = (window as any).process?.env;
+      const importMetaEnv = import.meta?.env;
+      
+      if (windowProcess?.WS_PORT) {
+        return parseInt(windowProcess.WS_PORT, 10);
+      }
+      
+      if (importMetaEnv?.WS_PORT) {
+        return parseInt(importMetaEnv.WS_PORT, 10);
+      }
+      
+      return 5001; // منفذ منفصل لـ WebSocket
+    } else {
+      return parseInt(processEnv.WS_PORT || '5001', 10);
+    }
+  };
+
+  // قراءة منفذ HMR من متغيرات البيئة
+  const getHMRPortFromEnv = (): number => {
+    if (typeof window !== 'undefined') {
+      const windowProcess = (window as any).process?.env;
+      const importMetaEnv = import.meta?.env;
+      
+      if (windowProcess?.HMR_PORT) {
+        return parseInt(windowProcess.HMR_PORT, 10);
+      }
+      
+      if (importMetaEnv?.HMR_PORT) {
+        return parseInt(importMetaEnv.HMR_PORT, 10);
+      }
+      
+      return 24678;
+    } else {
+      return parseInt(processEnv.HMR_PORT || '24678', 10);
+    }
+  };
+
   const serverPort = getPortFromEnv();
+  const wsPort = getWSPortFromEnv();
+  const hmrPort = getHMRPortFromEnv();
 
   // تحسين اكتشاف Replit في المتصفح والخادم
   const isReplitBrowser = typeof window !== 'undefined' && window.location && (
@@ -100,12 +142,12 @@ export function detectEnvironment(): EnvironmentConfig {
       host: '0.0.0.0',
       port: serverPort,
       hmr: {
-        port: 443,
+        port: 443, // HTTPS port للنطاق المخصص
         host: 'panel.binarjoinanelytic.info',
         protocol: 'wss'
       },
       websocket: {
-        port: 443,
+        port: 443, // HTTPS port للنطاق المخصص
         host: 'panel.binarjoinanelytic.info',
         protocol: 'wss',
       },
@@ -162,12 +204,12 @@ export function detectEnvironment(): EnvironmentConfig {
       host: '0.0.0.0',
       port: serverPort,
       hmr: {
-        port: 24678,
+        port: hmrPort,
         host: currentHost,
         protocol: 'wss'
       },
       websocket: {
-        port: serverPort, // استخدام نفس منفذ الخادم
+        port: wsPort, // استخدام منفذ منفصل لـ WebSocket
         host: currentHost,
         protocol: 'wss',
       },
@@ -189,11 +231,11 @@ export function detectEnvironment(): EnvironmentConfig {
       host: '0.0.0.0',
       port: serverPort,
       hmr: {
-        port: 24678,
+        port: hmrPort,
         host: 'localhost',
       },
       websocket: {
-        port: parseInt(processEnv.WS_PORT || processEnv.PORT || '5000'),
+        port: wsPort,
         host: '0.0.0.0',
         protocol: 'wss',
       },
@@ -215,11 +257,11 @@ export function detectEnvironment(): EnvironmentConfig {
     host: 'localhost',
     port: serverPort,
     hmr: {
-      port: 24678,
+      port: hmrPort,
       host: 'localhost',
     },
     websocket: {
-      port: parseInt(processEnv.WS_PORT || processEnv.PORT || '5000'),
+      port: wsPort,
       host: 'localhost',
       protocol: 'ws',
     },
