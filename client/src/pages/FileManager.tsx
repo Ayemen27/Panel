@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
@@ -85,6 +85,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 // Types for Database Files
 interface DatabaseFileItem {
@@ -170,6 +171,18 @@ export default function FileManager() {
   const [showMainLibraries, setShowMainLibraries] = useState(true);
   const [activeTab, setActiveTab] = useState<'files' | 'favorites' | 'recent'>('files');
   
+  // File Preview State
+  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
+  const [isFilePreviewOpen, setIsFilePreviewOpen] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [contentError, setContentError] = useState<string | null>(null);
+  
+  // Drag & Drop State
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
+  
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/' }
   ]);
@@ -223,8 +236,144 @@ export default function FileManager() {
     enabled: searchQuery.length > 0 && fileSystemMode === 'database',
   });
 
+  // Read file content query with timeout and retry
+  const readFileContentQuery = useMutation({
+    mutationFn: async (filePath: string) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const response = await apiRequest('GET', '/api/real-files/content', {
+          path: filePath
+        });
+        clearTimeout(timeoutId);
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message || 'فشل في قراءة الملف');
+        }
+        
+        return result.data;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('انتهت مهلة الاتصال - تجاوز الطلب الوقت المحدد');
+        }
+        throw error;
+      }
+    },
+    retry: (failureCount, error: Error) => {
+      // Retry up to 2 times for network errors, but not for file access errors
+      if (failureCount < 2 && 
+          !error.message.includes('Path validation failed') && 
+          !error.message.includes('Access denied') &&
+          !error.message.includes('not found')) {
+        return true;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
+  });
+
   // Define isSearching variable for loading states
   const isSearching = searchQuery.length > 0 && fileSystemMode === 'database' && isDatabaseSearching;
+
+  // File content reader function
+  const readFileContent = useCallback(async (file: FileItem) => {
+    if (fileSystemMode !== 'real') {
+      toast({
+        title: "غير مدعوم",
+        description: "قراءة المحتوى متوفرة فقط للملفات الحقيقية",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const realFile = file as RealFileItem;
+    
+    // Check if file is too large (>5MB)
+    if (realFile.size > 5 * 1024 * 1024) {
+      toast({
+        title: "ملف كبير جداً",
+        description: "لا يمكن معاينة الملفات الأكبر من 5 ميجابايت",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+    setIsLoadingContent(true);
+    setContentError(null);
+    setFileContent('');
+    setIsFilePreviewOpen(true);
+
+    try {
+      const contentData = await readFileContentQuery.mutateAsync(realFile.absolutePath);
+      setFileContent(contentData.content || '');
+    } catch (error: any) {
+      setContentError(error.message || 'فشل في قراءة الملف');
+      toast({
+        title: "خطأ في القراءة",
+        description: error.message || 'فشل في قراءة الملف',
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingContent(false);
+    }
+  }, [fileSystemMode, readFileContentQuery, toast]);
+
+  // Create new file/folder mutation with improved error handling (moved up to fix dependency)
+  const createItemMutation = useMutation({
+    mutationFn: async (data: { name: string; type: 'file' | 'folder'; parentId?: string; content?: string }) => {
+      if (fileSystemMode === 'database') {
+        const response = await apiRequest('POST', '/api/files', {
+          name: data.name,
+          type: data.type,
+          parentId: data.parentId || currentFolderId,
+          size: data.type === 'file' ? 0 : undefined,
+          isPublic: false,
+          tags: []
+        });
+        return await response.json();
+      } else {
+        // Real file system
+        const itemPath = `${currentPath}/${data.name}`;
+        const response = await apiRequest('POST', '/api/real-files/create', {
+          path: itemPath,
+          type: data.type === 'folder' ? 'directory' : 'file',
+          content: data.content || '',
+          mode: data.type === 'folder' ? '0755' : '0644'
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message);
+        }
+        
+        return result;
+      }
+    },
+    onSuccess: () => {
+      if (fileSystemMode === 'database') {
+        queryClient.invalidateQueries({ queryKey: ['/api/files'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/real-files/browse'] });
+      }
+      toast({
+        title: "تم الإنشاء",
+        description: "تم إنشاء العنصر بنجاح",
+      });
+      setIsCreateModalOpen(false);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.message || 'فشل في إنشاء العنصر';
+      toast({
+        title: "خطأ في الإنشاء",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  });
 
   // Handle path errors for real files (since onError is not available in TanStack Query v5)
   useEffect(() => {
@@ -335,6 +484,110 @@ export default function FileManager() {
       setIsRefreshing(false);
     }
   }, [refetch]);
+
+  // Drag & Drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleFileDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    dragCounter.current = 0;
+
+    if (fileSystemMode !== 'real') {
+      toast({
+        title: "غير مدعوم",
+        description: "رفع الملفات متوفر فقط في وضع الملفات الحقيقية",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const files = Array.from(e.dataTransfer.files);
+    
+    for (const file of files) {
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast({
+          title: "ملف كبير جداً",
+          description: `الملف ${file.name} أكبر من 50 ميجابايت`,
+          variant: "destructive"
+        });
+        continue;
+      }
+
+      try {
+        const content = await file.text();
+        await createItemMutation.mutateAsync({
+          name: file.name,
+          type: 'file',
+          content
+        });
+        
+        toast({
+          title: "تم الرفع",
+          description: `تم رفع ${file.name} بنجاح`
+        });
+      } catch (error: any) {
+        toast({
+          title: "فشل الرفع",
+          description: `فشل في رفع ${file.name}: ${error.message}`,
+          variant: "destructive"
+        });
+      }
+    }
+  }, [fileSystemMode, createItemMutation, toast]);
+
+  const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    for (const file of files) {
+      try {
+        const content = await file.text();
+        await createItemMutation.mutateAsync({
+          name: file.name,
+          type: 'file',
+          content
+        });
+        
+        toast({
+          title: "تم الرفع",
+          description: `تم رفع ${file.name} بنجاح`
+        });
+      } catch (error: any) {
+        toast({
+          title: "فشل الرفع",
+          description: `فشل في رفع ${file.name}: ${error.message}`,
+          variant: "destructive"
+        });
+      }
+    }
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [createItemMutation, toast]);
 
   // Touch gesture handling
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -1152,12 +1405,8 @@ export default function FileManager() {
       if (itemType === 'folder') {
         handleFolderClick(item);
       } else {
-        // Open file in editor or viewer
-        console.log('Open file:', itemName);
-        toast({
-          title: "فتح الملف",
-          description: `فتح ${itemName}`,
-        });
+        // Open file preview/content viewer
+        readFileContent(item);
       }
     };
 
@@ -1211,12 +1460,8 @@ export default function FileManager() {
 
     const handleEdit = () => {
       if (itemType === 'file') {
-        // TODO: Open file editor
-        console.log('Edit:', itemName);
-        toast({
-          title: "قريباً",
-          description: "سيتم إضافة محرر الملفات قريباً",
-        });
+        // Open file in edit mode
+        readFileContent(item);
       }
     };
 
@@ -1407,6 +1652,10 @@ export default function FileManager() {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleFileDrop}
     >
       {/* File Manager Header */}
       <div className="bg-gray-900 dark:bg-black text-white p-3 sm:p-4">
@@ -1471,6 +1720,17 @@ export default function FileManager() {
                         <FileIcon className="w-5 h-5 text-gray-600" />
                       </div>
                       <span className="text-base">ملف</span>
+                    </Button>
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center justify-start gap-4 h-14 bg-transparent border-0 text-gray-900 hover:bg-gray-50"
+                      variant="ghost"
+                      data-testid="button-upload-file"
+                    >
+                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                        <Upload className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <span className="text-base">رفع ملف</span>
                     </Button>
                     <Button
                       onClick={() => {
@@ -2066,9 +2326,124 @@ export default function FileManager() {
         )}
       </div>
 
+      {/* Hidden file input for drag & drop */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleFileInputChange}
+        accept="*/*"
+      />
+
+      {/* Drag overlay */}
+      {isDragOver && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-white rounded-lg p-8 text-center shadow-xl">
+            <Upload className="w-16 h-16 mx-auto mb-4 text-blue-600" />
+            <h3 className="text-xl font-semibold mb-2">اترك الملفات هنا</h3>
+            <p className="text-gray-600">سيتم رفع الملفات إلى المجلد الحالي</p>
+          </div>
+        </div>
+      )}
+
       {/* Modals & Dialogs */}
       <CreateItemModal />
       
+      {/* File Preview Dialog */}
+      <Dialog open={isFilePreviewOpen} onOpenChange={setIsFilePreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" data-testid="file-preview-dialog">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              معاينة الملف: {selectedFile?.name}
+            </DialogTitle>
+            <DialogDescription>
+              المسار: {(selectedFile as RealFileItem)?.absolutePath}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden">
+            {isLoadingContent ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+                  <p>جاري قراءة الملف...</p>
+                </div>
+              </div>
+            ) : contentError ? (
+              <Alert variant="destructive" className="h-64 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6" />
+                <AlertDescription className="ml-2">
+                  <strong>خطأ في قراءة الملف:</strong><br />
+                  {contentError}
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <ScrollArea className="h-[60vh] w-full border rounded-md">
+                <div className="p-4">
+                  {selectedFile && (selectedFile as RealFileItem).mimeType?.startsWith('image/') ? (
+                    <div className="text-center">
+                      <img 
+                        src={`/api/real-files/content?path=${encodeURIComponent((selectedFile as RealFileItem).absolutePath)}`}
+                        alt={selectedFile.name}
+                        className="max-w-full max-h-[50vh] mx-auto rounded-lg shadow-md"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          setContentError('فشل في تحميل الصورة');
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <Textarea 
+                      value={fileContent}
+                      onChange={(e) => setFileContent(e.target.value)}
+                      className="min-h-[50vh] font-mono text-sm"
+                      placeholder="محتوى الملف..."
+                      data-testid="textarea-file-content-viewer"
+                    />
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center pt-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {selectedFile && (
+                <>
+                  <span>الحجم: {formatFileSize(selectedFile.size)}</span>
+                  {(selectedFile as RealFileItem).mimeType && (
+                    <span className="border-l pl-2 ml-2">النوع: {(selectedFile as RealFileItem).mimeType}</span>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsFilePreviewOpen(false)}
+                data-testid="button-close-preview"
+              >
+                إغلاق
+              </Button>
+              {selectedFile && !isLoadingContent && !contentError && (
+                <Button 
+                  onClick={() => {
+                    const realFile = selectedFile as RealFileItem;
+                    window.open(`/api/real-files/content?path=${encodeURIComponent(realFile.absolutePath)}`, '_blank');
+                  }}
+                  data-testid="button-download-preview"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  تحميل
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="mx-2 max-w-[calc(100vw-1rem)] sm:max-w-[425px]" data-testid="delete-confirmation-dialog">
           <AlertDialogHeader>
