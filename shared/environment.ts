@@ -55,6 +55,8 @@ export function detectEnvironment(): EnvironmentConfig {
           /^https:\/\/.*\.replit\.dev$/,
           /^https:\/\/.*\.repl\.co$/,
           'https://replit.com',
+          'https://panel.binarjoinanelytic.info',
+          'http://panel.binarjoinanelytic.info',
           ...(isDevelopment ? [
             'http://localhost:3000',
             'http://localhost:5173',
@@ -135,6 +137,10 @@ export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     // في المتصفح
     if (ENV_CONFIG.isReplit) {
+      // إذا كان النطاق المخصص، استخدمه
+      if (window.location.hostname === 'panel.binarjoinanelytic.info') {
+        return window.location.origin;
+      }
       return window.location.origin;
     }
     return `${window.location.protocol}//${window.location.host}`;
@@ -149,6 +155,12 @@ export function getWebSocketUrl(): string {
   if (typeof window !== 'undefined') {
     // في المتصفح
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    
+    // للنطاق المخصص، استخدم WSS دائماً
+    if (window.location.hostname === 'panel.binarjoinanelytic.info') {
+      return `wss://${window.location.host}/ws`;
+    }
+    
     return `${protocol}//${window.location.host}/ws`;
   }
   
