@@ -191,7 +191,7 @@ export default function FileManager() {
   useEffect(() => {
     if (fileSystemMode === 'real') {
       // Use current working directory for Replit environment
-      const initialPath = process.env.NODE_ENV === 'development' ? '/home/runner' : process.cwd() || '/home/runner';
+      const initialPath = '/home/runner/workspace';
       setCurrentPath(initialPath);
       setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: initialPath }]);
     } else {
