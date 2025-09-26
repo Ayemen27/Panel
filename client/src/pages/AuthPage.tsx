@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, EyeOff, LogIn, UserPlus, Server, ArrowRight, Shield, Globe, Activity } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Server, Shield, Globe, Zap, Stars, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@shared/schema";
@@ -125,274 +125,261 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* خلفية متحركة */}
-      <div className="absolute inset-0 bg-grid-white/10 bg-grid-16 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* خلفية متحركة وتأثيرات بصرية */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse" />
-        <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000" />
-        <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-pink-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-2000" />
+        {/* الكريات المتحركة */}
+        <div className="absolute top-10 left-10 w-20 h-20 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-32 h-32 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-15 animate-bounce"></div>
+        <div className="absolute bottom-20 left-1/4 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-25 animate-pulse delay-1000"></div>
+        <div className="absolute bottom-40 right-1/3 w-16 h-16 bg-gradient-to-r from-green-400 to-teal-500 rounded-full opacity-20 animate-bounce delay-500"></div>
+        
+        {/* النجوم */}
+        <div className="absolute top-20 right-1/4 text-white opacity-30 animate-pulse">
+          <Stars className="w-6 h-6" />
+        </div>
+        <div className="absolute bottom-1/3 left-10 text-white opacity-20 animate-pulse delay-2000">
+          <Stars className="w-4 h-4" />
+        </div>
+        
+        {/* الشبكة */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent bg-grid-white/10 bg-grid-16 [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,white,rgba(255,255,255,0.1))]"></div>
       </div>
 
-      <div className="relative w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* الجانب الأيسر - معلومات النظام */}
-        <div className="text-center lg:text-right order-2 lg:order-1 text-white">
-          <div className="mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl mb-6 shadow-2xl">
-              <Server className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent leading-tight">
-              لوحة الإدارة الذكية
-            </h1>
-            <p className="text-xl lg:text-2xl text-blue-100 mb-8 leading-relaxed">
-              نظام إدارة شامل ومتطور للخوادم والتطبيقات
-            </p>
+      {/* المحتوى الرئيسي */}
+      <div className="relative z-10 w-full max-w-lg">
+        {/* شعار وعنوان النظام */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-3xl mb-6 shadow-2xl shadow-blue-500/30">
+            <Server className="w-10 h-10 text-white" />
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4">
-                <Globe className="w-8 h-8 text-blue-300" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">إدارة النطاقات</h3>
-              <p className="text-blue-200 text-sm">ربط وإدارة النطاقات بسهولة</p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4">
-                <Shield className="w-8 h-8 text-green-300" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">أمان SSL</h3>
-              <p className="text-blue-200 text-sm">شهادات مجانية وتجديد تلقائي</p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4">
-                <Activity className="w-8 h-8 text-purple-300" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">مراقبة مباشرة</h3>
-              <p className="text-blue-200 text-sm">إحصائيات وتنبيهات فورية</p>
-            </div>
-          </div>
-
-          <div className="space-y-4 text-blue-100">
-            <div className="flex items-center justify-center lg:justify-end gap-3">
-              <span className="text-lg">إدارة التطبيقات والعمليات</span>
-              <ArrowRight className="w-5 h-5 text-blue-400" />
-            </div>
-            <div className="flex items-center justify-center lg:justify-end gap-3">
-              <span className="text-lg">تكوين Nginx المتقدم</span>
-              <ArrowRight className="w-5 h-5 text-blue-400" />
-            </div>
-            <div className="flex items-center justify-center lg:justify-end gap-3">
-              <span className="text-lg">واجهة عربية احترافية</span>
-              <ArrowRight className="w-5 h-5 text-blue-400" />
-            </div>
-          </div>
+          <h1 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent">
+            🚀 لوحة التحكم الذكية
+          </h1>
+          <p className="text-lg text-blue-100/90 font-medium">
+            ✨ نظام إدارة متطور وآمن ✨
+          </p>
         </div>
 
-        {/* الجانب الأيمن - نماذج تسجيل الدخول */}
-        <div className="w-full max-w-md mx-auto order-1 lg:order-2">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 bg-white/10 backdrop-blur-sm border-white/20">
-              <TabsTrigger value="login" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900">
-                <LogIn className="w-4 h-4" />
-                تسجيل الدخول
-              </TabsTrigger>
-              <TabsTrigger value="register" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900">
-                <UserPlus className="w-4 h-4" />
-                حساب جديد
-              </TabsTrigger>
-            </TabsList>
+        {/* بطاقة تسجيل الدخول */}
+        <div className="backdrop-blur-xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl shadow-black/50 overflow-hidden">
+          {/* شريط علوي متدرج */}
+          <div className="h-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600"></div>
+          
+          <div className="p-8">
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-white/10 backdrop-blur-sm border-white/20 h-14">
+                <TabsTrigger 
+                  value="login" 
+                  className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-base font-semibold"
+                >
+                  <LogIn className="w-5 h-5" />
+                  تسجيل الدخول
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register" 
+                  className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white text-base font-semibold"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  حساب جديد
+                </TabsTrigger>
+              </TabsList>
 
-            {/* تسجيل الدخول */}
-            <TabsContent value="login">
-              <Card className="shadow-2xl border-0 bg-white/10 backdrop-blur-md border border-white/20">
-                <CardHeader className="text-center text-white">
-                  <CardTitle className="text-3xl font-bold">مرحباً بعودتك</CardTitle>
-                  <CardDescription className="text-blue-100 text-lg">
-                    أدخل بياناتك للوصول إلى لوحة التحكم
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
-                    <div className="space-y-3">
-                      <Label htmlFor="username" className="text-white text-base font-medium">اسم المستخدم</Label>
-                      <Input
-                        id="username"
-                        {...loginForm.register("username")}
-                        placeholder="أدخل اسم المستخدم"
-                        disabled={loginMutation.isPending}
-                        data-testid="input-username-login"
-                        className="h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                      />
-                      {loginForm.formState.errors.username && (
-                        <p className="text-red-300 text-sm">
-                          {loginForm.formState.errors.username.message}
-                        </p>
-                      )}
-                    </div>
+              {/* تسجيل الدخول */}
+              <TabsContent value="login">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-2xl mb-4 border border-white/20">
+                    <Lock className="w-8 h-8 text-blue-300" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">مرحباً بعودتك! 👋</h2>
+                  <p className="text-blue-100/80">أدخل بياناتك للوصول إلى النظام</p>
+                </div>
 
-                    <div className="space-y-3">
-                      <Label htmlFor="password" className="text-white text-base font-medium">كلمة المرور</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          {...loginForm.register("password")}
-                          placeholder="أدخل كلمة المرور"
-                          disabled={loginMutation.isPending}
-                          data-testid="input-password-login"
-                          className="h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 pl-14"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute left-2 top-0 h-full text-blue-200 hover:text-white hover:bg-white/10"
-                          onClick={() => setShowPassword(!showPassword)}
-                          tabIndex={-1}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </Button>
-                      </div>
-                      {loginForm.formState.errors.password && (
-                        <p className="text-red-300 text-sm">
-                          {loginForm.formState.errors.password.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg"
+                <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="username" className="text-white text-base font-semibold flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      اسم المستخدم
+                    </Label>
+                    <Input
+                      id="username"
+                      {...loginForm.register("username")}
+                      placeholder="أدخل اسم المستخدم"
                       disabled={loginMutation.isPending}
-                      data-testid="button-login"
-                    >
-                      {loginMutation.isPending ? (
-                        <div className="flex items-center gap-3">
-                          <div className="w-5 h-5 animate-spin border-2 border-current border-t-transparent rounded-full" />
-                          جاري تسجيل الدخول...
-                        </div>
-                      ) : (
-                        <>
-                          <LogIn className="w-5 h-5 ml-2" />
-                          تسجيل الدخول
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                      data-testid="input-username-login"
+                      className="h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 backdrop-blur-sm text-lg"
+                    />
+                    {loginForm.formState.errors.username && (
+                      <p className="text-red-300 text-sm font-medium">
+                        {loginForm.formState.errors.username.message}
+                      </p>
+                    )}
+                  </div>
 
-            {/* إنشاء حساب جديد */}
-            <TabsContent value="register">
-              <Card className="shadow-2xl border-0 bg-white/10 backdrop-blur-md border border-white/20">
-                <CardHeader className="text-center text-white">
-                  <CardTitle className="text-3xl font-bold">انضم إلينا</CardTitle>
-                  <CardDescription className="text-blue-100 text-lg">
-                    أنشئ حسابك الجديد للبدء
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <Label htmlFor="firstName" className="text-white text-base font-medium">الاسم الأول</Label>
-                        <Input
-                          id="firstName"
-                          {...registerForm.register("firstName")}
-                          placeholder="الاسم الأول"
-                          disabled={registerMutation.isPending}
-                          data-testid="input-firstname"
-                          className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                        />
-                        {registerForm.formState.errors.firstName && (
-                          <p className="text-red-300 text-sm">
-                            {registerForm.formState.errors.firstName.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <Label htmlFor="lastName" className="text-white text-base font-medium">الاسم الأخير</Label>
-                        <Input
-                          id="lastName"
-                          {...registerForm.register("lastName")}
-                          placeholder="الاسم الأخير"
-                          disabled={registerMutation.isPending}
-                          data-testid="input-lastname"
-                          className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                        />
-                        {registerForm.formState.errors.lastName && (
-                          <p className="text-red-300 text-sm">
-                            {registerForm.formState.errors.lastName.message}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="email" className="text-white text-base font-medium">البريد الإلكتروني</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-white text-base font-semibold flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      كلمة المرور
+                    </Label>
+                    <div className="relative">
                       <Input
-                        id="email"
-                        type="email"
-                        {...registerForm.register("email")}
-                        placeholder="example@domain.com"
-                        disabled={registerMutation.isPending}
-                        data-testid="input-email"
-                        className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        {...loginForm.register("password")}
+                        placeholder="أدخل كلمة المرور"
+                        disabled={loginMutation.isPending}
+                        data-testid="input-password-login"
+                        className="h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 backdrop-blur-sm text-lg pl-14"
                       />
-                      {registerForm.formState.errors.email && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute left-2 top-0 h-full text-blue-200 hover:text-white hover:bg-white/10"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </Button>
+                    </div>
+                    {loginForm.formState.errors.password && (
+                      <p className="text-red-300 text-sm font-medium">
+                        {loginForm.formState.errors.password.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-16 text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-2xl shadow-blue-500/30 transform hover:scale-105 transition-all duration-200"
+                    disabled={loginMutation.isPending}
+                    data-testid="button-login"
+                  >
+                    {loginMutation.isPending ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 animate-spin border-3 border-current border-t-transparent rounded-full" />
+                        جاري تسجيل الدخول...
+                      </div>
+                    ) : (
+                      <>
+                        <Zap className="w-6 h-6 ml-2" />
+                        🚀 دخول للنظام
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              {/* إنشاء حساب جديد */}
+              <TabsContent value="register">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-2xl mb-4 border border-white/20">
+                    <UserPlus className="w-8 h-8 text-purple-300" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">انضم إلينا! 🌟</h2>
+                  <p className="text-blue-100/80">أنشئ حسابك الجديد للبدء</p>
+                </div>
+
+                <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-white text-sm font-semibold">الاسم الأول</Label>
+                      <Input
+                        id="firstName"
+                        {...registerForm.register("firstName")}
+                        placeholder="الاسم الأول"
+                        disabled={registerMutation.isPending}
+                        data-testid="input-firstname"
+                        className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm"
+                      />
+                      {registerForm.formState.errors.firstName && (
                         <p className="text-red-300 text-sm">
-                          {registerForm.formState.errors.email.message}
+                          {registerForm.formState.errors.firstName.message}
                         </p>
                       )}
                     </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="username-register" className="text-white text-base font-medium">اسم المستخدم</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-white text-sm font-semibold">الاسم الأخير</Label>
                       <Input
-                        id="username-register"
-                        {...registerForm.register("username")}
-                        placeholder="اسم المستخدم"
+                        id="lastName"
+                        {...registerForm.register("lastName")}
+                        placeholder="الاسم الأخير"
                         disabled={registerMutation.isPending}
-                        data-testid="input-username-register"
-                        className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                        data-testid="input-lastname"
+                        className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm"
                       />
-                      {registerForm.formState.errors.username && (
+                      {registerForm.formState.errors.lastName && (
                         <p className="text-red-300 text-sm">
-                          {registerForm.formState.errors.username.message}
+                          {registerForm.formState.errors.lastName.message}
                         </p>
                       )}
                     </div>
+                  </div>
 
-                    <div className="space-y-3">
-                      <Label htmlFor="password-register" className="text-white text-base font-medium">كلمة المرور</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-white text-sm font-semibold">البريد الإلكتروني</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      {...registerForm.register("email")}
+                      placeholder="example@domain.com"
+                      disabled={registerMutation.isPending}
+                      data-testid="input-email"
+                      className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm"
+                    />
+                    {registerForm.formState.errors.email && (
+                      <p className="text-red-300 text-sm">
+                        {registerForm.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="username-register" className="text-white text-sm font-semibold">اسم المستخدم</Label>
+                    <Input
+                      id="username-register"
+                      {...registerForm.register("username")}
+                      placeholder="اسم المستخدم"
+                      disabled={registerMutation.isPending}
+                      data-testid="input-username-register"
+                      className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm"
+                    />
+                    {registerForm.formState.errors.username && (
+                      <p className="text-red-300 text-sm">
+                        {registerForm.formState.errors.username.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password-register" className="text-white text-sm font-semibold">كلمة المرور</Label>
                       <div className="relative">
                         <Input
                           id="password-register"
                           type={showPassword ? "text" : "password"}
                           {...registerForm.register("password")}
-                          placeholder="أدخل كلمة المرور"
+                          placeholder="كلمة المرور"
                           disabled={registerMutation.isPending}
                           data-testid="input-password-register"
-                          className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 pl-14"
+                          className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm pl-12"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute left-2 top-0 h-full text-blue-200 hover:text-white hover:bg-white/10"
+                          className="absolute left-1 top-0 h-full w-10 text-blue-200 hover:text-white hover:bg-white/10"
                           onClick={() => setShowPassword(!showPassword)}
                           tabIndex={-1}
                         >
                           {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
+                            <EyeOff className="w-4 h-4" />
                           ) : (
-                            <Eye className="w-5 h-5" />
+                            <Eye className="w-4 h-4" />
                           )}
                         </Button>
                       </div>
@@ -403,30 +390,30 @@ export default function AuthPage() {
                       )}
                     </div>
 
-                    <div className="space-y-3">
-                      <Label htmlFor="confirmPassword" className="text-white text-base font-medium">تأكيد كلمة المرور</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-white text-sm font-semibold">تأكيد كلمة المرور</Label>
                       <div className="relative">
                         <Input
                           id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
                           {...registerForm.register("confirmPassword")}
-                          placeholder="أعد إدخال كلمة المرور"
+                          placeholder="تأكيد كلمة المرور"
                           disabled={registerMutation.isPending}
                           data-testid="input-confirm-password"
-                          className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 pl-14"
+                          className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm pl-12"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute left-2 top-0 h-full text-blue-200 hover:text-white hover:bg-white/10"
+                          className="absolute left-1 top-0 h-full w-10 text-blue-200 hover:text-white hover:bg-white/10"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           tabIndex={-1}
                         >
                           {showConfirmPassword ? (
-                            <EyeOff className="w-5 h-5" />
+                            <EyeOff className="w-4 h-4" />
                           ) : (
-                            <Eye className="w-5 h-5" />
+                            <Eye className="w-4 h-4" />
                           )}
                         </Button>
                       </div>
@@ -436,30 +423,37 @@ export default function AuthPage() {
                         </p>
                       )}
                     </div>
+                  </div>
 
-                    <Button
-                      type="submit"
-                      className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 border-0 shadow-lg"
-                      disabled={registerMutation.isPending}
-                      data-testid="button-register"
-                    >
-                      {registerMutation.isPending ? (
-                        <div className="flex items-center gap-3">
-                          <div className="w-5 h-5 animate-spin border-2 border-current border-t-transparent rounded-full" />
-                          جاري إنشاء الحساب...
-                        </div>
-                      ) : (
-                        <>
-                          <UserPlus className="w-5 h-5 ml-2" />
-                          إنشاء حساب
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  <Button
+                    type="submit"
+                    className="w-full h-16 text-lg font-bold bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 border-0 shadow-2xl shadow-purple-500/30 transform hover:scale-105 transition-all duration-200"
+                    disabled={registerMutation.isPending}
+                    data-testid="button-register"
+                  >
+                    {registerMutation.isPending ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 animate-spin border-3 border-current border-t-transparent rounded-full" />
+                        جاري إنشاء الحساب...
+                      </div>
+                    ) : (
+                      <>
+                        <Stars className="w-6 h-6 ml-2" />
+                        🌟 إنشاء حساب جديد
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* نص أسفل الصفحة */}
+        <div className="text-center mt-8">
+          <p className="text-blue-200/60 text-sm">
+            © 2025 - نظام إدارة ذكي وآمن 🔐
+          </p>
         </div>
       </div>
     </div>
