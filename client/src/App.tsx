@@ -58,14 +58,9 @@ function Router() {
     <Switch>
       {!isAuthenticated ? (
         // المستخدم غير مسجل دخول - إظهار صفحة تسجيل الدخول فقط
-        <>
-          <Route path="/">
-            <AuthPage />
-          </Route>
-          <Route>
-            <AuthPage />
-          </Route>
-        </>
+        <Route>
+          <AuthPage />
+        </Route>
       ) : (
         // المستخدم مسجل دخول - إظهار الصفحات المحمية
         <>

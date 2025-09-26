@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, LogIn, Shield } from "lucide-react";
+import { Eye, EyeOff, LogIn, Shield, Lock, User, Building2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,8 +28,15 @@ type LoginData = z.infer<typeof loginSchema>;
 
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+
+  // تأثير تحميل الصفحة
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // نموذج تسجيل الدخول
   const loginForm = useForm<LoginData>({
@@ -72,48 +79,66 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="shadow-lg border-border">
-          <CardHeader className="text-center pb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-xl mx-auto mb-4">
-              <Shield className="w-8 h-8 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 bg-grid-slate-100 dark:bg-grid-slate-800 bg-[size:32px_32px] opacity-20"></div>
+      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-400/20 dark:bg-blue-600/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-indigo-400/20 dark:bg-indigo-600/20 rounded-full blur-3xl"></div>
+      
+      <div className={`w-full max-w-md relative z-10 transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <Card className="backdrop-blur-lg bg-white/80 dark:bg-slate-900/80 shadow-2xl border border-white/20 dark:border-slate-700/50 rounded-2xl">
+          <CardHeader className="text-center pb-8 pt-8">
+            {/* Logo/Brand Section */}
+            <div className="relative mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 shadow-lg">
+                <Building2 className="w-10 h-10 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
             </div>
-            <CardTitle className="text-2xl font-bold text-foreground">
+            
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-2">
               تسجيل الدخول
             </CardTitle>
-            <p className="text-muted-foreground text-sm mt-2">
-              أدخل بياناتك للوصول إلى لوحة التحكم
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
+              أدخل بياناتك للوصول إلى لوحة التحكم الإدارية
             </p>
           </CardHeader>
           
-          <CardContent className="space-y-4">
-            <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-foreground">
+          <CardContent className="px-8 pb-8">
+            <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
+              {/* Username Field */}
+              <div className="space-y-3">
+                <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 font-medium flex items-center gap-2">
+                  <User className="w-4 h-4" />
                   اسم المستخدم أو البريد الإلكتروني
                 </Label>
-                <Input
-                  id="username"
-                  data-testid="input-username"
-                  {...loginForm.register("username")}
-                  placeholder="أدخل اسم المستخدم أو البريد الإلكتروني"
-                  disabled={loginMutation.isPending}
-                  className="h-11 bg-background border-border text-foreground text-right"
-                  dir="ltr"
-                />
+                <div className="relative group">
+                  <Input
+                    id="username"
+                    data-testid="input-username"
+                    {...loginForm.register("username")}
+                    placeholder="أدخل اسم المستخدم أو البريد الإلكتروني"
+                    disabled={loginMutation.isPending}
+                    className="h-12 bg-white/60 dark:bg-slate-800/60 border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 text-right transition-all duration-300 rounded-xl shadow-sm group-hover:shadow-md focus:shadow-lg pl-4 pr-4"
+                    dir="ltr"
+                  />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </div>
                 {loginForm.formState.errors.username && (
-                  <p className="text-destructive text-sm" data-testid="error-username">
+                  <p className="text-red-500 text-sm font-medium flex items-center gap-1" data-testid="error-username">
+                    <span className="w-1 h-1 bg-red-500 rounded-full"></span>
                     {loginForm.formState.errors.username.message}
                   </p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">
+              {/* Password Field */}
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 font-medium flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
                   كلمة المرور
                 </Label>
-                <div className="relative">
+                <div className="relative group">
                   <Input
                     id="password"
                     data-testid="input-password"
@@ -121,7 +146,7 @@ export default function AuthPage() {
                     {...loginForm.register("password")}
                     placeholder="أدخل كلمة المرور"
                     disabled={loginMutation.isPending}
-                    className="h-11 bg-background border-border text-foreground pl-10 text-right"
+                    className="h-12 bg-white/60 dark:bg-slate-800/60 border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 text-right transition-all duration-300 rounded-xl shadow-sm group-hover:shadow-md focus:shadow-lg pl-12 pr-4"
                     dir="ltr"
                   />
                   <Button
@@ -129,41 +154,54 @@ export default function AuthPage() {
                     variant="ghost"
                     size="icon"
                     data-testid="button-toggle-password"
-                    className="absolute left-0 top-0 h-11 w-11 hover:bg-transparent"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors duration-300"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="w-4 h-4 text-muted-foreground" />
+                      <EyeOff className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     ) : (
-                      <Eye className="w-4 h-4 text-muted-foreground" />
+                      <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     )}
                   </Button>
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
                 {loginForm.formState.errors.password && (
-                  <p className="text-destructive text-sm" data-testid="error-password">
+                  <p className="text-red-500 text-sm font-medium flex items-center gap-1" data-testid="error-password">
+                    <span className="w-1 h-1 bg-red-500 rounded-full"></span>
                     {loginForm.formState.errors.password.message}
                   </p>
                 )}
               </div>
 
-              <Button
-                type="submit"
-                data-testid="button-login"
-                className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                disabled={loginMutation.isPending}
-              >
-                {loginMutation.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
-                    جاري تسجيل الدخول...
-                  </div>
-                ) : (
-                  <>
-                    <LogIn className="w-4 h-4 ml-2" />
-                    تسجيل الدخول
-                  </>
-                )}
-              </Button>
+              {/* Login Button */}
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  data-testid="button-login"
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 animate-spin border-2 border-white border-t-transparent rounded-full" />
+                      <span>جاري تسجيل الدخول...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <LogIn className="w-5 h-5" />
+                      <span>تسجيل الدخول</span>
+                    </div>
+                  )}
+                </Button>
+              </div>
+
+              {/* Security Notice */}
+              <div className="pt-4 text-center">
+                <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  محمي بتشفير SSL 256-bit
+                </p>
+              </div>
             </form>
           </CardContent>
         </Card>
