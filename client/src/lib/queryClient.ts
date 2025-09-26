@@ -1,7 +1,8 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, type QueryFunction } from "@tanstack/react-query";
+import { getApiBaseUrl } from "../../../shared/environment";
 
 // Use relative URLs to avoid SSL issues with IP addresses
-const API_BASE = window.location.origin;
+const API_BASE = `${getApiBaseUrl()}/api`;
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -83,7 +84,7 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: async ({ queryKey, meta }) => {
         const url = queryKey[0] as string;
-        
+
         // Validate URL before making request
         if (!url || url.includes('undefined')) {
           throw new Error('Invalid URL detected');

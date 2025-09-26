@@ -1,10 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { ENV_CONFIG, logEnvironmentInfo } from "../shared/environment";
 
 // SSL certificate verification is enabled for security
 // If you encounter SSL issues with database connections, configure proper certificates
 // instead of disabling SSL verification globally
+
+logEnvironmentInfo();
 
 const app = express();
 app.use(express.json());

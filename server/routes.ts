@@ -26,6 +26,9 @@ import { RealFileSystemService } from "./services/realFileSystemService";
 import { db } from "./db";
 import { files } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import cors from "cors";
+import express, { type Request, Response, NextFunction } from "express";
+import { ENV_CONFIG } from "../shared/environment";
 
 // WebSocket clients store
 const wsClients = new Set<WebSocket>();
@@ -38,38 +41,34 @@ const realFileSystemService = new RealFileSystemService(storage);
 
 // Unified CORS configuration for both HTTP and WebSocket
 function setupCORS(app: Express) {
-  app.use((req, res, next) => {
-    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
-    const origin = req.headers.origin;
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // السماح بالطلبات بدون origin (مثل تطبيقات الموبايل)
+        if (!origin) return callback(null, true);
 
-    // Determine allowed origins based on environment
-    const allowedOrigins = isDevelopment 
-      ? ['http://localhost:5000', 'https://replit.dev', 'http://127.0.0.1:5000']
-      : ['https://binarjoinanelytic.info'];
+        const isAllowed = ENV_CONFIG.cors.origin.some(allowedOrigin => {
+          if (typeof allowedOrigin === 'string') {
+            return origin === allowedOrigin;
+          }
+          if (allowedOrigin instanceof RegExp) {
+            return allowedOrigin.test(origin);
+          }
+          return false;
+        });
 
-    // Allow origin if it's in the allowed list or if no origin (same-origin requests)
-    const allowOrigin = !origin || allowedOrigins.some(allowed => 
-      origin === allowed || (isDevelopment && (
-        origin.includes('localhost') || 
-        origin.includes('replit.dev') ||
-        origin.includes('127.0.0.1')
-      ))
-    );
-
-    if (allowOrigin) {
-      res.header('Access-Control-Allow-Origin', origin || (isDevelopment ? 'http://localhost:5000' : 'https://binarjoinanelytic.info'));
-    }
-
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, Set-Cookie');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE, PATCH');
-
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-    } else {
-      next();
-    }
-  });
+        if (isAllowed) {
+          callback(null, true);
+        } else {
+          console.warn(`Security: Blocked request from unauthorized origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: ENV_CONFIG.cors.credentials,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    })
+  );
 }
 
 // Enhanced authentication middleware for custom auth system
@@ -1639,17 +1638,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const origin = info.origin;
       const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
 
-      const allowedOrigins = isDevelopment 
-        ? ['http://localhost:5000', 'https://replit.dev', 'http://127.0.0.1:5000']
-        : ['https://binarjoinanelytic.info'];
+      if (!origin) return true; // السماح بالاتصالات بدون origin
 
-      if (!origin || !allowedOrigins.some(allowed => 
-        origin === allowed || (isDevelopment && (
-          origin.includes('localhost') || 
-          origin.includes('replit.dev') ||
-          origin.includes('127.0.0.1')
-        ))
-      )) {
+      const isAllowed = ENV_CONFIG.cors.origin.some(allowedOrigin => {
+        if (typeof allowedOrigin === 'string') {
+          return origin === allowedOrigin;
+        }
+        if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin);
+        }
+        return false;
+      });
+
+      if (!isAllowed) {
         console.warn(`Security: Blocked WebSocket connection from unauthorized origin: ${origin}`);
         return false;
       }

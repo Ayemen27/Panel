@@ -30,7 +30,7 @@ function setupSSLConfig() {
   const connectionString = createDatabaseUrl();
 
   // التحقق من نوع الاتصال
-  const isLocalConnection = connectionString.includes('localhost') || 
+  const isLocalConnection = connectionString.includes('localhost') ||
                            connectionString.includes('127.0.0.1') ||
                            connectionString.includes('@localhost/');
 
@@ -105,7 +105,7 @@ const cleanConnectionString = connectionString
   .replace(/[?&]sslkey=[^&]*/g, '')
   .replace(/[?&]sslrootcert=[^&]*/g, '');
 
-export const pool = new Pool({ 
+export const pool = new Pool({
   connectionString: cleanConnectionString,
   ssl: sslConfig,
   // إعدادات الاتصال المحسنة
@@ -117,7 +117,7 @@ export const pool = new Pool({
   query_timeout: 30000
 });
 
-export const db = drizzle(pool, { 
+export const db = drizzle(pool, {
   schema,
   logger: false // تعطيل السجلات لتحسين الأداء
 });
