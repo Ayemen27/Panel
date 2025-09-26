@@ -79,6 +79,7 @@ export function detectEnvironment(): EnvironmentConfig {
       hmr: {
         port: 24678,
         host: '0.0.0.0',
+        protocol: 'ws'
       },
       websocket: {
         port: parseInt(process.env.PORT || '6000'),
@@ -193,18 +194,22 @@ export function getWebSocketUrl(): string {
 export function logEnvironmentInfo(): void {
   const isCustomDomain = typeof window !== 'undefined' && 
     window.location.hostname === 'panel.binarjoinanelytic.info';
+  const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'server';
     
   console.log('🌍 Environment Configuration:');
   console.log(`📍 Environment: ${ENV_CONFIG.name}`);
   console.log(`🔧 Replit: ${ENV_CONFIG.isReplit}`);
+  console.log(`💻 Current Host: ${currentHost}`);
   
   if (isCustomDomain) {
     console.log(`🌟 Custom Domain: panel.binarjoinanelytic.info`);
     console.log(`🔗 External Server: 93.127.142.144`);
   }
   
-  console.log(`🌐 Host: ${ENV_CONFIG.host}:${ENV_CONFIG.port}`);
-  console.log(`⚡ HMR: ${ENV_CONFIG.hmr.host}:${ENV_CONFIG.hmr.port}`);
+  console.log(`🌐 Server: ${ENV_CONFIG.host}:${ENV_CONFIG.port}`);
+  console.log(`⚡ HMR: ${ENV_CONFIG.hmr.protocol || 'ws'}://${ENV_CONFIG.hmr.host}:${ENV_CONFIG.hmr.port}`);
   console.log(`🔌 WebSocket: ${ENV_CONFIG.websocket.protocol}://${ENV_CONFIG.websocket.host}:${ENV_CONFIG.websocket.port}`);
+  console.log(`📡 API Base: ${getApiBaseUrl()}`);
+  console.log(`🔌 WS URL: ${getWebSocketUrl()}`);
   console.log(`🔐 CORS Origins:`, ENV_CONFIG.cors.origin);
 }
