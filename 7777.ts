@@ -3,15 +3,8 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
-
-dotenv.config(); // تحميل متغيرات .env
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const REPLIT_HMR_HOST = process.env.REPLIT_URL
-  ? process.env.REPLIT_URL.replace(/^https?:\/\//, '')
-  : "localhost";
 
 export default defineConfig({
   define: {
@@ -48,7 +41,7 @@ export default defineConfig({
     },
     hmr: process.env.REPL_ID
       ? {
-          host: REPLIT_HMR_HOST, // تلقائي على Replit أو fallback
+          host: process.env.REPLIT_URL.replace(/^https?:\/\//, ''), // تلقائي على Replit
           protocol: 'wss',
         }
       : {
