@@ -32,8 +32,43 @@ export function detectEnvironment(): EnvironmentConfig {
     typeof window !== 'undefined' && window.location.hostname.includes('replit.dev')
   );
 
+  // اكتشاف النطاق المخصص
+  const isCustomDomain = typeof window !== 'undefined' && 
+    window.location.hostname === 'panel.binarjoinanelytic.info';
+  
   const isDevelopment = process.env.NODE_ENV === 'development';
   const isProduction = process.env.NODE_ENV === 'production';
+
+  // إذا كان النطاق المخصص، استخدم إعدادات الإنتاج
+  if (isCustomDomain) {
+    return {
+      name: 'production',
+      isReplit: false,
+      host: '0.0.0.0',
+      port: parseInt(process.env.PORT || '6000'),
+      hmr: {
+        port: 443,
+        host: 'panel.binarjoinanelytic.info',
+        protocol: 'wss'
+      },
+      websocket: {
+        port: 443,
+        host: 'panel.binarjoinanelytic.info',
+        protocol: 'wss',
+      },
+      cors: {
+        origin: [
+          'https://panel.binarjoinanelytic.info',
+          'http://panel.binarjoinanelytic.info',
+        ],
+        credentials: true,
+      },
+      database: {
+        ssl: true,
+        connectionPooling: true,
+      },
+    };
+  }
 
   if (isReplit) {
     return {
@@ -135,15 +170,8 @@ export const ENV_CONFIG = detectEnvironment();
 // Helper functions
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
-    // في المتصفح
-    if (ENV_CONFIG.isReplit) {
-      // إذا كان النطاق المخصص، استخدمه
-      if (window.location.hostname === 'panel.binarjoinanelytic.info') {
-        return window.location.origin;
-      }
-      return window.location.origin;
-    }
-    return `${window.location.protocol}//${window.location.host}`;
+    // في المتصفح - استخدم الرابط الحالي دائماً
+    return window.location.origin;
   }
   
   // في الخادم
@@ -155,12 +183,6 @@ export function getWebSocketUrl(): string {
   if (typeof window !== 'undefined') {
     // في المتصفح
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    
-    // للنطاق المخصص، استخدم WSS دائماً
-    if (window.location.hostname === 'panel.binarjoinanelytic.info') {
-      return `wss://${window.location.host}/ws`;
-    }
-    
     return `${protocol}//${window.location.host}/ws`;
   }
   
@@ -169,9 +191,18 @@ export function getWebSocketUrl(): string {
 }
 
 export function logEnvironmentInfo(): void {
+  const isCustomDomain = typeof window !== 'undefined' && 
+    window.location.hostname === 'panel.binarjoinanelytic.info';
+    
   console.log('🌍 Environment Configuration:');
   console.log(`📍 Environment: ${ENV_CONFIG.name}`);
   console.log(`🔧 Replit: ${ENV_CONFIG.isReplit}`);
+  
+  if (isCustomDomain) {
+    console.log(`🌟 Custom Domain: panel.binarjoinanelytic.info`);
+    console.log(`🔗 External Server: 93.127.142.144`);
+  }
+  
   console.log(`🌐 Host: ${ENV_CONFIG.host}:${ENV_CONFIG.port}`);
   console.log(`⚡ HMR: ${ENV_CONFIG.hmr.host}:${ENV_CONFIG.hmr.port}`);
   console.log(`🔌 WebSocket: ${ENV_CONFIG.websocket.protocol}://${ENV_CONFIG.websocket.host}:${ENV_CONFIG.websocket.port}`);
