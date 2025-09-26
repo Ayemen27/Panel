@@ -13,10 +13,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
-// Schema لتسجيل الدخول
+// Schema لتسجيل الدخول مع تحقق محسّن
 const loginSchema = z.object({
-  username: z.string().min(1, "اسم المستخدم مطلوب"),
-  password: z.string().min(1, "كلمة المرور مطلوبة"),
+  username: z.string()
+    .min(1, "اسم المستخدم مطلوب")
+    .min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل")
+    .regex(/^[a-zA-Z0-9_@.-]+$/, "اسم المستخدم يجب أن يحتوي على أحرف وأرقام فقط"),
+  password: z.string()
+    .min(1, "كلمة المرور مطلوبة")
+    .min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -30,7 +35,7 @@ export default function AuthPage() {
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      username: "binarjoinanalytic", // القيمة الافتراضية لسهولة الاختبار
       password: "",
     },
   });
@@ -86,17 +91,19 @@ export default function AuthPage() {
             <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-foreground">
-                  اسم المستخدم
+                  اسم المستخدم أو البريد الإلكتروني
                 </Label>
                 <Input
                   id="username"
+                  data-testid="input-username"
                   {...loginForm.register("username")}
-                  placeholder="أدخل اسم المستخدم"
+                  placeholder="أدخل اسم المستخدم أو البريد الإلكتروني"
                   disabled={loginMutation.isPending}
-                  className="h-11 bg-background border-border text-foreground"
+                  className="h-11 bg-background border-border text-foreground text-right"
+                  dir="ltr"
                 />
                 {loginForm.formState.errors.username && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm" data-testid="error-username">
                     {loginForm.formState.errors.username.message}
                   </p>
                 )}
@@ -109,16 +116,19 @@ export default function AuthPage() {
                 <div className="relative">
                   <Input
                     id="password"
+                    data-testid="input-password"
                     type={showPassword ? "text" : "password"}
                     {...loginForm.register("password")}
                     placeholder="أدخل كلمة المرور"
                     disabled={loginMutation.isPending}
-                    className="h-11 bg-background border-border text-foreground pl-10"
+                    className="h-11 bg-background border-border text-foreground pl-10 text-right"
+                    dir="ltr"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
+                    data-testid="button-toggle-password"
                     className="absolute left-0 top-0 h-11 w-11 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
@@ -130,7 +140,7 @@ export default function AuthPage() {
                   </Button>
                 </div>
                 {loginForm.formState.errors.password && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm" data-testid="error-password">
                     {loginForm.formState.errors.password.message}
                   </p>
                 )}
@@ -138,7 +148,8 @@ export default function AuthPage() {
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
+                data-testid="button-login"
+                className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 disabled={loginMutation.isPending}
               >
                 {loginMutation.isPending ? (
