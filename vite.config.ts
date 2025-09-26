@@ -16,8 +16,12 @@ const REPLIT_HMR_HOST = process.env.REPLIT_URL
 export default defineConfig({
   define: {
     global: 'globalThis',
-    'process.env': {},
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    'process.env': {
+      PORT: JSON.stringify(process.env.PORT || '5000'),
+      NODE_ENV: JSON.stringify(process.env.NODE_ENV || 'development')
+    },
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.PORT': JSON.stringify(process.env.PORT || '5000')
   },
   plugins: [
     react(),

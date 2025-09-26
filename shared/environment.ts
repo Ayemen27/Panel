@@ -143,7 +143,7 @@ export function detectEnvironment(): EnvironmentConfig {
         protocol: 'wss'
       },
       websocket: {
-        port: serverPort,
+        port: serverPort, // استخدام نفس منفذ الخادم
         host: currentHost,
         protocol: 'wss',
       },
@@ -262,7 +262,8 @@ export function getWebSocketUrl(): string {
 
     // للتطوير المحلي، استخدم المنفذ الافتراضي أو المحدد
     const currentPort = window.location.port;
-    const wsPort = currentPort || (protocol === 'wss:' ? '443' : '5000');
+    // استخدام منفذ ENV_CONFIG.websocket.port بدلاً من منفذ النافذة المحلي
+    const wsPort = ENV_CONFIG.websocket.port || (protocol === 'wss:' ? '443' : '5000');
     const wsUrl = `${protocol}//${host}:${wsPort}/ws`;
     console.log('🏠 Using local WebSocket URL:', wsUrl);
     return wsUrl;
