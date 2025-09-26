@@ -1085,21 +1085,19 @@ export default function FileManager() {
     return (
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="sm:max-w-[400px] mx-4 rounded-lg" data-testid="create-item-modal">
-          <div className="p-6">
-            {/* Header */}
-            <div className="text-center mb-6">
-              <h2 className="text-lg font-medium text-gray-900">
-                {itemType === 'folder' ? 'إنشاء مجلد' : 'إنشاء ملف'}
-              </h2>
-            </div>
-
-            {/* Input Field */}
-            <div className="mb-8">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              {itemType === 'folder' ? 'إنشاء مجلد' : 'إنشاء ملف'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
               <Input
                 placeholder={itemType === 'folder' ? 'اسم المجلد' : 'اسم الملف'}
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
-                className="w-full px-4 py-3 text-base border-2 border-teal-500 rounded-md focus:border-teal-600 focus:ring-0"
+                className="w-full"
                 data-testid="input-item-name"
                 autoFocus
               />
@@ -1107,7 +1105,7 @@ export default function FileManager() {
 
             {/* File Content (only for real files) */}
             {itemType === 'file' && fileSystemMode === 'real' && (
-              <div className="mb-6">
+              <div>
                 <textarea
                   placeholder="محتوى الملف (اختياري)"
                   value={fileContent}
@@ -1118,23 +1116,20 @@ export default function FileManager() {
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-2 pt-4">
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-6 py-2 text-teal-600 hover:bg-teal-50"
                 data-testid="button-cancel"
               >
-                CANCEL
+                إلغاء
               </Button>
               <Button 
                 onClick={handleCreate}
                 disabled={createItemMutation.isPending}
-                className="px-8 py-2 bg-teal-600 hover:bg-teal-700 text-white"
                 data-testid="button-create"
               >
-                {createItemMutation.isPending ? 'جاري الإنشاء...' : 'OK'}
+                {createItemMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء'}
               </Button>
             </div>
           </div>
@@ -1531,55 +1526,7 @@ export default function FileManager() {
         </div>
       </div>
 
-      {/* Top Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-around px-4 py-3">
-          {/* Files Tab */}
-          <button
-            onClick={() => setActiveTab('files')}
-            className={cn(
-              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
-              activeTab === 'files' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            )}
-            data-testid="tab-files"
-          >
-            <FileIcon className="w-6 h-6 mb-1" />
-            <span className="text-xs">الملفات</span>
-          </button>
-
-          {/* Favorites Tab */}
-          <button
-            onClick={() => setActiveTab('favorites')}
-            className={cn(
-              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
-              activeTab === 'favorites' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            )}
-            data-testid="tab-favorites"
-          >
-            <Star className="w-6 h-6 mb-1" />
-            <span className="text-xs">النجمة</span>
-          </button>
-
-          {/* Recent Tab */}
-          <button
-            onClick={() => setActiveTab('recent')}
-            className={cn(
-              "flex flex-col items-center py-2 px-4 rounded-lg transition-colors",
-              activeTab === 'recent' 
-                ? "text-primary bg-primary/10" 
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            )}
-            data-testid="tab-recent"
-          >
-            <Clock className="w-6 h-6 mb-1" />
-            <span className="text-xs">التاريخ</span>
-          </button>
-        </div>
-      </div>
+      
 
       {/* Sidebar */}
       <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
