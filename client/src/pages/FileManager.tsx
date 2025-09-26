@@ -1728,7 +1728,7 @@ export default function FileManager() {
                 if (fileSystemMode === 'database') {
                   setCurrentFolderId(null);
                 } else {
-                  const initialPath = process.env.NODE_ENV === 'development' ? '/workspace' : '/app';
+                  const initialPath = '/home/runner/workspace';
                   setCurrentPath(initialPath);
                 }
               }}
