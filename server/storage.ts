@@ -44,8 +44,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, count, gte, like, ilike, isNull, isNotNull, lt, max, sql } from "drizzle-orm";
-// Assuming logger is imported from a shared module or defined elsewhere
-import { logger } from "@shared/logger"; // Placeholder for actual logger import
+import { logger } from "./utils/logger";
 
 export interface IStorage {
   // User operations (for username/password auth)
