@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 interface EnvironmentConfig {
-  [key: string]: string;
+  [key: string]: string | undefined;
 }
 
 class EnvLoader {
@@ -42,8 +42,13 @@ class EnvLoader {
           if (trimmedLine && !trimmedLine.startsWith('#')) {
             const [key, ...valueParts] = trimmedLine.split('=');
             if (key && valueParts.length > 0) {
+              const keyTrimmed = key.trim();
               const value = valueParts.join('=').replace(/^["']|["']$/g, '');
-              this.envConfig[key.trim()] = value;
+              
+              // Only set if not already set in process.env (preserve system env vars priority)
+              if (!process.env[keyTrimmed] && !this.envConfig[keyTrimmed]) {
+                this.envConfig[keyTrimmed] = value;
+              }
             }
           }
         }
