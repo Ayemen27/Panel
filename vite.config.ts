@@ -18,10 +18,12 @@ export default defineConfig({
     global: 'globalThis',
     'process.env': {
       PORT: JSON.stringify(process.env.PORT || '5000'),
-      NODE_ENV: JSON.stringify(process.env.NODE_ENV || 'development')
+      NODE_ENV: JSON.stringify(process.env.NODE_ENV || 'development'),
+      VITE_PORT: JSON.stringify(process.env.PORT || '5000')
     },
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-    'process.env.PORT': JSON.stringify(process.env.PORT || '5000')
+    'process.env.PORT': JSON.stringify(process.env.PORT || '5000'),
+    'process.env.VITE_PORT': JSON.stringify(process.env.PORT || '5000')
   },
   plugins: [
     react(),

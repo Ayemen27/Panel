@@ -38,6 +38,19 @@ export function detectEnvironment(): EnvironmentConfig {
     ? (import.meta?.env?.MODE || 'development')
     : (processEnv.NODE_ENV || 'development');
 
+  // قراءة المنفذ من متغيرات البيئة بشكل صحيح في المتصفح والخادم
+  const getPortFromEnv = (): number => {
+    if (typeof window !== 'undefined') {
+      // في المتصفح - قراءة من process.env المُعرّف في vite.config.ts
+      return parseInt((window as any).process?.env?.PORT || '5000', 10);
+    } else {
+      // في الخادم - قراءة من process.env مباشرة
+      return parseInt(processEnv.PORT || '5000', 10);
+    }
+  };
+
+  const serverPort = getPortFromEnv();
+
   // تحسين اكتشاف Replit في المتصفح والخادم
   const isReplitBrowser = typeof window !== 'undefined' && window.location && (
     window.location.hostname.includes('replit.dev') ||
@@ -71,7 +84,7 @@ export function detectEnvironment(): EnvironmentConfig {
       name: 'production',
       isReplit: false,
       host: '0.0.0.0',
-      port: parseInt(processEnv.PORT || '5000'),
+      port: serverPort,
       hmr: {
         port: 443,
         host: 'panel.binarjoinanelytic.info',
@@ -129,9 +142,6 @@ export function detectEnvironment(): EnvironmentConfig {
       );
     }
 
-    // إصلاح مشكلة عدم تطابق المنافذ - استخدام نفس منفذ الخادم في جميع الحالات
-    const serverPort = parseInt(processEnv.PORT || '5000');
-
     return {
       name: 'replit',
       isReplit: true,
@@ -163,7 +173,7 @@ export function detectEnvironment(): EnvironmentConfig {
       name: 'production',
       isReplit: false,
       host: '0.0.0.0',
-      port: parseInt(processEnv.PORT || '5000'),
+      port: serverPort,
       hmr: {
         port: 24678,
         host: 'localhost',
@@ -189,7 +199,7 @@ export function detectEnvironment(): EnvironmentConfig {
     name: 'development',
     isReplit: false,
     host: 'localhost',
-    port: parseInt(processEnv.PORT || '5000'),
+    port: serverPort,
     hmr: {
       port: 24678,
       host: 'localhost',
