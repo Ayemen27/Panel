@@ -158,11 +158,9 @@ function Router() {
             </MainLayout>
           </Route>
           <Route path="/file-manager">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <FileManager />
-              </Suspense>
-            </MainLayout>
+            <Suspense fallback={<PageLoader />}>
+              <FileManager />
+            </Suspense>
           </Route>
           <Route path="/path-manager">
             <MainLayout>
