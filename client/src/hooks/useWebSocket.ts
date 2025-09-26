@@ -20,10 +20,17 @@ export function useWebSocket() {
   const reconnectInterval = 3000;
 
   const connect = useCallback(() => {
-    // منع الاتصالات المتعددة
+    // منع الاتصالات المتعددة بشكل أكثر صرامة
     if (wsRef.current?.readyState === WebSocket.CONNECTING || 
         wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connecting/connected, skipping...');
       return;
+    }
+
+    // إلغاء أي محاولة إعادة اتصال سابقة
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
 
     try {
@@ -66,17 +73,20 @@ export function useWebSocket() {
           message: 'Connection closed'
         });
         
-        // إعادة الاتصال التلقائي مع حد أقصى للمحاولات
-        if (reconnectAttemptsRef.current < maxReconnectAttempts && 
-            event.code !== 1000) { // 1000 = إغلاق طبيعي
+        // تقليل عدد محاولات إعادة الاتصال وزيادة الفترات الزمنية
+        if (reconnectAttemptsRef.current < 3 && 
+            event.code !== 1000 && 
+            event.code !== 1001) { // تجنب إعادة الاتصال للإغلاق الطبيعي
           
           reconnectAttemptsRef.current++;
-          const delay = reconnectInterval * Math.pow(1.5, reconnectAttemptsRef.current - 1);
+          const delay = Math.min(reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
           
-          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current}/3)`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
+            if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+              connect();
+            }
           }, delay);
         }
       };

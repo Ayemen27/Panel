@@ -18,16 +18,36 @@ import Dashboard from "@/pages/Dashboard";
 import Applications from "@/pages/Applications";
 
 // Less critical components loaded lazily for better initial performance
-const ApplicationLogs = lazy(() => import("@/pages/ApplicationLogs"));
-const Domains = lazy(() => import("@/pages/Domains"));
-const Nginx = lazy(() => import("@/pages/Nginx"));
-const SSL = lazy(() => import("@/pages/SSL"));
-const Processes = lazy(() => import("@/pages/Processes"));
-const Logs = lazy(() => import("@/pages/Logs"));
-const Terminal = lazy(() => import("@/pages/Terminal"));
-const HealthCheck = lazy(() => import("@/pages/HealthCheck"));
-const FileManager = lazy(() => import("@/pages/FileManager"));
-const PathManager = lazy(() => import("@/pages/PathManager"));
+const ApplicationLogs = lazy(() => 
+  import("@/pages/ApplicationLogs").then(module => ({ default: module.default }))
+);
+const Domains = lazy(() => 
+  import("@/pages/Domains").then(module => ({ default: module.default }))
+);
+const Nginx = lazy(() => 
+  import("@/pages/Nginx").then(module => ({ default: module.default }))
+);
+const SSL = lazy(() => 
+  import("@/pages/SSL").then(module => ({ default: module.default }))
+);
+const Processes = lazy(() => 
+  import("@/pages/Processes").then(module => ({ default: module.default }))
+);
+const Logs = lazy(() => 
+  import("@/pages/Logs").then(module => ({ default: module.default }))
+);
+const Terminal = lazy(() => 
+  import("@/pages/Terminal").then(module => ({ default: module.default }))
+);
+const HealthCheck = lazy(() => 
+  import("@/pages/HealthCheck").then(module => ({ default: module.default }))
+);
+const FileManager = lazy(() => 
+  import("@/pages/FileManager").then(module => ({ default: module.default }))
+);
+const PathManager = lazy(() => 
+  import("@/pages/PathManager").then(module => ({ default: module.default }))
+);
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (

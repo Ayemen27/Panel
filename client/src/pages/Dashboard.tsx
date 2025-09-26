@@ -74,25 +74,28 @@ export default function Dashboard() {
   const { data: stats, isLoading: statsLoading, error } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
     enabled: isAuthenticated,
-    refetchInterval: 60000, // Refresh every 60 seconds
-    staleTime: 45000, // Data is considered fresh for 45 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
+    refetchInterval: 30000, // تحديث كل 30 ثانية بدلاً من 60
+    staleTime: 25000, // البيانات طازجة لمدة 25 ثانية
+    gcTime: 300000, // الاحتفاظ في الكاش لمدة 5 دقائق
+    refetchOnWindowFocus: false, // منع التحديث عند التركيز على النافذة
   });
 
   const { data: applications, isLoading: appsLoading } = useQuery<Application[]>({
     queryKey: ["/api/applications"],
     enabled: isAuthenticated,
-    refetchInterval: 60000, // Refresh every 60 seconds
-    staleTime: 45000, // Data is considered fresh for 45 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
+    refetchInterval: 45000, // تحديث كل 45 ثانية
+    staleTime: 40000, // البيانات طازجة لمدة 40 ثانية
+    gcTime: 300000, // الاحتفاظ في الكاش لمدة 5 دقائق
+    refetchOnWindowFocus: false, // منع التحديث عند التركيز على النافذة
   });
 
   const { data: systemInfo, isLoading: systemLoading } = useQuery<SystemInfo>({
     queryKey: ["/api/system/info"],
     enabled: isAuthenticated,
-    refetchInterval: 120000, // Refresh every 2 minutes
-    staleTime: 90000, // Data is considered fresh for 90 seconds
-    gcTime: 600000, // Keep in cache for 10 minutes
+    refetchInterval: 180000, // تحديث كل 3 دقائق بدلاً من 2
+    staleTime: 150000, // البيانات طازجة لمدة 2.5 دقيقة
+    gcTime: 600000, // الاحتفاظ في الكاش لمدة 10 دقائق
+    refetchOnWindowFocus: false, // منع التحديث عند التركيز على النافذة
   });
 
   if (error && isUnauthorizedError(error as Error)) {

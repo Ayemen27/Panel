@@ -49,11 +49,11 @@ function setupSSLConfig() {
     minVersion: 'TLSv1.2' as const,
     maxVersion: 'TLSv1.3' as const,
   };
-  
+
   // محاولة استخدام شهادة SSL من متغيرات البيئة أولاً
   try {
     const sslCert = envLoader.get('PGSSLROOTCERT');
-    
+
     if (sslCert) {
       console.log('📜 [SSL] استخدام شهادة SSL من متغيرات البيئة');
       sslConfig.ca = sslCert;
@@ -69,10 +69,10 @@ function setupSSLConfig() {
         // للاتصالات الخارجية، استخدم SSL مع التحقق الصارم
         console.log('🔒 [SSL] تفعيل SSL مع التحقق الصارم للاتصالات الخارجية');
         console.log('💡 [SSL] يُنصح بإضافة شهادة SSL للحصول على أمان أفضل');
-        
+
         // إعداد SSL مرن بناءً على متغيرات البيئة
         const skipSSLVerification = envLoader.get('PGSSL_SKIP_VERIFICATION');
-        
+
         if (skipSSLVerification === 'true') {
           console.log('⚠️ [SSL] تم تعطيل التحقق من الشهادات بناءً على PGSSL_SKIP_VERIFICATION');
           sslConfig.rejectUnauthorized = false;
@@ -117,7 +117,10 @@ export const pool = new Pool({
   query_timeout: 30000
 });
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(pool, { 
+  schema,
+  logger: false // تعطيل السجلات لتحسين الأداء
+});
 
 // اختبار الاتصال عند تحميل الموديول
 (async () => {
@@ -137,16 +140,16 @@ export const db = drizzle(pool, { schema });
 // 🧠 الدوال الذكية لإدارة الاتصالات
 export function getSmartDB(operationType: 'read' | 'write' | 'backup' | 'sync' = 'read') {
   const connection = smartConnectionManager.getSmartConnection(operationType);
-  
+
   console.log(`🎯 [Smart DB] توجيه ${operationType} إلى: ${connection.source || 'لا يوجد اتصال'}`);
-  
+
   return connection.db || db; // fallback to default db
 }
 
 export function getSmartPool(operationType: 'read' | 'write' | 'backup' | 'sync' = 'read') {
   const connection = smartConnectionManager.getSmartConnection(operationType);
-  
+
   console.log(`🎯 [Smart Pool] توجيه ${operationType} إلى: ${connection.source || 'لا يوجد اتصال'}`);
-  
+
   return connection.pool || pool; // fallback to default pool
 }
