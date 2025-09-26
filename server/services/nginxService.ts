@@ -17,20 +17,39 @@ export class NginxService {
         await fs.writeFile(tempFile, content);
         
         try {
-          await execAsync(`sudo nginx -t -c ${tempFile}`);
+          // Try without sudo first, then with NOPASSWD sudo if available
+          let testCommand = `nginx -t -c ${tempFile}`;
+          try {
+            await execAsync(testCommand);
+          } catch (e) {
+            testCommand = `sudo -n nginx -t -c ${tempFile}`;
+            await execAsync(testCommand);
+          }
           await fs.unlink(tempFile);
           return { success: true };
         } catch (error) {
           await fs.unlink(tempFile);
           return { 
             success: false, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+            error: error instanceof Error ? error.message : 'Unable to test nginx config (permission denied)' 
           };
         }
       } else {
         // Test current configuration
-        await execAsync('sudo nginx -t');
-        return { success: true };
+        try {
+          await execAsync('nginx -t');
+          return { success: true };
+        } catch (e) {
+          try {
+            await execAsync('sudo -n nginx -t');
+            return { success: true };
+          } catch (error) {
+            return { 
+              success: false, 
+              error: 'Unable to test nginx config (permission denied)' 
+            };
+          }
+        }
       }
     } catch (error) {
       return { 
@@ -42,9 +61,27 @@ export class NginxService {
 
   async reloadNginx(): Promise<void> {
     try {
-      await execAsync('sudo systemctl reload nginx');
+      // Try without sudo first
+      try {
+        await execAsync('systemctl reload nginx');
+        return;
+      } catch (e) {
+        // Try with non-interactive sudo
+        await execAsync('sudo -n systemctl reload nginx');
+        return;
+      }
     } catch (error) {
-      throw new Error(`Failed to reload nginx: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // If both fail, check if nginx service exists and is running
+      try {
+        const { stdout } = await execAsync('systemctl is-active nginx');
+        if (stdout.trim() === 'active') {
+          throw new Error('Nginx reload failed: Permission denied. Please configure passwordless sudo for nginx operations.');
+        } else {
+          throw new Error('Nginx service is not running or not installed.');
+        }
+      } catch (checkError) {
+        throw new Error(`Failed to reload nginx: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   }
 
@@ -134,11 +171,32 @@ server {
 
   async getStatus(): Promise<{ active: boolean; enabled: boolean }> {
     try {
-      const { stdout } = await execAsync('sudo systemctl is-active nginx');
-      const active = stdout.trim() === 'active';
+      let active = false;
+      let enabled = false;
       
-      const { stdout: enabledOutput } = await execAsync('sudo systemctl is-enabled nginx');
-      const enabled = enabledOutput.trim() === 'enabled';
+      try {
+        const { stdout } = await execAsync('systemctl is-active nginx');
+        active = stdout.trim() === 'active';
+      } catch (e) {
+        try {
+          const { stdout } = await execAsync('sudo -n systemctl is-active nginx');
+          active = stdout.trim() === 'active';
+        } catch (err) {
+          active = false;
+        }
+      }
+      
+      try {
+        const { stdout } = await execAsync('systemctl is-enabled nginx');
+        enabled = stdout.trim() === 'enabled';
+      } catch (e) {
+        try {
+          const { stdout } = await execAsync('sudo -n systemctl is-enabled nginx');
+          enabled = stdout.trim() === 'enabled';
+        } catch (err) {
+          enabled = false;
+        }
+      }
       
       return { active, enabled };
     } catch (error) {

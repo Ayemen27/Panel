@@ -238,10 +238,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/applications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
-      const [applications, statusMap] = await Promise.all([
-        storage.getApplications(userId),
-        pm2Service.getAllApplicationStatuses()
-      ]);
+      const applications = await storage.getApplications(userId);
+      let statusMap = new Map<string, string>();
+      
+      try {
+        statusMap = await pm2Service.getAllApplicationStatuses();
+      } catch (error) {
+        console.warn('Failed to get PM2 status, using database status:', error);
+      }
 
       // Apply status from the batch fetch
       const appsWithStatus = applications.map(app => {
@@ -1451,7 +1455,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(processes);
     } catch (error) {
       console.error("Error fetching processes:", error);
-      res.status(500).json({ message: "Failed to fetch processes" });
+      res.status(500).json({ 
+        message: "Failed to fetch processes",
+        error: error instanceof Error ? error.message : 'Unknown error',
+        processes: [] // Return empty array as fallback
+      });
     }
   });
 

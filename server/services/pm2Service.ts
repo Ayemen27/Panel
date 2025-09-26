@@ -242,10 +242,16 @@ export class PM2Service {
       try {
         const processes = await this.getCachedPM2Processes();
         processes.forEach(process => {
-          statusMap.set(process.name, this.translatePM2Status(process.pm2_env.status));
+          if (process && process.name && process.pm2_env) {
+            statusMap.set(process.name, this.translatePM2Status(process.pm2_env.status));
+          }
         });
       } catch (error) {
-        console.warn('Failed to get PM2 processes:', error);
+        console.warn('Failed to get PM2 processes, using fallback:', error);
+        // Fall back to checking individual processes
+        this.fallbackProcesses.forEach((processInfo, name) => {
+          statusMap.set(name, processInfo.status);
+        });
       }
     } else {
       // Use fallback processes
@@ -264,15 +270,55 @@ export class PM2Service {
       return this.pm2ProcessCache.data;
     }
     
-    const { stdout } = await execAsync(`pm2 jlist`);
-    const processes: PM2Process[] = JSON.parse(stdout);
-    
-    this.pm2ProcessCache = {
-      data: processes,
-      timestamp: now
-    };
-    
-    return processes;
+    try {
+      const { stdout } = await execAsync(`pm2 jlist`);
+      
+      // Clean and validate JSON output
+      let cleanOutput = stdout.trim();
+      
+      // Remove any non-JSON content that might be at the beginning or end
+      const jsonStart = cleanOutput.indexOf('[');
+      const jsonEnd = cleanOutput.lastIndexOf(']');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanOutput = cleanOutput.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      // Try to parse JSON with better error handling
+      let processes: PM2Process[] = [];
+      
+      try {
+        processes = JSON.parse(cleanOutput);
+        
+        // Validate that it's an array
+        if (!Array.isArray(processes)) {
+          console.warn('PM2 jlist did not return an array, falling back to empty array');
+          processes = [];
+        }
+      } catch (parseError) {
+        console.error('Failed to parse PM2 JSON output:', parseError);
+        console.error('Raw output:', stdout);
+        
+        // Try alternative command
+        try {
+          const { stdout: altOutput } = await execAsync(`pm2 list --format json`);
+          processes = JSON.parse(altOutput.trim());
+        } catch (altError) {
+          console.error('Alternative PM2 command also failed:', altError);
+          processes = [];
+        }
+      }
+      
+      this.pm2ProcessCache = {
+        data: processes,
+        timestamp: now
+      };
+      
+      return processes;
+    } catch (error) {
+      console.error('Error getting PM2 processes:', error);
+      return [];
+    }
   }
 
   private translatePM2Status(pm2Status: string): string {
@@ -340,10 +386,10 @@ export class PM2Service {
     
     if (pm2Available) {
       try {
-        const { stdout } = await execAsync('pm2 jlist');
-        return JSON.parse(stdout);
+        return await this.getCachedPM2Processes();
       } catch (error) {
-        throw new Error(`Failed to list PM2 processes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error('Failed to list PM2 processes:', error);
+        return [];
       }
     } else {
       // Return empty array for fallback mode
