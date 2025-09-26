@@ -1,8 +1,4 @@
-// تحميل متغيرات البيئة من ملف .env
-import dotenv from 'dotenv';
-if (typeof process !== 'undefined' && process.env) {
-  dotenv.config({ path: '.env' });
-}
+// ملاحظة: تحميل متغيرات البيئة يجب أن يتم في ملفات الخادم، ليس هنا
 
 export interface EnvironmentConfig {
   name: 'replit' | 'production' | 'development';
