@@ -51,6 +51,5 @@ export default defineConfig({
     host: process.env.REPL_ID ? "0.0.0.0" : "localhost",
     port: 5173,
     strictPort: false,
-    },
   },
 });
