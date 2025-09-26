@@ -124,9 +124,8 @@ export function detectEnvironment(): EnvironmentConfig {
       );
     }
     
-    const serverPort = typeof window !== 'undefined' 
-      ? parseInt(window.location.port || '443')
-      : parseInt(processEnv.PORT || '6000');
+    // إصلاح مشكلة عدم تطابق المنافذ - استخدام نفس منفذ الخادم في جميع الحالات
+    const serverPort = parseInt(processEnv.PORT || '6000');
     
     return {
       name: 'replit',
@@ -241,10 +240,18 @@ export function getWebSocketUrl(): string {
     const isReplitDomain = host.includes('replit.dev') || host.includes('repl.co');
     const isCustomDomain = host === 'panel.binarjoinanelytic.info';
     
-    if (isReplitDomain || isCustomDomain) {
-      // لنطاقات Replit والنطاق المخصص، استخدم البروتوكول الآمن بدون منفذ
+    if (isReplitDomain) {
+      // لنطاقات Replit، استخدم بدون منفذ (يستخدم المنفذ الافتراضي)
+      // Replit يربط المنفذ المحلي بالمنفذ الخارجي تلقائياً
       const wsUrl = `${protocol}//${host}/ws`;
-      console.log('🔗 Using Replit/Custom domain WebSocket URL:', wsUrl);
+      console.log('🔗 Using Replit domain WebSocket URL:', wsUrl);
+      return wsUrl;
+    }
+    
+    if (isCustomDomain) {
+      // للنطاق المخصص، استخدم بدون منفذ (يستخدم 443 افتراضياً)
+      const wsUrl = `${protocol}//${host}/ws`;
+      console.log('🔗 Using Custom domain WebSocket URL:', wsUrl);
       return wsUrl;
     }
     
