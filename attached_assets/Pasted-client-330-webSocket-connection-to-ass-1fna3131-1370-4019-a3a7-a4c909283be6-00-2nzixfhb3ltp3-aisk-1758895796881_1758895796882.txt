@@ -1,0 +1,145 @@
+client 330
+
+webSocket connection to ass://1fna3131-1370-4019-a3a7-a4c909283be6-00-2nzixfhb3ltp3.aisko.replit.de v/2token=enVosoxglud failed: Error during WebSocket handshake: Unexpected response code: 400
+
+Uncaught (in promise) DOMException: Failed to construct WebSocket: The URL WES//localhost:undefine d/?token=envosoxgääod is invalid.
+
+client:336
+
+at setupWebSocket (https://1faa5131-f37d-4bf9-2327-04c905283be6-00-2mz1xfhb51to3.sisko.replit.dev/@vite/client
+
+236:19)
+
+at fallhack (https://1faa5131-f37d-4bf9-837-a4r909283be6-00-2nzixthb51a3.sisko.replit.dev/@vite/client:509:1 )
+
+ot WebSocket. <anonymous (https://1fa35131-f37d-4bf9-8307-34c909283be6-00-2nzixfhb51tp3.sisko.replit.dev/@vite/Elient:555:2)
+
+Connecting to WebSocket: W5s://faa5131-137d-4bf9-a3a7-adc909283be6-00-2nzixfhb51tp3.sisko.repli useWebSocket.ts.40
+
+dev/ws
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+api/user:1
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized) api/notifications:1
+
+WebSocket connected
+
+useWebSocket.ts: 45
+
+Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+
+AuthPage.tsx:75
+
+Login successful: Object
+
+Authenticated user detected, current path:
+
+useAuth.ts:82
+
+Redirecting to dashboard...
+
+useAuth.ts.
+
+JxThb51103.sisko.replit.dev/dashboard
+
+A soft navigation has been detected. https://lfaa5133-f37d-4bf9-0387-34c509283be6-00-2nz use browser-location.15.69.
+
+Authenticated user detected, current path: /dashboard
+
+useAuth.ts 02
+
+Auth check result: Object
+
+useAuth.c:53
+
+Authenticated user detected, current path: /dashboard
+
+UseAuth.ts:82
+
+A soft navigation has been detected: https://1fa5131-137d-4b19-a3a7-a4c909283be6-09-ceact-doo, development:2482
+
+2nzixfhb51cnt.sinko.replit.dev/file-manager
+
+hook.is:608 Warning Encountered two children with the same key, root, Keys should be unique so that components maintain their identity across updates, Non unique keys may cause children to be duplicated and/or onitted the behavior is unsupported and could change in a future version. Error Component Stack
+
+at div (sanолучаит») at div (<anonyπους»)
+
+at FileManager mager (ElleManager.ts 144:21)
+
+at div (anonymous»)
+
+at Suspense (<anonymous>)
+
+al Route (index.js:250:18)
+
+at NotificationProvider (NotificationContext. Iss: 16:40)
+
+at Switch (index, 15:337-193 at Router (ARR.15:06:42)
+
+Provider (Leate-context.jax:59:15)
+
+as TooltipProvider (tooltip.tex:68:5)
+
+at ThemeProvider (TheseContext.sx:18:33)
+
+al QueryClientProvider (QueryClientProvider Esx:30:31
+
+at App (ARR ISK 1923)
+
+karning: Encountered two children with the same key, root, Keys should be unique so that book.js:608 components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or
+
+onitted the behavior is unsupported and could change in a future version. Error Component Stack
+
+at div (<anonymous>> al div (<anonyrous»)
+
+at div (<anonymous>>
+
+at FileManager (FileManager.tsx:144:21)
+
+at Suspense (<anonymous>
+
+at Route (index.j. 250:18)
+
+at switch (index.ja:337-19
+
+at Router (Aop.tsx:66:42)
+
+at NotificationProvider (NotificationContext.isx:16:40)
+
+at Provider (create context.iss.59.12)
+
+at TooltipProvider (tooltip.tsx:68:5) at ThemeProvider (ThemeContext.1sx:18:33)
+
+at QueryClientProvider (QueryClientProvider.ts303)
+
+at App (Ano.tsx:192:3)
+
+Warning Encountered two children with the same key, 'root' Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children children to be d be duplicated and/or onitted the behavior is unsupported and could change in a future version. Error Component Stack:
+
+at div (<anonymous>>
+
+at div (<anonymous>>
+
+at div (<anonyrous>>
+
+at FileManager (FileManager.tsx. 144:21)
+
+at Suspense (<anonymous>)
+
+Route (index.js: 250:18)
+
+at Switch (index.ja:337-19)
+
+at Router (App.sx:06:42)
+
+at NotificationProvider (NotificationContext.Isa:16:40)
+
+at Provider (create context.tsx 39.12) at Tooltip Provider (tooltip.tsx:66:5)
+
+at ThemeProvider (ThemeContext.tsx:18:33)
+
+at QueryClientProvider (QueryClientProvider.tsx: 30:3)
+
+at App (Ang SX:192:3)
