@@ -25,19 +25,23 @@ export interface EnvironmentConfig {
 }
 
 export function detectEnvironment(): EnvironmentConfig {
+  // Safe process access for browser/server compatibility
+  const processEnv = typeof process !== 'undefined' ? process.env : {};
+  const nodeEnv = processEnv.NODE_ENV || 'development';
+  
   const isReplit = !!(
-    process.env.REPL_ID || 
-    process.env.REPLIT_DB_URL || 
-    process.env.REPL_SLUG ||
-    typeof window !== 'undefined' && window.location.hostname.includes('replit.dev')
+    processEnv.REPL_ID || 
+    processEnv.REPLIT_DB_URL || 
+    processEnv.REPL_SLUG ||
+    (typeof window !== 'undefined' && window.location.hostname.includes('replit.dev'))
   );
 
   // اكتشاف النطاق المخصص
   const isCustomDomain = typeof window !== 'undefined' && 
     window.location.hostname === 'panel.binarjoinanelytic.info';
   
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isDevelopment = nodeEnv === 'development';
+  const isProduction = nodeEnv === 'production';
 
   // إذا كان النطاق المخصص، استخدم إعدادات الإنتاج
   if (isCustomDomain) {
@@ -45,7 +49,7 @@ export function detectEnvironment(): EnvironmentConfig {
       name: 'production',
       isReplit: false,
       host: '0.0.0.0',
-      port: parseInt(process.env.PORT || '6000'),
+      port: parseInt(processEnv.PORT || '6000'),
       hmr: {
         port: 443,
         host: 'panel.binarjoinanelytic.info',
@@ -71,25 +75,27 @@ export function detectEnvironment(): EnvironmentConfig {
   }
 
   if (isReplit) {
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : '0.0.0.0';
+    
     return {
       name: 'replit',
       isReplit: true,
       host: '0.0.0.0',
-      port: parseInt(process.env.PORT || '6000'),
+      port: parseInt(processEnv.PORT || '6000'),
       hmr: {
         port: 24678,
-        host: '0.0.0.0',
-        protocol: 'ws'
+        host: currentHost,
+        protocol: 'wss'
       },
       websocket: {
-        port: parseInt(process.env.PORT || '6000'),
-        host: '0.0.0.0',
+        port: parseInt(processEnv.PORT || '6000'),
+        host: currentHost,
         protocol: 'wss',
       },
       cors: {
         origin: [
-          /^https:\/\/.*\.replit\.dev$/,
-          /^https:\/\/.*\.repl\.co$/,
+          'https://*.replit.dev',
+          'https://*.repl.co',
           'https://replit.com',
           'https://panel.binarjoinanelytic.info',
           'http://panel.binarjoinanelytic.info',
@@ -114,18 +120,18 @@ export function detectEnvironment(): EnvironmentConfig {
       name: 'production',
       isReplit: false,
       host: '0.0.0.0',
-      port: parseInt(process.env.PORT || '3000'),
+      port: parseInt(processEnv.PORT || '3000'),
       hmr: {
         port: 24678,
         host: 'localhost',
       },
       websocket: {
-        port: parseInt(process.env.WS_PORT || process.env.PORT || '3000'),
+        port: parseInt(processEnv.WS_PORT || processEnv.PORT || '3000'),
         host: '0.0.0.0',
         protocol: 'wss',
       },
       cors: {
-        origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'],
+        origin: processEnv.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'],
         credentials: true,
       },
       database: {
@@ -140,13 +146,13 @@ export function detectEnvironment(): EnvironmentConfig {
     name: 'development',
     isReplit: false,
     host: 'localhost',
-    port: parseInt(process.env.PORT || '3000'),
+    port: parseInt(processEnv.PORT || '3000'),
     hmr: {
       port: 24678,
       host: 'localhost',
     },
     websocket: {
-      port: parseInt(process.env.WS_PORT || '8080'),
+      port: parseInt(processEnv.WS_PORT || '8080'),
       host: 'localhost',
       protocol: 'ws',
     },
@@ -182,9 +188,17 @@ export function getApiBaseUrl(): string {
 
 export function getWebSocketUrl(): string {
   if (typeof window !== 'undefined') {
-    // في المتصفح
+    // في المتصفح - استخدم الهوست الحالي مع البروتوكول المناسب
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.host}/ws`;
+    const host = window.location.hostname;
+    const port = ENV_CONFIG.websocket.port;
+    
+    // للنطاق المخصص أو Replit، استخدم المنفذ من النافذة
+    if (host.includes('replit.dev') || host === 'panel.binarjoinanelytic.info') {
+      return `${protocol}//${window.location.host}/ws`;
+    }
+    
+    return `${protocol}//${host}:${port}/ws`;
   }
   
   // في الخادم

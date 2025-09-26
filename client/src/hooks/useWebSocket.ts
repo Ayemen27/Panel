@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getWebSocketUrl } from '../../../shared/environment';
+import { getWebSocketUrl, ENV_CONFIG } from '../../../shared/environment';
 
 interface WebSocketMessage {
   type: string;
@@ -37,8 +37,9 @@ export function useWebSocket() {
       // Use the current domain for WebSocket connection with proper error handling
       const wsUrl = getWebSocketUrl();
 
-      if (!wsUrl || wsUrl.includes('undefined')) {
-        console.warn('Invalid WebSocket URL detected, skipping WebSocket connection');
+      if (!wsUrl || wsUrl.includes('undefined') || wsUrl.includes('NaN')) {
+        console.warn('Invalid WebSocket URL detected:', wsUrl);
+        console.warn('Environment config:', ENV_CONFIG);
         return;
       }
 
