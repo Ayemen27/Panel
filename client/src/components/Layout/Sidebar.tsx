@@ -35,6 +35,7 @@ const navigationItems = [
   { href: "/domains", label: "النطاقات", icon: Globe },
   { href: "/nginx", label: "Nginx", icon: Settings },
   { href: "/ssl", label: "شهادات SSL", icon: Shield },
+  { href: "/audit", label: "الفحص الشامل", icon: Shield, requiresRole: 'admin' },
   { href: "/processes", label: "العمليات", icon: List },
   { href: "/logs", label: "السجلات", icon: FileText },
   { href: "/terminal", label: "الطرفية", icon: TerminalIcon },

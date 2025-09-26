@@ -18,34 +18,37 @@ import Dashboard from "@/pages/Dashboard";
 import Applications from "@/pages/Applications";
 
 // Less critical components loaded lazily for better initial performance
-const ApplicationLogs = lazy(() => 
+const ApplicationLogs = lazy(() =>
   import("@/pages/ApplicationLogs").then(module => ({ default: module.default }))
 );
-const Domains = lazy(() => 
+const Domains = lazy(() =>
   import("@/pages/Domains").then(module => ({ default: module.default }))
 );
-const Nginx = lazy(() => 
+const Nginx = lazy(() =>
   import("@/pages/Nginx").then(module => ({ default: module.default }))
 );
-const SSL = lazy(() => 
+const SSL = lazy(() =>
   import("@/pages/SSL").then(module => ({ default: module.default }))
 );
-const Processes = lazy(() => 
+const Processes = lazy(() =>
   import("@/pages/Processes").then(module => ({ default: module.default }))
 );
-const Logs = lazy(() => 
+const Logs = lazy(() =>
   import("@/pages/Logs").then(module => ({ default: module.default }))
 );
-const Terminal = lazy(() => 
+const ComprehensiveAudit = lazy(() =>
+  import("./pages/ComprehensiveAudit").then(module => ({ default: module.default }))
+);
+const Terminal = lazy(() =>
   import("@/pages/Terminal").then(module => ({ default: module.default }))
 );
-const HealthCheck = lazy(() => 
+const HealthCheck = lazy(() =>
   import("@/pages/HealthCheck").then(module => ({ default: module.default }))
 );
-const FileManager = lazy(() => 
+const FileManager = lazy(() =>
   import("@/pages/FileManager").then(module => ({ default: module.default }))
 );
-const PathManager = lazy(() => 
+const PathManager = lazy(() =>
   import("@/pages/PathManager").then(module => ({ default: module.default }))
 );
 
@@ -138,6 +141,13 @@ function Router() {
             <MainLayout>
               <Suspense fallback={<PageLoader />}>
                 <Logs />
+              </Suspense>
+            </MainLayout>
+          </Route>
+          <Route path="/audit">
+            <MainLayout>
+              <Suspense fallback={<PageLoader />}>
+                <ComprehensiveAudit />
               </Suspense>
             </MainLayout>
           </Route>

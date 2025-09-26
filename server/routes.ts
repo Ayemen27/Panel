@@ -1546,6 +1546,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive audit endpoint
+  app.post('/api/system/audit/comprehensive', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { auditService } = await import('./services/auditService');
+      
+      // Run comprehensive audit
+      const auditReport = await auditService.runCompleteAudit();
+      
+      res.json({
+        success: true,
+        message: 'Comprehensive audit completed',
+        data: auditReport
+      });
+    } catch (error) {
+      console.error("Comprehensive audit failed:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Audit failed' 
+      });
+    }
+  });
+
+  // Download audit report as markdown
+  app.get('/api/system/audit/report/:format', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { format } = req.params;
+      const { auditData } = req.query;
+
+      if (!auditData) {
+        return res.status(400).json({ message: 'Audit data is required' });
+      }
+
+      const parsedAuditData = JSON.parse(decodeURIComponent(auditData as string));
+      const { AuditHelpers } = await import('../utils/auditHelpers');
+
+      if (format === 'markdown') {
+        const markdownReport = await AuditHelpers.generateMarkdownReport(parsedAuditData);
+        
+        res.setHeader('Content-Type', 'text/markdown');
+        res.setHeader('Content-Disposition', `attachment; filename="audit-report-${new Date().toISOString().split('T')[0]}.md"`);
+        res.send(markdownReport);
+      } else if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="audit-report-${new Date().toISOString().split('T')[0]}.json"`);
+        res.json(parsedAuditData);
+      } else {
+        res.status(400).json({ message: 'Unsupported format. Use markdown or json' });
+      }
+    } catch (error) {
+      console.error("Failed to generate audit report:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Failed to generate report' 
+      });
+    }
+  });
+
   // Terminal commands (restricted)
   app.post('/api/terminal/execute', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
