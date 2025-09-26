@@ -49,16 +49,13 @@ function setupCORS(app: Express) {
 
         const allowedOrigins = ENV_CONFIG.cors.origin;
 
-        // التحقق من النطاقات المسموحة
+        // التحقق من النطاقات المسموحة مع دعم Regex محسن
         const isAllowed = allowedOrigins.some(allowedOrigin => {
           if (typeof allowedOrigin === 'string') {
-            // مطابقة مباشرة أو wildcard
-            if (allowedOrigin.includes('*')) {
-              const pattern = allowedOrigin.replace(/\*/g, '.*');
-              return new RegExp(`^${pattern}$`).test(origin);
-            }
+            // مطابقة مباشرة
             return allowedOrigin === origin;
           } else if (allowedOrigin instanceof RegExp) {
+            // اختبار Regex
             return allowedOrigin.test(origin);
           }
           return false;
@@ -67,7 +64,8 @@ function setupCORS(app: Express) {
         if (isAllowed) {
           callback(null, true);
         } else {
-          console.log(`Security: Blocked request from unauthorized origin: ${origin}`);
+          console.log(`CORS: Blocked request from origin: ${origin}`);
+          console.log(`CORS: Allowed origins:`, allowedOrigins);
           callback(new Error('Not allowed by CORS'));
         }
       },

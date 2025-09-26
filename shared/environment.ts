@@ -15,7 +15,7 @@ export interface EnvironmentConfig {
     protocol: string;
   };
   cors: {
-    origin: string[];
+    origin: (string | RegExp)[];
     credentials: boolean;
   };
   database: {
@@ -33,7 +33,10 @@ export function detectEnvironment(): EnvironmentConfig {
     processEnv.REPL_ID || 
     processEnv.REPLIT_DB_URL || 
     processEnv.REPL_SLUG ||
-    (typeof window !== 'undefined' && window.location.hostname.includes('replit.dev'))
+    (typeof window !== 'undefined' && (
+      window.location.hostname.includes('replit.dev') ||
+      window.location.hostname.includes('repl.co')
+    ))
   );
 
   // اكتشاف النطاق المخصص
@@ -77,16 +80,20 @@ export function detectEnvironment(): EnvironmentConfig {
   if (isReplit) {
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : '0.0.0.0';
     
-    // إنشاء قائمة CORS ديناميكية تدعم جميع نطاقات Replit
-    const corsOrigins = [
-      'https://*.replit.dev',
-      'https://*.repl.co', 
+    // إنشاء قائمة CORS ديناميكية مرنة لدعم جميع نطاقات Replit
+    const corsOrigins: (string | RegExp)[] = [
+      // دعم جميع النطاقات الفرعية لـ Replit باستخدام Regex
+      /^https:\/\/.*\.replit\.dev$/,
+      /^https:\/\/.*\.repl\.co$/,
+      /^https:\/\/.*\.sisko\.replit\.dev$/,
+      /^https:\/\/.*\.pike\.replit\.dev$/,
+      /^https:\/\/.*\.worf\.replit\.dev$/,
       'https://replit.com',
       'https://panel.binarjoinanelytic.info',
       'http://panel.binarjoinanelytic.info'
     ];
 
-    // إضافة النطاق الحالي إذا كان من Replit
+    // إضافة النطاق الحالي بشكل صريح إذا كان من Replit
     if (typeof window !== 'undefined' && currentHost) {
       const currentOrigin = `${window.location.protocol}//${currentHost}`;
       if (currentHost.includes('replit.dev') || currentHost.includes('repl.co')) {
@@ -146,7 +153,7 @@ export function detectEnvironment(): EnvironmentConfig {
         protocol: 'wss',
       },
       cors: {
-        origin: processEnv.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'],
+        origin: (processEnv.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com']).map(origin => origin.trim()),
         credentials: true,
       },
       database: {
