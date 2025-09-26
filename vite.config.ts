@@ -41,15 +41,13 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
-    hmr: {
-      port: 24678,
-      host: process.env.REPL_ID ? "0.0.0.0" : "localhost",
-      clientPort: process.env.REPL_ID ? 443 : 24678,
-      // إصلاح مشكلة WebSocket URL
-      protocol: process.env.REPL_ID ? 'wss' : 'ws',
-    },
-    host: process.env.REPL_ID ? "0.0.0.0" : "localhost",
-    port: 5173,
-    strictPort: false,
-  },
-});
+hmr: process.env.REPL_ID ? {
+  port: 24678,
+  host: "0.0.0.0",
+  clientPort: 24678,
+  protocol: 'wss',
+  overlay: false,
+} : {
+  port: 24678,
+  host: "localhost",
+},
