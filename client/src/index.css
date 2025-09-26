@@ -72,23 +72,23 @@
   .gradient-bg {
     background: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(239, 84%, 67%) 100%);
   }
-  
+
   .status-online {
     @apply bg-green-500;
   }
-  
+
   .status-offline {
     @apply bg-red-500;
   }
-  
+
   .status-warning {
     @apply bg-yellow-500;
   }
-  
+
   .sidebar-transition {
     transition: transform 0.3s ease-in-out;
   }
-  
+
   .notification-dot {
     position: absolute;
     top: -2px;
@@ -99,11 +99,11 @@
     border-radius: 50%;
     animation: pulse 2s infinite;
   }
-  
+
   .card-hover {
     transition: all 0.2s ease-in-out;
   }
-  
+
   .card-hover:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -136,6 +136,29 @@
     transform: scale(0.9);
     transition: transform 0.1s ease-in-out;
   }
+
+  /* File Manager RTL Support */
+  .file-manager-container {
+    direction: rtl;
+  }
+
+  .file-manager-container [dir="rtl"] {
+    text-align: right;
+  }
+
+  .file-manager-container [dir="rtl"] .breadcrumbs {
+    direction: rtl;
+    flex-direction: row-reverse;
+  }
+
+  .file-manager-container [dir="rtl"] .file-grid {
+    direction: rtl;
+  }
+
+  .file-manager-container [dir="rtl"] .context-menu {
+    right: auto;
+    left: 0;
+  }
 }
 
 /* تحسينات للهواتف المحمولة */
@@ -150,7 +173,7 @@
   html {
     font-size: 14px;
   }
-  
+
   body {
     -webkit-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
@@ -163,7 +186,7 @@
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   button, 
   input, 
   select, 
