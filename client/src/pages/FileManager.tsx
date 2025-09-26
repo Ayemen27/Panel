@@ -158,6 +158,7 @@ export default function FileManager() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [itemType, setItemType] = useState<'file' | 'folder'>('file');
   const [showFilters, setShowFilters] = useState(false);
   const [pathError, setPathError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -1058,7 +1059,6 @@ export default function FileManager() {
 
   const CreateItemModal = () => {
     const [itemName, setItemName] = useState('');
-    const [itemType, setItemType] = useState<'file' | 'folder'>('file');
     const [fileContent, setFileContent] = useState('');
 
     const handleCreate = () => {
@@ -1084,63 +1084,57 @@ export default function FileManager() {
 
     return (
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="sm:max-w-[425px] mx-2 max-h-[90vh] overflow-y-auto" data-testid="create-item-modal">
-          <DialogHeader>
-            <DialogTitle>إنشاء عنصر جديد</DialogTitle>
-            <DialogDescription>
-              اختر نوع العنصر الذي تريد إنشاؤه وأدخل اسمه
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-              <Button
-                variant={itemType === 'folder' ? 'default' : 'outline'}
-                onClick={() => setItemType('folder')}
-                className="flex items-center gap-2 h-12 text-sm"
-                data-testid="button-folder-type"
-              >
-                <Folder className="w-4 h-4" />
-                مجلد
-              </Button>
-              <Button
-                variant={itemType === 'file' ? 'default' : 'outline'}
-                onClick={() => setItemType('file')}
-                className="flex items-center gap-2 h-12 text-sm"
-                data-testid="button-file-type"
-              >
-                <FileIcon className="w-4 h-4" />
-                ملف
-              </Button>
+        <DialogContent className="sm:max-w-[400px] mx-4 rounded-lg" data-testid="create-item-modal">
+          <div className="p-6">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h2 className="text-lg font-medium text-gray-900">
+                {itemType === 'folder' ? 'إنشاء مجلد' : 'إنشاء ملف'}
+              </h2>
             </div>
-            <Input
-              placeholder="اسم العنصر"
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              data-testid="input-item-name"
-            />
-            {itemType === 'file' && fileSystemMode === 'real' && (
-              <textarea
-                placeholder="محتوى الملف (اختياري)"
-                value={fileContent}
-                onChange={(e) => setFileContent(e.target.value)}
-                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                data-testid="textarea-file-content"
+
+            {/* Input Field */}
+            <div className="mb-8">
+              <Input
+                placeholder={itemType === 'folder' ? 'اسم المجلد' : 'اسم الملف'}
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                className="w-full px-4 py-3 text-base border-2 border-teal-500 rounded-md focus:border-teal-600 focus:ring-0"
+                data-testid="input-item-name"
+                autoFocus
               />
+            </div>
+
+            {/* File Content (only for real files) */}
+            {itemType === 'file' && fileSystemMode === 'real' && (
+              <div className="mb-6">
+                <textarea
+                  placeholder="محتوى الملف (اختياري)"
+                  value={fileContent}
+                  onChange={(e) => setFileContent(e.target.value)}
+                  className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  data-testid="textarea-file-content"
+                />
+              </div>
             )}
-            <div className="flex justify-end gap-2 pt-2">
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4">
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 onClick={() => setIsCreateModalOpen(false)}
+                className="px-6 py-2 text-teal-600 hover:bg-teal-50"
                 data-testid="button-cancel"
               >
-                إلغاء
+                CANCEL
               </Button>
               <Button 
                 onClick={handleCreate}
                 disabled={createItemMutation.isPending}
+                className="px-8 py-2 bg-teal-600 hover:bg-teal-700 text-white"
                 data-testid="button-create"
               >
-                {createItemMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء'}
+                {createItemMutation.isPending ? 'جاري الإنشاء...' : 'OK'}
               </Button>
             </div>
           </div>
@@ -1454,15 +1448,53 @@ export default function FileManager() {
             >
               <Search className="w-5 h-5" />
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
-              onClick={() => setIsCreateModalOpen(true)}
-              data-testid="button-add"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+                  data-testid="button-add"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-auto rounded-t-lg">
+                <div className="p-4">
+                  <h3 className="text-lg font-medium text-center mb-4 text-gray-900">جديد</h3>
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => {
+                        setItemType('file');
+                        setIsCreateModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-start gap-4 h-14 bg-transparent border-0 text-gray-900 hover:bg-gray-50"
+                      variant="ghost"
+                      data-testid="button-create-file"
+                    >
+                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                        <FileIcon className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <span className="text-base">ملف</span>
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setItemType('folder');
+                        setIsCreateModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-start gap-4 h-14 bg-transparent border-0 text-gray-900 hover:bg-gray-50"
+                      variant="ghost"
+                      data-testid="button-create-folder"
+                    >
+                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                        <Folder className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <span className="text-base">مجلد</span>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
           
           {/* Center: Title */}
