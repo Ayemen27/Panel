@@ -125,21 +125,21 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* خلفية متحركة وتأثيرات بصرية */}
-      <div className="absolute inset-0">
-        {/* الكريات المتحركة */}
-        <div className="absolute top-10 left-10 w-20 h-20 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-32 h-32 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-15 animate-bounce"></div>
-        <div className="absolute bottom-20 left-1/4 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-25 animate-pulse delay-1000"></div>
-        <div className="absolute bottom-40 right-1/3 w-16 h-16 bg-gradient-to-r from-green-400 to-teal-500 rounded-full opacity-20 animate-bounce delay-500"></div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-3 sm:p-4 lg:p-6 relative overflow-hidden">
+      {/* خلفية متحركة وتأثيرات بصرية - مخفية على الهواتف الصغيرة */}
+      <div className="absolute inset-0 hidden sm:block">
+        {/* الكريات المتحركة - أحجام أصغر على الشاشات الصغيرة */}
+        <div className="absolute top-5 sm:top-10 left-5 sm:left-10 w-12 sm:w-20 h-12 sm:h-20 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute top-20 sm:top-40 right-10 sm:right-20 w-16 sm:w-32 h-16 sm:h-32 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-15 animate-bounce"></div>
+        <div className="absolute bottom-10 sm:bottom-20 left-1/4 w-12 sm:w-24 h-12 sm:h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-25 animate-pulse delay-1000"></div>
+        <div className="absolute bottom-20 sm:bottom-40 right-1/3 w-8 sm:w-16 h-8 sm:h-16 bg-gradient-to-r from-green-400 to-teal-500 rounded-full opacity-20 animate-bounce delay-500"></div>
         
         {/* النجوم */}
-        <div className="absolute top-20 right-1/4 text-white opacity-30 animate-pulse">
-          <Stars className="w-6 h-6" />
+        <div className="absolute top-10 sm:top-20 right-1/4 text-white opacity-30 animate-pulse">
+          <Stars className="w-4 sm:w-6 h-4 sm:h-6" />
         </div>
-        <div className="absolute bottom-1/3 left-10 text-white opacity-20 animate-pulse delay-2000">
-          <Stars className="w-4 h-4" />
+        <div className="absolute bottom-1/3 left-5 sm:left-10 text-white opacity-20 animate-pulse delay-2000">
+          <Stars className="w-3 sm:w-4 h-3 sm:h-4" />
         </div>
         
         {/* الشبكة */}
@@ -147,57 +147,59 @@ export default function AuthPage() {
       </div>
 
       {/* المحتوى الرئيسي */}
-      <div className="relative z-10 w-full max-w-lg">
+      <div className="relative z-10 w-full max-w-sm sm:max-w-md lg:max-w-lg">
         {/* شعار وعنوان النظام */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-3xl mb-6 shadow-2xl shadow-blue-500/30">
-            <Server className="w-10 h-10 text-white" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-16 sm:w-20 h-16 sm:h-20 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 shadow-xl sm:shadow-2xl shadow-blue-500/30">
+            <Server className="w-8 sm:w-10 h-8 sm:h-10 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-3 sm:mb-4 bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent leading-tight">
             🚀 لوحة التحكم الذكية
           </h1>
-          <p className="text-lg text-blue-100/90 font-medium">
+          <p className="text-base sm:text-lg text-blue-100/90 font-medium px-4">
             ✨ نظام إدارة متطور وآمن ✨
           </p>
         </div>
 
         {/* بطاقة تسجيل الدخول */}
-        <div className="backdrop-blur-xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl sm:rounded-3xl border border-white/20 shadow-xl sm:shadow-2xl shadow-black/50 overflow-hidden">
           {/* شريط علوي متدرج */}
-          <div className="h-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600"></div>
+          <div className="h-1.5 sm:h-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600"></div>
           
-          <div className="p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-white/10 backdrop-blur-sm border-white/20 h-14">
+              <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8 bg-white/10 backdrop-blur-sm border-white/20 h-12 sm:h-14">
                 <TabsTrigger 
                   value="login" 
-                  className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-base font-semibold"
+                  className="flex items-center gap-1 sm:gap-2 lg:gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-sm sm:text-base font-semibold px-2 sm:px-3"
                 >
-                  <LogIn className="w-5 h-5" />
-                  تسجيل الدخول
+                  <LogIn className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="hidden xs:inline sm:inline">تسجيل الدخول</span>
+                  <span className="xs:hidden sm:hidden">دخول</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="register" 
-                  className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white text-base font-semibold"
+                  className="flex items-center gap-1 sm:gap-2 lg:gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white text-sm sm:text-base font-semibold px-2 sm:px-3"
                 >
-                  <UserPlus className="w-5 h-5" />
-                  حساب جديد
+                  <UserPlus className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="hidden xs:inline sm:inline">حساب جديد</span>
+                  <span className="xs:hidden sm:hidden">جديد</span>
                 </TabsTrigger>
               </TabsList>
 
               {/* تسجيل الدخول */}
               <TabsContent value="login">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-2xl mb-4 border border-white/20">
-                    <Lock className="w-8 h-8 text-blue-300" />
+                <div className="text-center mb-6 sm:mb-8">
+                  <div className="inline-flex items-center justify-center w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 border border-white/20">
+                    <Lock className="w-6 sm:w-8 h-6 sm:h-8 text-blue-300" />
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">مرحباً بعودتك! 👋</h2>
-                  <p className="text-blue-100/80">أدخل بياناتك للوصول إلى النظام</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">مرحباً بعودتك! 👋</h2>
+                  <p className="text-sm sm:text-base text-blue-100/80 px-2">أدخل بياناتك للوصول إلى النظام</p>
                 </div>
 
-                <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
+                <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4 sm:space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="username" className="text-white text-base font-semibold flex items-center gap-2">
+                    <Label htmlFor="username" className="text-white text-sm sm:text-base font-semibold flex items-center gap-2">
                       <Globe className="w-4 h-4" />
                       اسم المستخدم
                     </Label>
@@ -207,7 +209,7 @@ export default function AuthPage() {
                       placeholder="أدخل اسم المستخدم"
                       disabled={loginMutation.isPending}
                       data-testid="input-username-login"
-                      className="h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 backdrop-blur-sm text-lg"
+                      className="h-12 sm:h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 backdrop-blur-sm text-base sm:text-lg"
                     />
                     {loginForm.formState.errors.username && (
                       <p className="text-red-300 text-sm font-medium">
@@ -217,7 +219,7 @@ export default function AuthPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-white text-base font-semibold flex items-center gap-2">
+                    <Label htmlFor="password" className="text-white text-sm sm:text-base font-semibold flex items-center gap-2">
                       <Shield className="w-4 h-4" />
                       كلمة المرور
                     </Label>
@@ -229,20 +231,20 @@ export default function AuthPage() {
                         placeholder="أدخل كلمة المرور"
                         disabled={loginMutation.isPending}
                         data-testid="input-password-login"
-                        className="h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 backdrop-blur-sm text-lg pl-14"
+                        className="h-12 sm:h-14 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-blue-400 focus:ring-blue-400 backdrop-blur-sm text-base sm:text-lg pl-12 sm:pl-14"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute left-2 top-0 h-full text-blue-200 hover:text-white hover:bg-white/10"
+                        className="absolute left-1 sm:left-2 top-0 h-full w-10 sm:w-12 text-blue-200 hover:text-white hover:bg-white/10"
                         onClick={() => setShowPassword(!showPassword)}
                         tabIndex={-1}
                       >
                         {showPassword ? (
-                          <EyeOff className="w-5 h-5" />
+                          <EyeOff className="w-4 sm:w-5 h-4 sm:h-5" />
                         ) : (
-                          <Eye className="w-5 h-5" />
+                          <Eye className="w-4 sm:w-5 h-4 sm:h-5" />
                         )}
                       </Button>
                     </div>
@@ -255,19 +257,19 @@ export default function AuthPage() {
 
                   <Button
                     type="submit"
-                    className="w-full h-16 text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-2xl shadow-blue-500/30 transform hover:scale-105 transition-all duration-200"
+                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl sm:shadow-2xl shadow-blue-500/30 transform hover:scale-105 transition-all duration-200 touch-manipulation"
                     disabled={loginMutation.isPending}
                     data-testid="button-login"
                   >
                     {loginMutation.isPending ? (
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 animate-spin border-3 border-current border-t-transparent rounded-full" />
-                        جاري تسجيل الدخول...
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-5 sm:w-6 h-5 sm:h-6 animate-spin border-2 sm:border-3 border-current border-t-transparent rounded-full" />
+                        <span className="text-sm sm:text-base">جاري تسجيل الدخول...</span>
                       </div>
                     ) : (
                       <>
-                        <Zap className="w-6 h-6 ml-2" />
-                        🚀 دخول للنظام
+                        <Zap className="w-5 sm:w-6 h-5 sm:h-6 ml-2" />
+                        <span className="text-sm sm:text-base">🚀 دخول للنظام</span>
                       </>
                     )}
                   </Button>
@@ -276,16 +278,16 @@ export default function AuthPage() {
 
               {/* إنشاء حساب جديد */}
               <TabsContent value="register">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-2xl mb-4 border border-white/20">
-                    <UserPlus className="w-8 h-8 text-purple-300" />
+                <div className="text-center mb-6 sm:mb-8">
+                  <div className="inline-flex items-center justify-center w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 border border-white/20">
+                    <UserPlus className="w-6 sm:w-8 h-6 sm:h-8 text-purple-300" />
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">انضم إلينا! 🌟</h2>
-                  <p className="text-blue-100/80">أنشئ حسابك الجديد للبدء</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">انضم إلينا! 🌟</h2>
+                  <p className="text-sm sm:text-base text-blue-100/80 px-2">أنشئ حسابك الجديد للبدء</p>
                 </div>
 
-                <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName" className="text-white text-sm font-semibold">الاسم الأول</Label>
                       <Input
@@ -294,7 +296,7 @@ export default function AuthPage() {
                         placeholder="الاسم الأول"
                         disabled={registerMutation.isPending}
                         data-testid="input-firstname"
-                        className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm"
+                        className="h-11 sm:h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm text-sm sm:text-base"
                       />
                       {registerForm.formState.errors.firstName && (
                         <p className="text-red-300 text-sm">
@@ -310,7 +312,7 @@ export default function AuthPage() {
                         placeholder="الاسم الأخير"
                         disabled={registerMutation.isPending}
                         data-testid="input-lastname"
-                        className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm"
+                        className="h-11 sm:h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm text-sm sm:text-base"
                       />
                       {registerForm.formState.errors.lastName && (
                         <p className="text-red-300 text-sm">
@@ -329,7 +331,7 @@ export default function AuthPage() {
                       placeholder="example@domain.com"
                       disabled={registerMutation.isPending}
                       data-testid="input-email"
-                      className="h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm"
+                      className="h-11 sm:h-12 bg-white/10 border-white/30 text-white placeholder:text-blue-200 focus:border-purple-400 focus:ring-purple-400 backdrop-blur-sm text-sm sm:text-base"
                     />
                     {registerForm.formState.errors.email && (
                       <p className="text-red-300 text-sm">
@@ -427,19 +429,19 @@ export default function AuthPage() {
 
                   <Button
                     type="submit"
-                    className="w-full h-16 text-lg font-bold bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 border-0 shadow-2xl shadow-purple-500/30 transform hover:scale-105 transition-all duration-200"
+                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg font-bold bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 border-0 shadow-xl sm:shadow-2xl shadow-purple-500/30 transform hover:scale-105 transition-all duration-200 touch-manipulation"
                     disabled={registerMutation.isPending}
                     data-testid="button-register"
                   >
                     {registerMutation.isPending ? (
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 animate-spin border-3 border-current border-t-transparent rounded-full" />
-                        جاري إنشاء الحساب...
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-5 sm:w-6 h-5 sm:h-6 animate-spin border-2 sm:border-3 border-current border-t-transparent rounded-full" />
+                        <span className="text-sm sm:text-base">جاري إنشاء الحساب...</span>
                       </div>
                     ) : (
                       <>
-                        <Stars className="w-6 h-6 ml-2" />
-                        🌟 إنشاء حساب جديد
+                        <Stars className="w-5 sm:w-6 h-5 sm:h-6 ml-2" />
+                        <span className="text-sm sm:text-base">🌟 إنشاء حساب جديد</span>
                       </>
                     )}
                   </Button>
@@ -450,8 +452,8 @@ export default function AuthPage() {
         </div>
 
         {/* نص أسفل الصفحة */}
-        <div className="text-center mt-8">
-          <p className="text-blue-200/60 text-sm">
+        <div className="text-center mt-6 sm:mt-8">
+          <p className="text-blue-200/60 text-xs sm:text-sm px-4">
             © 2025 - نظام إدارة ذكي وآمن 🔐
           </p>
         </div>

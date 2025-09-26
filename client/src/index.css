@@ -138,9 +138,37 @@
   }
 }
 
+/* تحسينات للهواتف المحمولة */
 @media (max-width: 768px) {
   .sidebar-hidden {
     transform: translateX(100%);
+  }
+}
+
+/* شاشات صغيرة جداً */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+  
+  body {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+}
+
+/* تحسين اللمس للهواتف */
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  button, 
+  input, 
+  select, 
+  textarea {
+    min-height: 44px;
   }
 }
 
