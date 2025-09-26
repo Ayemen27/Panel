@@ -3,6 +3,44 @@ import App from "./App";
 import "./index.css";
 import { logEnvironmentInfo, ENV_CONFIG, getWebSocketUrl } from "@shared/environment";
 
+// إصلاح مشكلة Vite HMR WebSocket في بيئة Replit
+if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
+  // تعطيل error overlay للـ HMR لتجنب أخطاء WebSocket
+  if (import.meta.hot) {
+    import.meta.hot.on('vite:error', (payload) => {
+      // تصفية أخطاء WebSocket المتعلقة بـ HMR
+      if (payload.err && payload.err.message && 
+          (payload.err.message.includes('WebSocket') || 
+           payload.err.message.includes('localhost:undefined'))) {
+        console.warn('⚠️ Vite HMR WebSocket issue (safe to ignore in Replit):', payload.err.message);
+        return; // تجاهل هذه الأخطاء
+      }
+    });
+  }
+  
+  // إصلاح Vite client WebSocket URL إذا كان غير صحيح
+  const originalWebSocket = window.WebSocket;
+  const WebSocketConstructor = class extends originalWebSocket {
+    constructor(url: string | URL, protocols?: string | string[]) {
+      // إصلاح URLs الخاطئة للـ HMR
+      if (typeof url === 'string' && 
+          (url.includes('localhost:undefined') || 
+           url.includes('//localhost:undefined') ||
+           url.includes('ws://localhost:undefined'))) {
+        // استخدام URL صحيح لـ HMR
+        const fixedUrl = `wss://${window.location.hostname}:24678`;
+        console.log('🔧 Fixed Vite HMR WebSocket URL:', fixedUrl);
+        super(fixedUrl, protocols);
+      } else {
+        super(url, protocols);
+      }
+    }
+  };
+  
+  // استبدال WebSocket العالمي
+  window.WebSocket = WebSocketConstructor as any;
+}
+
 // تشخيص البيئة عند بداية التطبيق
 console.log("🚀 Starting application...");
 console.log("🌍 ENVIRONMENT DETECTED:");

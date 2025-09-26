@@ -27,7 +27,7 @@ import { db } from "./db";
 import { files } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import cors from "cors";
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type Response, NextFunction } from "express";
 import { ENV_CONFIG } from "../shared/environment";
 
 // WebSocket clients store
@@ -1583,7 +1583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const parsedAuditData = JSON.parse(decodeURIComponent(auditData as string));
-      const { AuditHelpers } = await import('../utils/auditHelpers');
+      const { AuditHelpers } = await import('./utils/auditHelpers');
 
       if (format === 'markdown') {
         const markdownReport = await AuditHelpers.generateMarkdownReport(parsedAuditData);
