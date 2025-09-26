@@ -190,9 +190,8 @@ export default function FileManager() {
   // Initialize real files with default allowed path
   useEffect(() => {
     if (fileSystemMode === 'real') {
-      // Set initial path to a safe default from ALLOWED_PATHS
-      // Prefer Replit workspace for testing environment
-      const initialPath = '/home/runner/workspace';
+      // Use current working directory for Replit environment
+      const initialPath = process.env.NODE_ENV === 'development' ? '/home/runner' : process.cwd() || '/home/runner';
       setCurrentPath(initialPath);
       setBreadcrumbs([{ id: null, name: 'الرئيسية', path: initialPath }]);
     } else {

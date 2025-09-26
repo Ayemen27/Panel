@@ -44,6 +44,8 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, count, gte, like, ilike, isNull, isNotNull, lt, max, sql } from "drizzle-orm";
+// Assuming logger is imported from a shared module or defined elsewhere
+import { logger } from "@shared/logger"; // Placeholder for actual logger import
 
 export interface IStorage {
   // User operations (for username/password auth)
@@ -177,21 +179,21 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(files)
       .where(and(eq(files.id, fileId), eq(files.ownerId, userId)));
-    
+
     if (file) {
       return true; // Owner has all permissions
     }
-    
+
     // Check if user is admin
     const [user] = await db
       .select()
       .from(users)
       .where(eq(users.id, userId));
-    
+
     if (user?.role === 'admin') {
       return true; // Admin has all permissions
     }
-    
+
     // Check explicit permissions
     const [userPermission] = await db
       .select()
@@ -210,7 +212,7 @@ export class DatabaseStorage implements IStorage {
           )
         )
       );
-    
+
     return !!userPermission;
   }
 
@@ -220,7 +222,7 @@ export class DatabaseStorage implements IStorage {
       .select({ maxVersion: max(fileBackups.version) })
       .from(fileBackups)
       .where(eq(fileBackups.fileId, fileId));
-    
+
     return (result.maxVersion || 0) + 1;
   }
 
@@ -246,11 +248,11 @@ export class DatabaseStorage implements IStorage {
     // DEVELOPMENT ONLY: Auto-assign admin role to new users
     // WARNING: This feature should be REMOVED before production deployment
     // Set FORCE_ADMIN_FOR_NEW_USERS=true in development to auto-assign admin role
-    
+
     // Check if user already exists (only if ID is provided)
     let existingUser = null;
     let isNewUser = true;
-    
+
     if (userData.id) {
       try {
         existingUser = await this.getUser(userData.id);
@@ -260,14 +262,14 @@ export class DatabaseStorage implements IStorage {
         isNewUser = true;
       }
     }
-    
+
     // Prepare user data with potential admin role assignment
     let userDataToInsert = { ...userData };
-    
+
     // Apply admin role only to NEW users when environment variable is set
     if (isNewUser && process.env.FORCE_ADMIN_FOR_NEW_USERS === 'true') {
       userDataToInsert.role = 'admin';
-      
+
       // Security logging: Log admin role assignment for audit trail
       console.warn('🚨 SECURITY AUDIT: Auto-assigned admin role to new user', {
         userId: userData.id,
@@ -276,7 +278,7 @@ export class DatabaseStorage implements IStorage {
         reason: 'FORCE_ADMIN_FOR_NEW_USERS environment variable enabled',
         environment: 'development'
       });
-      
+
       // Create audit log if the system logs are available
       try {
         await this.createSystemLog({
@@ -295,7 +297,7 @@ export class DatabaseStorage implements IStorage {
         console.error('Failed to create audit log for admin role assignment:', error);
       }
     }
-    
+
     if (isNewUser) {
       // For new users, insert with all data including potential admin role
       const [user] = await db
@@ -303,7 +305,7 @@ export class DatabaseStorage implements IStorage {
         .values(userDataToInsert)
         .onConflictDoNothing()
         .returning();
-      
+
       // If conflict happened (user was created between check and insert), get the existing user
       if (!user) {
         const [existingUser] = await db
@@ -312,7 +314,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(users.id, userData.id!));
         return existingUser;
       }
-      
+
       return user;
     } else {
       // For existing users, only update allowed fields, preserve role
@@ -564,11 +566,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // System Log operations
-  async getSystemLogs(filters?: { 
-    source?: string; 
-    level?: string; 
-    applicationId?: string; 
-    limit?: number 
+  async getSystemLogs(filters?: {
+    source?: string;
+    level?: string;
+    applicationId?: string;
+    limit?: number;
   }): Promise<SystemLog[]> {
     const conditions = [];
     if (filters?.source) {
@@ -635,11 +637,12 @@ export class DatabaseStorage implements IStorage {
     return {
       total: certs.length,
       valid: certs.filter(cert => cert.status === 'valid' && cert.expiresAt && cert.expiresAt > now).length,
-      expiringSoon: certs.filter(cert => 
-        cert.status === 'valid' && 
-        cert.expiresAt && 
-        cert.expiresAt <= thirtyDaysFromNow && 
-        cert.expiresAt > now
+      expiringSoon: certs.filter(
+        cert =>
+          cert.status === 'valid' &&
+          cert.expiresAt &&
+          cert.expiresAt <= thirtyDaysFromNow &&
+          cert.expiresAt > now
       ).length,
       expired: certs.filter(cert => cert.expiresAt && cert.expiresAt <= now).length,
     };
@@ -671,7 +674,7 @@ export class DatabaseStorage implements IStorage {
     } else {
       conditions.push(eq(files.parentId, parentId));
     }
-    
+
     return await db
       .select()
       .from(files)
@@ -690,17 +693,17 @@ export class DatabaseStorage implements IStorage {
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to update this file');
     }
-    
+
     const [updated] = await db
       .update(files)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(files.id, id))
       .returning();
-    
+
     if (!updated) {
       throw new Error('File not found or could not be updated');
     }
-    
+
     return updated;
   }
 
@@ -710,7 +713,7 @@ export class DatabaseStorage implements IStorage {
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to delete this file');
     }
-    
+
     // Use transaction to ensure data consistency
     await db.transaction(async (tx) => {
       // Delete related records first to avoid foreign key constraints
@@ -718,10 +721,10 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(fileLocks).where(eq(fileLocks.fileId, id));
       await tx.delete(fileBackups).where(eq(fileBackups.fileId, id));
       await tx.delete(fileAuditLogs).where(eq(fileAuditLogs.fileId, id));
-      
+
       // Finally delete the file
       const result = await tx.delete(files).where(eq(files.id, id));
-      
+
       if (result.rowCount === 0) {
         throw new Error('File not found or could not be deleted');
       }
@@ -733,7 +736,7 @@ export class DatabaseStorage implements IStorage {
     if (type) {
       conditions.push(eq(files.type, type));
     }
-    
+
     return await db
       .select()
       .from(files)
@@ -744,7 +747,7 @@ export class DatabaseStorage implements IStorage {
   // Search and filtering operations
   async searchFiles(userId: string, query: string, filters?: { type?: 'file' | 'folder'; tags?: string[] }): Promise<File[]> {
     const conditions = [eq(files.ownerId, userId)];
-    
+
     // Add search query condition
     if (query.trim()) {
       conditions.push(
@@ -754,23 +757,23 @@ export class DatabaseStorage implements IStorage {
         )!
       );
     }
-    
+
     // Add type filter
     if (filters?.type) {
       conditions.push(eq(files.type, filters.type));
     }
-    
+
     // Add tags filter - check if any of the provided tags exist in the file's tags array
     if (filters?.tags && filters.tags.length > 0) {
       // Use proper array operators for PostgreSQL text[] arrays
-      const tagConditions = filters.tags.map(tag => 
-        sql`${tag} = ANY(${files.tags})`
+      const tagConditions = filters.tags.map(
+        tag => sql`${tag} = ANY(${files.tags})`
       );
       if (tagConditions.length > 0) {
         conditions.push(or(...tagConditions)!);
       }
     }
-    
+
     return await db
       .select()
       .from(files)
@@ -801,17 +804,17 @@ export class DatabaseStorage implements IStorage {
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to delete this file');
     }
-    
+
     // Get the file first
     const [file] = await db
       .select()
       .from(files)
       .where(eq(files.id, fileId));
-      
+
     if (!file) {
       throw new Error('File not found');
     }
-    
+
     // Use transaction to ensure data consistency
     return await db.transaction(async (tx) => {
       // Create trash entry
@@ -832,16 +835,16 @@ export class DatabaseStorage implements IStorage {
           metadata: file.metadata,
         })
         .returning();
-      
+
       // Delete related records first to avoid foreign key constraints
       await tx.delete(filePermissions).where(eq(filePermissions.fileId, fileId));
       await tx.delete(fileLocks).where(eq(fileLocks.fileId, fileId));
       await tx.delete(fileBackups).where(eq(fileBackups.fileId, fileId));
       await tx.delete(fileAuditLogs).where(eq(fileAuditLogs.fileId, fileId));
-      
+
       // Finally delete the file
       await tx.delete(files).where(eq(files.id, fileId));
-      
+
       return trashEntry;
     });
   }
@@ -857,11 +860,11 @@ export class DatabaseStorage implements IStorage {
           eq(fileTrash.ownerId, userId)
         )
       );
-    
+
     if (!trashEntry) {
       throw new Error('Trash entry not found or access denied');
     }
-    
+
     // Use transaction to ensure data consistency
     return await db.transaction(async (tx) => {
       // Check if a file with the same path already exists
@@ -874,11 +877,11 @@ export class DatabaseStorage implements IStorage {
             eq(files.ownerId, userId)
           )
         );
-      
+
       if (existingFile) {
         throw new Error('A file with the same path already exists. Please remove or rename it first.');
       }
-      
+
       // Restore the file
       const [restoredFile] = await tx
         .insert(files)
@@ -895,10 +898,10 @@ export class DatabaseStorage implements IStorage {
           metadata: trashEntry.metadata,
         })
         .returning();
-      
+
       // Remove from trash
       await tx.delete(fileTrash).where(eq(fileTrash.id, trashId));
-      
+
       return restoredFile;
     });
   }
@@ -914,11 +917,11 @@ export class DatabaseStorage implements IStorage {
           eq(fileTrash.ownerId, userId)
         )
       );
-    
+
     if (!trashEntry) {
       throw new Error('Trash entry not found or access denied');
     }
-    
+
     const result = await db.delete(fileTrash).where(eq(fileTrash.id, trashId));
     if (result.rowCount === 0) {
       throw new Error('Failed to permanently delete the file');
@@ -932,7 +935,7 @@ export class DatabaseStorage implements IStorage {
   // Backup operations
   async getFileBackups(fileId: string, userId?: string): Promise<FileBackup[]> {
     const conditions = [eq(fileBackups.fileId, fileId)];
-    
+
     // If userId is provided, ensure user has access to the file
     if (userId) {
       const hasPermission = await this.checkUserFileAccess(fileId, userId, 'read');
@@ -940,7 +943,7 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Access denied: You do not have permission to view backups for this file');
       }
     }
-    
+
     return await db
       .select()
       .from(fileBackups)
@@ -954,20 +957,20 @@ export class DatabaseStorage implements IStorage {
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to create backup for this file');
     }
-    
+
     // Get the file first
     const [file] = await db
       .select()
       .from(files)
       .where(eq(files.id, fileId));
-    
+
     if (!file) {
       throw new Error('File not found');
     }
-    
+
     // Get next version number automatically
     const version = await this.getNextVersionNumber(fileId);
-    
+
     const [backup] = await db
       .insert(fileBackups)
       .values({
@@ -982,7 +985,7 @@ export class DatabaseStorage implements IStorage {
         metadata: file.metadata,
       })
       .returning();
-    
+
     return backup;
   }
 
@@ -992,17 +995,17 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(fileBackups)
       .where(eq(fileBackups.id, backupId));
-    
+
     if (!backup) {
       throw new Error('Backup not found');
     }
-    
+
     // Check if user has write permission for the file
     const hasPermission = await this.checkUserFileAccess(backup.fileId, userId, 'write');
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to restore this backup');
     }
-    
+
     // Update the file with backup content
     const [restoredFile] = await db
       .update(files)
@@ -1014,11 +1017,11 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(files.id, backup.fileId))
       .returning();
-    
+
     if (!restoredFile) {
       throw new Error('Failed to restore backup - file not found');
     }
-    
+
     return restoredFile;
   }
 
@@ -1031,7 +1034,7 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Access denied: You do not have permission to view file permissions');
       }
     }
-    
+
     return await db
       .select()
       .from(filePermissions)
@@ -1045,12 +1048,12 @@ export class DatabaseStorage implements IStorage {
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to set file permissions');
     }
-    
+
     const [created] = await db
       .insert(filePermissions)
       .values(permission)
       .returning();
-    
+
     return created;
   }
 
@@ -1060,17 +1063,17 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(filePermissions)
       .where(eq(filePermissions.id, permissionId));
-    
+
     if (!permission) {
       throw new Error('Permission record not found');
     }
-    
+
     // Check if user has admin permission for this file or is the owner
     const hasPermission = await this.checkUserFileAccess(permission.fileId, userId, 'admin');
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to remove file permissions');
     }
-    
+
     const result = await db.delete(filePermissions).where(eq(filePermissions.id, permissionId));
     if (result.rowCount === 0) {
       throw new Error('Failed to remove permission');
@@ -1083,7 +1086,7 @@ export class DatabaseStorage implements IStorage {
     if (file) {
       return true; // Owner has all permissions
     }
-    
+
     // Check explicit permissions
     const [userPermission] = await db
       .select()
@@ -1099,11 +1102,11 @@ export class DatabaseStorage implements IStorage {
           )
         )
       );
-    
+
     if (userPermission) {
       return true;
     }
-    
+
     // Check role-based permissions (would need user role lookup)
     // For now, return false if no explicit permission found
     return false;
@@ -1117,48 +1120,48 @@ export class DatabaseStorage implements IStorage {
     if (!hasPermission) {
       throw new Error(`Access denied: You do not have ${requiredPermission} permission for this file`);
     }
-    
+
     // Clean expired locks first
     await this.cleanExpiredLocks(fileId);
-    
+
     // Check if file is already locked with conflicting lock
     const existingLocks = await this.getFileLocks(fileId);
-    
+
     // Filter out expired locks
-    const activeLocks = existingLocks.filter(lock => 
-      !lock.expiresAt || lock.expiresAt > new Date()
+    const activeLocks = existingLocks.filter(
+      lock => !lock.expiresAt || lock.expiresAt > new Date()
     );
-    
+
     // Check for conflicts
     const hasConflict = activeLocks.some(lock => {
       // User can't have multiple locks of same type
       if (lock.userId === userId && lock.lockType === lockType) {
         throw new Error(`You already have a ${lockType} lock on this file`);
       }
-      
+
       // Exclusive locks conflict with everything
       if (lock.lockType === 'exclusive' || lockType === 'exclusive') {
         return true;
       }
-      
+
       // Write locks conflict with write/read locks
       if (lock.lockType === 'write' && (lockType === 'write' || lockType === 'read')) {
         return true;
       }
-      
+
       if (lockType === 'write' && (lock.lockType === 'write' || lock.lockType === 'read')) {
         return true;
       }
-      
+
       return false;
     });
-    
+
     if (hasConflict) {
       throw new Error('File is already locked with a conflicting lock type');
     }
-    
+
     const expiresAt = ttl ? new Date(Date.now() + ttl * 1000) : undefined;
-    
+
     const [lock] = await db
       .insert(fileLocks)
       .values({
@@ -1168,7 +1171,7 @@ export class DatabaseStorage implements IStorage {
         expiresAt,
       })
       .returning();
-    
+
     return lock;
   }
 
@@ -1178,10 +1181,10 @@ export class DatabaseStorage implements IStorage {
     if (!hasPermission) {
       throw new Error('Access denied: You do not have permission to unlock this file');
     }
-    
+
     // Clean expired locks first
     await this.cleanExpiredLocks(fileId);
-    
+
     const result = await db
       .delete(fileLocks)
       .where(
@@ -1190,7 +1193,7 @@ export class DatabaseStorage implements IStorage {
           eq(fileLocks.userId, userId)
         )
       );
-      
+
     if (result.rowCount === 0) {
       throw new Error('No active lock found for this user on this file');
     }
@@ -1206,12 +1209,12 @@ export class DatabaseStorage implements IStorage {
 
   async isFileLocked(fileId: string): Promise<boolean> {
     const locks = await this.getFileLocks(fileId);
-    
+
     // Check if any non-expired locks exist
-    const activeLocks = locks.filter(lock => 
-      !lock.expiresAt || lock.expiresAt > new Date()
+    const activeLocks = locks.filter(
+      lock => !lock.expiresAt || lock.expiresAt > new Date()
     );
-    
+
     return activeLocks.length > 0;
   }
 
@@ -1223,15 +1226,15 @@ export class DatabaseStorage implements IStorage {
 
   async getFileAuditLogs(fileId?: string, userId?: string, limit = 100): Promise<FileAuditLog[]> {
     const conditions = [];
-    
+
     if (fileId) {
       conditions.push(eq(fileAuditLogs.fileId, fileId));
     }
-    
+
     if (userId) {
       conditions.push(eq(fileAuditLogs.userId, userId));
     }
-    
+
     if (conditions.length > 0) {
       return await db
         .select()
@@ -1240,7 +1243,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(fileAuditLogs.timestamp))
         .limit(limit);
     }
-    
+
     return await db
       .select()
       .from(fileAuditLogs)
@@ -1279,7 +1282,7 @@ export class DatabaseStorage implements IStorage {
     // Generate new name if not provided
     const fileName = newName || `Copy of ${sourceFile.name}`;
     const fullDestinationPath = destinationPath ? `${destinationPath}/${fileName}` : fileName;
-    
+
     // Create copy in database first
     const copyData: InsertFile = {
       name: fileName,
@@ -1314,9 +1317,9 @@ export class DatabaseStorage implements IStorage {
     // Update copy with actual file size and checksum
     const [updatedCopy] = await db
       .update(files)
-      .set({ 
+      .set({
         size: copyResult.data?.size || sourceFile.size,
-        checksum: copyResult.data?.checksum 
+        checksum: copyResult.data?.checksum,
       })
       .where(eq(files.id, copy.id))
       .returning();
@@ -1327,7 +1330,7 @@ export class DatabaseStorage implements IStorage {
       action: 'create',
       userId,
       details: `Copied from ${sourceFile.name}`,
-      newValue: updatedCopy
+      newValue: updatedCopy,
     });
 
     return updatedCopy;
@@ -1338,7 +1341,7 @@ export class DatabaseStorage implements IStorage {
     if (!sourceFile) {
       throw new Error('Source file not found');
     }
-    
+
     return this.copyFile(fileId, sourceFile.parentId, userId, `${sourceFile.name} (Copy)`);
   }
 
@@ -1366,7 +1369,7 @@ export class DatabaseStorage implements IStorage {
       action: 'share',
       userId,
       details: `${isPublic ? 'Made public' : 'Made private'}`,
-      newValue: { isPublic }
+      newValue: { isPublic },
     });
 
     return updatedFile;
@@ -1382,7 +1385,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllowedPaths(type?: 'allowed' | 'blocked'): Promise<AllowedPath[]> {
     const conditions = [eq(allowedPaths.isActive, true)];
-    
+
     if (type) {
       conditions.push(eq(allowedPaths.type, type));
     }
@@ -1399,7 +1402,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(allowedPaths)
       .where(eq(allowedPaths.id, id));
-    
+
     return allowedPath;
   }
 
@@ -1408,7 +1411,7 @@ export class DatabaseStorage implements IStorage {
       .insert(allowedPaths)
       .values(pathData)
       .returning();
-    
+
     return allowedPath;
   }
 
@@ -1418,11 +1421,11 @@ export class DatabaseStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(allowedPaths.id, id))
       .returning();
-    
+
     if (!allowedPath) {
       throw new Error('Allowed path not found');
     }
-    
+
     return allowedPath;
   }
 
@@ -1431,35 +1434,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async checkPathAllowed(path: string): Promise<boolean> {
-    // First check if path is explicitly blocked
-    const [blockedPath] = await db
-      .select()
-      .from(allowedPaths)
-      .where(
-        and(
-          eq(allowedPaths.type, 'blocked'),
-          eq(allowedPaths.isActive, true),
-          like(allowedPaths.path, `${path}%`)
+    try {
+      // First check if path is explicitly blocked
+      const blockedPath = await db
+        .select()
+        .from(allowedPaths)
+        .where(
+          and(
+            eq(allowedPaths.type, 'blocked'),
+            eq(allowedPaths.isActive, true),
+            like(allowedPaths.path, `${path}%`) // Use LIKE for path matching
+          )
         )
-      );
+        .limit(1); // We only need to know if at least one blocked path matches
 
-    if (blockedPath) {
-      return false;
+      if (blockedPath.length > 0) {
+        return false; // Path is blocked
+      }
+
+      // Then check if path is allowed
+      const allowedPathsList = await db
+        .select()
+        .from(allowedPaths)
+        .where(
+          and(
+            eq(allowedPaths.type, 'allowed'),
+            eq(allowedPaths.isActive, true)
+          )
+        );
+
+      // Check if the given path starts with any of the allowed paths or is exactly one of them
+      return allowedPathsList.some(allowedPath => {
+        return path === allowedPath.path || path.startsWith(allowedPath.path + '/');
+      });
+
+    } catch (error) {
+      logger.error('Error checking path allowance:', error);
+      return false; // Default to false in case of error
     }
-
-    // Then check if path is allowed
-    const [allowedPath] = await db
-      .select()
-      .from(allowedPaths)
-      .where(
-        and(
-          eq(allowedPaths.type, 'allowed'),
-          eq(allowedPaths.isActive, true),
-          like(allowedPaths.path, `${path}%`)
-        )
-      );
-
-    return !!allowedPath;
   }
 
   async getActivePaths(type: 'allowed' | 'blocked'): Promise<string[]> {

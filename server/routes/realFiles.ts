@@ -1,0 +1,246 @@
+
+import express from 'express';
+import { RealFileSystemService } from '../services/realFileSystemService';
+import { storage } from '../storage';
+import { auth } from '../auth';
+import { logger } from '../utils/logger';
+
+const router = express.Router();
+const realFileService = new RealFileSystemService(storage);
+
+// Browse directory
+router.get('/browse', auth, async (req, res) => {
+  try {
+    const { path } = req.query;
+    const userId = req.user!.id;
+
+    if (!path || typeof path !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Path parameter is required'
+      });
+    }
+
+    const result = await realFileService.listDirectory(path, userId);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('Error browsing directory:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Get file content
+router.get('/content', auth, async (req, res) => {
+  try {
+    const { path } = req.query;
+    const userId = req.user!.id;
+
+    if (!path || typeof path !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Path parameter is required'
+      });
+    }
+
+    const result = await realFileService.readFileContent(path, userId);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('Error reading file content:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Create file or directory
+router.post('/create', auth, async (req, res) => {
+  try {
+    const { path, type, content, mode } = req.body;
+    const userId = req.user!.id;
+
+    if (!path || !type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Path and type are required'
+      });
+    }
+
+    let result;
+    if (type === 'directory') {
+      result = await realFileService.createDirectory(path, userId, {
+        recursive: true,
+        mode: mode || 0o755
+      });
+    } else {
+      result = await realFileService.createFile(path, userId, {
+        content: content || '',
+        mode: mode || 0o644
+      });
+    }
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('Error creating item:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Delete file or directory
+router.delete('/delete', auth, async (req, res) => {
+  try {
+    const { path } = req.body;
+    const userId = req.user!.id;
+
+    if (!path) {
+      return res.status(400).json({
+        success: false,
+        error: 'Path is required'
+      });
+    }
+
+    const result = await realFileService.deleteItem(path, userId);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('Error deleting item:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Rename file or directory
+router.put('/rename', auth, async (req, res) => {
+  try {
+    const { oldPath, newPath } = req.body;
+    const userId = req.user!.id;
+
+    if (!oldPath || !newPath) {
+      return res.status(400).json({
+        success: false,
+        error: 'Both oldPath and newPath are required'
+      });
+    }
+
+    const result = await realFileService.renameItem(oldPath, newPath, userId);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('Error renaming item:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Copy file or directory
+router.post('/copy', auth, async (req, res) => {
+  try {
+    const { sourcePath, destinationPath } = req.body;
+    const userId = req.user!.id;
+
+    if (!sourcePath || !destinationPath) {
+      return res.status(400).json({
+        success: false,
+        error: 'Both sourcePath and destinationPath are required'
+      });
+    }
+
+    const result = await realFileService.copyItem(sourcePath, destinationPath, userId);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('Error copying item:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Get file info
+router.get('/info', auth, async (req, res) => {
+  try {
+    const { path } = req.query;
+    const userId = req.user!.id;
+
+    if (!path || typeof path !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Path parameter is required'
+      });
+    }
+
+    const result = await realFileService.getFileInfo(path, userId);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('Error getting file info:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+export default router;

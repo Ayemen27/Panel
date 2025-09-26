@@ -20,12 +20,11 @@ import { logger } from '../utils/logger';
  * Security Configuration and Constants
  */
 const ALLOWED_PATHS = [
-  '/home/administrator/app',
-  '/etc/nginx/sites-available',
-  '/var/www',
-  '/home/administrator/Bot.v',
+  '/home/runner',
+  '/home/runner/workspace',
+  process.cwd(),
   '/tmp/uploads',
-  '/home/runner/workspace'
+  '/var/tmp'
 ];
 
 // Maximum file size: 100MB

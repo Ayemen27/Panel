@@ -41,12 +41,12 @@ function setupCORS(app: Express) {
   app.use((req, res, next) => {
     const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
     const origin = req.headers.origin;
-    
+
     // Determine allowed origins based on environment
     const allowedOrigins = isDevelopment 
       ? ['http://localhost:5000', 'https://replit.dev', 'http://127.0.0.1:5000']
       : ['https://binarjoinanelytic.info'];
-    
+
     // Allow origin if it's in the allowed list or if no origin (same-origin requests)
     const allowOrigin = !origin || allowedOrigins.some(allowed => 
       origin === allowed || (isDevelopment && (
@@ -55,15 +55,15 @@ function setupCORS(app: Express) {
         origin.includes('127.0.0.1')
       ))
     );
-    
+
     if (allowOrigin) {
       res.header('Access-Control-Allow-Origin', origin || (isDevelopment ? 'http://localhost:5000' : 'https://binarjoinanelytic.info'));
     }
-    
+
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, Set-Cookie');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE, PATCH');
-    
+
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
     } else {
@@ -121,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { role } = req.body;
-      
+
       if (!['admin', 'user', 'moderator', 'viewer'].includes(role)) {
         return res.status(400).json({ message: 'Invalid role' });
       }
@@ -200,10 +200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Import migration function dynamically
       const { addDefaultPaths } = await import('./migrations/001_add_default_paths.js');
-      
+
       const userId = getUserId(req)!;
       const result = await addDefaultPaths(userId);
-      
+
       res.json(result);
     } catch (error) {
       console.error("Error setting up default paths:", error);
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req)!;
       const applications = await storage.getApplications(userId);
       let statusMap = new Map<string, string>();
-      
+
       try {
         statusMap = await pm2Service.getAllApplicationStatuses();
       } catch (error) {
@@ -663,10 +663,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/nginx/configs', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const configData = insertNginxConfigSchema.parse(req.body);
-      
+
       // Test the configuration first
       const testResult = await nginxService.testConfig(configData.content);
-      
+
       const config = await storage.createNginxConfig({
         ...configData,
         lastTest: new Date(),
@@ -740,18 +740,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==========================================
   // FILE MANAGEMENT API ROUTES
   // ==========================================
-  
+
   // File CRUD Operations
   app.get('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
       const { parentId, type } = req.query;
-      
+
       const files = await storage.getFiles(
         parentId as string || null, 
         userId
       );
-      
+
       res.json(files);
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -763,13 +763,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       const file = await storage.getFile(id, userId);
-      
+
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       res.json(file);
     } catch (error) {
       console.error("Error fetching file:", error);
@@ -781,26 +781,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       // Check if file exists and user has permission
       const file = await storage.getFile(id, userId);
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       // Check read permission
       const hasPermission = await storage.checkFilePermission(id, userId, 'read');
       if (!hasPermission) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       // Use FileManagerService to read file content safely
       const result = await fileManagerService.readFile(file.path, userId);
-      
+
       if (!result.success) {
         return res.status(400).json({ message: result.message });
       }
-      
+
       res.json({ 
         content: result.data.content,
         mimeType: result.data.mimeType,
@@ -821,7 +821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const file = await storage.createFile(fileData);
-      
+
       // Create audit log
       await storage.createAuditLog({
         fileId: file.id,
@@ -851,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedFile = await storage.updateFile(id, updates, userId);
-      
+
       // Create audit log
       await storage.createAuditLog({
         fileId: id,
@@ -893,7 +893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use FileManagerService to write file safely
       const result = await fileManagerService.writeFile(file.path, content, userId);
-      
+
       if (!result.success) {
         return res.status(400).json({ message: result.message });
       }
@@ -936,14 +936,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (user?.role !== 'admin') {
           return res.status(403).json({ message: "Admin access required for permanent delete" });
         }
-        
+
         await storage.deleteFile(id, userId);
-        
+
         res.json({ message: "File permanently deleted" });
       } else {
         // Move to trash
         const trashItem = await storage.moveToTrash(id, userId);
-        
+
         res.json({ 
           message: "File moved to trash",
           trashId: trashItem.id
@@ -960,13 +960,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { q, type, tags } = req.query;
-      
+
       const filters: any = {};
       if (type) filters.type = type as 'file' | 'folder';
       if (tags) filters.tags = (tags as string).split(',');
-      
+
       const files = await storage.searchFiles(userId, q as string || '', filters);
-      
+
       res.json(files);
     } catch (error) {
       console.error("Error searching files:", error);
@@ -979,7 +979,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const trashFiles = await storage.getTrashFiles(userId);
-      
+
       res.json(trashFiles);
     } catch (error) {
       console.error("Error fetching trash files:", error);
@@ -991,9 +991,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { trashId } = req.params;
-      
+
       const restoredFile = await storage.restoreFromTrash(trashId, userId);
-      
+
       // Create audit log
       await storage.createAuditLog({
         fileId: restoredFile.id,
@@ -1001,7 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         details: `Restored from trash: ${restoredFile.name}`
       });
-      
+
       res.json({ 
         message: "File restored successfully",
         file: restoredFile
@@ -1016,9 +1016,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { trashId } = req.params;
-      
+
       await storage.permanentDelete(trashId, userId);
-      
+
       res.json({ message: "File permanently deleted" });
     } catch (error) {
       console.error("Error permanently deleting file:", error);
@@ -1029,9 +1029,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/files/trash', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
-      
+
       await storage.emptyTrash(userId);
-      
+
       res.json({ message: "Trash emptied successfully" });
     } catch (error) {
       console.error("Error emptying trash:", error);
@@ -1044,9 +1044,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       const backups = await storage.getFileBackups(id, userId);
-      
+
       res.json(backups);
     } catch (error) {
       console.error("Error fetching file backups:", error);
@@ -1059,9 +1059,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req)!;
       const { id } = req.params;
       const { content } = req.body;
-      
+
       const backup = await storage.createBackup(id, content, userId);
-      
+
       res.status(201).json(backup);
     } catch (error) {
       console.error("Error creating backup:", error);
@@ -1073,9 +1073,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { backupId } = req.params;
-      
+
       const restoredFile = await storage.restoreBackup(backupId, userId);
-      
+
       // Create audit log
       await storage.createAuditLog({
         fileId: restoredFile.id,
@@ -1083,7 +1083,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         details: `Restored from backup: ${restoredFile.name}`
       });
-      
+
       res.json({ 
         message: "File restored from backup successfully",
         file: restoredFile
@@ -1099,9 +1099,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       const permissions = await storage.getFilePermissions(id, userId);
-      
+
       res.json(permissions);
     } catch (error) {
       console.error("Error fetching file permissions:", error);
@@ -1120,7 +1120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const permission = await storage.setFilePermission(permissionData, userId);
-      
+
       // Create audit log
       await storage.createAuditLog({
         fileId: id,
@@ -1129,7 +1129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Granted ${permission.permission} permission`,
         newValue: permission
       });
-      
+
       res.status(201).json(permission);
     } catch (error) {
       console.error("Error setting file permission:", error);
@@ -1141,9 +1141,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { permissionId } = req.params;
-      
+
       await storage.removeFilePermission(permissionId, userId);
-      
+
       res.json({ message: "Permission removed successfully" });
     } catch (error) {
       console.error("Error removing file permission:", error);
@@ -1155,9 +1155,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/files/:id/locks', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
-      
+
       const locks = await storage.getFileLocks(id);
-      
+
       res.json(locks);
     } catch (error) {
       console.error("Error fetching file locks:", error);
@@ -1170,9 +1170,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req)!;
       const { id } = req.params;
       const { lockType = 'write', ttl } = req.body;
-      
+
       const lock = await storage.lockFile(id, userId, lockType, ttl);
-      
+
       // Create audit log
       await storage.createAuditLog({
         fileId: id,
@@ -1181,7 +1181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Applied ${lockType} lock`,
         newValue: lock
       });
-      
+
       res.status(201).json(lock);
     } catch (error) {
       console.error("Error locking file:", error);
@@ -1193,9 +1193,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       await storage.unlockFile(id, userId);
-      
+
       // Create audit log
       await storage.createAuditLog({
         fileId: id,
@@ -1203,7 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         details: 'Removed file lock'
       });
-      
+
       res.json({ message: "File unlocked successfully" });
     } catch (error) {
       console.error("Error unlocking file:", error);
@@ -1216,13 +1216,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { fileId, limit } = req.query;
-      
+
       const logs = await storage.getFileAuditLogs(
         fileId as string,
         userId,
         parseInt(limit as string) || 50
       );
-      
+
       res.json(logs);
     } catch (error) {
       console.error("Error fetching audit logs:", error);
@@ -1235,17 +1235,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       // Validate request body
       const copySchema = z.object({
         destinationFolderId: z.string().nullable().optional(),
         name: z.string().min(1).max(255).optional()
       });
-      
+
       const { destinationFolderId, name } = copySchema.parse(req.body);
-      
+
       const copiedFile = await storage.copyFile(id, destinationFolderId || null, userId, name);
-      
+
       res.status(201).json(copiedFile);
     } catch (error) {
       console.error("Error copying file:", error);
@@ -1257,9 +1257,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       const duplicatedFile = await storage.duplicateFile(id, userId);
-      
+
       res.status(201).json(duplicatedFile);
     } catch (error) {
       console.error("Error duplicating file:", error);
@@ -1271,16 +1271,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       const { id } = req.params;
-      
+
       // Validate request body
       const shareSchema = z.object({
         isPublic: z.boolean()
       });
-      
+
       const { isPublic } = shareSchema.parse(req.body);
-      
+
       const sharedFile = await storage.shareFile(id, isPublic, userId);
-      
+
       res.json({
         file: sharedFile,
         publicUrl: isPublic ? storage.getPublicFileUrl(id) : null
@@ -1296,18 +1296,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { public: isPublicRequest } = req.query;
       const isPublicDownload = isPublicRequest === 'true';
-      
+
       // For public downloads, find file without user filter
       let file;
       let userId = null;
-      
+
       if (isPublicDownload) {
         // Get file without user restriction for public downloads
         const [publicFile] = await db
           .select()
           .from(files)
           .where(and(eq(files.id, id), eq(files.isPublic, true)));
-        
+
         if (!publicFile) {
           return res.status(404).json({ message: "Public file not found" });
         }
@@ -1318,14 +1318,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!authenticatedReq.user) {
           return res.status(401).json({ message: "Authentication required" });
         }
-        
+
         userId = getUserId(authenticatedReq)!;
         file = await storage.getFile(id, userId);
-        
+
         if (!file) {
           return res.status(404).json({ message: "File not found" });
         }
-        
+
         // Check permissions for authenticated downloads
         const hasAccess = await storage.checkFilePermission(id, userId, 'read');
         if (!hasAccess) {
@@ -1342,7 +1342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set appropriate headers for download
       res.setHeader('Content-Disposition', `attachment; filename="${file.name}"`);
       res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
-      
+
       // Handle file content - if it's binary, send as buffer
       const content = result.data?.content || '';
       if (file.mimeType && !file.mimeType.startsWith('text/') && file.mimeType !== 'application/json') {
@@ -1353,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For text files, send as string
         res.send(content);
       }
-      
+
       // Create audit log for authenticated downloads
       if (userId) {
         await storage.createAuditLog({
@@ -1375,13 +1375,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req)!;
       // Support both query param and path param for folder ID
       const folderId = req.params.folderId || req.query.folderId || null;
-      
+
       // Convert 'root' or 'null' string to actual null
       const actualFolderId = (folderId === 'root' || folderId === 'null') ? null : folderId as string || null;
-      
+
       // Get files in the specified folder (or root if no folderId)
       const rawFiles = await storage.getFiles(actualFolderId, userId);
-      
+
       // Normalize data to match FileItem interface from frontend
       const files = rawFiles.map(file => ({
         ...file,
@@ -1394,7 +1394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         checksum: file.checksum || undefined, // Convert null to undefined
         mimeType: file.mimeType || undefined, // Convert null to undefined
       }));
-      
+
       res.json(files);
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -1412,7 +1412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         applicationId: applicationId as string,
         limit: parseInt(limit as string) || 100
       };
-      
+
       const logs = await storage.getSystemLogs(filters);
       res.json(logs);
     } catch (error) {
@@ -1425,7 +1425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const application = await storage.getApplication(id);
-      
+
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
       }
@@ -1550,10 +1550,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/system/audit/comprehensive', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       const { auditService } = await import('./services/auditService');
-      
+
       // Run comprehensive audit
       const auditReport = await auditService.runCompleteAudit();
-      
+
       res.json({
         success: true,
         message: 'Comprehensive audit completed',
@@ -1583,7 +1583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (format === 'markdown') {
         const markdownReport = await AuditHelpers.generateMarkdownReport(parsedAuditData);
-        
+
         res.setHeader('Content-Type', 'text/markdown');
         res.setHeader('Content-Disposition', `attachment; filename="audit-report-${new Date().toISOString().split('T')[0]}.md"`);
         res.send(markdownReport);
@@ -1638,11 +1638,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify Origin for security
       const origin = info.origin;
       const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
-      
+
       const allowedOrigins = isDevelopment 
         ? ['http://localhost:5000', 'https://replit.dev', 'http://127.0.0.1:5000']
         : ['https://binarjoinanelytic.info'];
-      
+
       if (!origin || !allowedOrigins.some(allowed => 
         origin === allowed || (isDevelopment && (
           origin.includes('localhost') || 
@@ -1653,7 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`Security: Blocked WebSocket connection from unauthorized origin: ${origin}`);
         return false;
       }
-      
+
       return true;
     }
   });
@@ -1701,7 +1701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'authenticated-user-id' // Get from actual session
           };
         }
-        
+
         return null;
       } catch (error) {
         console.error('Session validation error:', error);
@@ -1712,13 +1712,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString());
-        
+
         switch (message.type) {
           case 'TERMINAL_AUTH_REQUEST':
             // Authenticate the WebSocket connection using HTTP session (NO TOKENS)
             try {
               wsUser = await authenticateUser();
-              
+
               if (!wsUser || !wsUser.isAuthenticated) {
                 ws.send(JSON.stringify({
                   type: 'TERMINAL_AUTH_ERROR',
@@ -1744,7 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 type: 'TERMINAL_AUTH_SUCCESS',
                 message: 'Terminal authentication successful'
               }));
-              
+
             } catch (error) {
               console.error('Terminal auth error:', error);
               ws.send(JSON.stringify({
@@ -1774,7 +1774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             const { command } = message;
-            
+
             if (!command || typeof command !== 'string') {
               ws.send(JSON.stringify({
                 type: 'TERMINAL_ERROR',
@@ -1801,7 +1801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             const trimmedCommand = command.trim();
             const commandSpec = SECURE_COMMAND_MAP[trimmedCommand];
-            
+
             if (!commandSpec) {
               console.warn(`Security: Blocked unauthorized command attempt: "${trimmedCommand}" from user: ${wsUser.id}`);
               ws.send(JSON.stringify({
@@ -1840,7 +1840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               // SECURE EXECUTION: Use spawn without shell to prevent RCE
               const { spawn } = await import('child_process');
-              
+
               // Use direct binary execution (NO SHELL) for security
               const childProcess = spawn(commandSpec.binary, commandSpec.args, {
                 stdio: ['pipe', 'pipe', 'pipe'],
@@ -1863,7 +1863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               childProcess.stdout?.on('data', (data: Buffer) => {
                 const output = data.toString();
                 outputSize += output.length;
-                
+
                 // Prevent memory abuse
                 if (outputSize > MAX_OUTPUT_SIZE) {
                   childProcess.kill('SIGKILL');
@@ -1873,9 +1873,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }));
                   return;
                 }
-                
+
                 outputBuffer += output;
-                
+
                 // Send to THIS connection only
                 ws.send(JSON.stringify({
                   type: 'TERMINAL_OUTPUT',
@@ -1891,7 +1891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               childProcess.stderr?.on('data', (data: Buffer) => {
                 const output = data.toString();
                 outputSize += output.length;
-                
+
                 if (outputSize > MAX_OUTPUT_SIZE) {
                   childProcess.kill('SIGKILL');
                   ws.send(JSON.stringify({
@@ -1900,9 +1900,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }));
                   return;
                 }
-                
+
                 outputBuffer += output;
-                
+
                 // Send to THIS connection only
                 ws.send(JSON.stringify({
                   type: 'TERMINAL_OUTPUT',
@@ -1919,7 +1919,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               childProcess.on('close', (code: number | null, signal: string | null) => {
                 activeProcess = null; // Clear reference
                 const finalStatus = code === 0 ? 'success' : 'error';
-                
+
                 // Send completion to THIS connection only
                 ws.send(JSON.stringify({
                   type: 'TERMINAL_COMPLETE',
@@ -1950,15 +1950,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (activeProcess) {
                   console.warn(`Terminal: Command "${trimmedCommand}" timed out, killing process`);
                   activeProcess.kill('SIGTERM'); // Try graceful first
-                  
+
                   // Force kill if not terminated in 5 seconds
                   setTimeout(() => {
                     if (activeProcess) {
                       activeProcess.kill('SIGKILL');
-                      activeProcess = null;
                     }
                   }, 5000);
-                  
+
                   ws.send(JSON.stringify({
                     type: 'TERMINAL_ERROR',
                     message: 'Command timed out (30s limit)'
@@ -1995,7 +1994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on('close', (code: number, reason: Buffer) => {
       wsClients.delete(ws);
-      
+
       // CRITICAL: Kill any active process on connection close
       if (activeProcess) {
         console.log(`Terminal: Killing active process on connection close for user: ${wsUser?.id}`);
@@ -2007,27 +2006,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 5000);
         activeProcess = null;
       }
-      
+
       // If user was authenticated, log the disconnection for security
       if (wsUser) {
         console.log(`Terminal: Authenticated user ${wsUser.id} disconnected`);
       }
-      
+
       // Reset authentication state
       wsUser = null;
       isTerminalAuthenticated = false;
-      
+
       console.log(`WebSocket client disconnected. Code: ${code}, Reason: ${reason.toString()}`);
     });
 
     ws.on('error', (error: Error) => {
       console.error('WebSocket error:', error);
       wsClients.delete(ws);
-      
+
       // Reset authentication state on error
       wsUser = null;
       isTerminalAuthenticated = false;
-      
+
       // Log security event if authenticated user had error
       if (wsUser) {
         console.warn(`Terminal: Authenticated user ${wsUser.id} connection error: ${error.message}`);
