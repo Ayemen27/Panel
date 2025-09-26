@@ -319,22 +319,6 @@ export function Header({ onMenuClick, showMenuButton }: HeaderProps) {
     <header className="bg-card border-b border-border px-6 py-4" data-testid="header">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {showMenuButton && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onMenuClick}
-              data-testid="button-menu"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
-          <h2 className="text-xl font-semibold" data-testid="page-title">
-            {pageNames[location] || "لوحة التحكم"}
-          </h2>
-        </div>
-        
-        <div className="flex items-center gap-4">
           {/* Notifications */}
           <NotificationsPopover />
           
@@ -346,6 +330,22 @@ export function Header({ onMenuClick, showMenuButton }: HeaderProps) {
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <span className="text-sm font-medium">متصل</span>
           </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold" data-testid="page-title">
+            {pageNames[location] || "لوحة التحكم"}
+          </h2>
+          {showMenuButton && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onMenuClick}
+              data-testid="button-menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
     </header>
