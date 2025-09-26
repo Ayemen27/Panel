@@ -29,26 +29,25 @@ export function detectEnvironment(): EnvironmentConfig {
   const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
   const nodeEnv = processEnv.NODE_ENV || 'development';
   
-  const isReplit = !!(
+  // تحسين اكتشاف Replit في المتصفح والخادم
+  const isReplitBrowser = typeof window !== 'undefined' && window.location && (
+    window.location.hostname.includes('replit.dev') ||
+    window.location.hostname.includes('repl.co') ||
+    window.location.hostname.includes('sisko.replit.dev') ||
+    window.location.hostname.includes('pike.replit.dev') ||
+    window.location.hostname.includes('worf.replit.dev')
+  );
+  
+  const isReplitServer = !!(
     processEnv.REPL_ID || 
     processEnv.REPLIT_DB_URL || 
     processEnv.REPL_SLUG ||
-    // في المتصفح، اكتشف Replit من النطاق
-    (typeof window !== 'undefined' && window.location && (
-      window.location.hostname.includes('replit.dev') ||
-      window.location.hostname.includes('repl.co') ||
-      window.location.hostname.includes('sisko.replit.dev') ||
-      window.location.hostname.includes('pike.replit.dev') ||
-      window.location.hostname.includes('worf.replit.dev')
-    )) ||
-    // في الخادم، تحقق من متغيرات النظام الإضافية
-    (typeof process !== 'undefined' && (
-      process.env.REPLIT_CLUSTER || 
-      process.env.REPLIT_ENVIRONMENT ||
-      process.env.NODE_ENV === 'development' && 
-      (process.env.HOSTNAME && process.env.HOSTNAME.includes('replit'))
-    ))
+    processEnv.REPLIT_CLUSTER || 
+    processEnv.REPLIT_ENVIRONMENT ||
+    (processEnv.HOSTNAME && processEnv.HOSTNAME.includes('replit'))
   );
+  
+  const isReplit = isReplitBrowser || isReplitServer;
 
   // اكتشاف النطاق المخصص
   const isCustomDomain = typeof window !== 'undefined' && 
@@ -228,32 +227,30 @@ export function getWebSocketUrl(): string {
     
     // التحقق من صحة القيم
     if (!host || host === 'undefined' || host === 'null' || host.length === 0) {
-      console.warn('Invalid hostname detected, using fallback');
-      return 'wss://localhost:6000/ws';
+      console.error('❌ Invalid hostname detected:', host);
+      // استخدام fallback أفضل
+      return protocol === 'wss:' ? 'wss://localhost:6000/ws' : 'ws://localhost:6000/ws';
     }
     
-    // للنطاق المخصص أو Replit، استخدم الهوست الحالي بدون منفذ إضافي
-    if (host.includes('replit.dev') || host.includes('repl.co') || host === 'panel.binarjoinanelytic.info') {
-      // استخدم نفس المنفذ المستخدم في المتصفح أو المنفذ الافتراضي
-      const finalPort = port || (protocol === 'wss:' ? '443' : '80');
-      const wsUrl = finalPort === '443' || finalPort === '80' ? 
-        `${protocol}//${host}/ws` : 
-        `${protocol}//${host}:${finalPort}/ws`;
-      console.log('Using Replit/Custom domain WebSocket URL:', wsUrl);
+    // تحديد ما إذا كان هذا نطاق Replit
+    const isReplitDomain = host.includes('replit.dev') || host.includes('repl.co');
+    const isCustomDomain = host === 'panel.binarjoinanelytic.info';
+    
+    if (isReplitDomain || isCustomDomain) {
+      // لنطاقات Replit والنطاق المخصص، استخدم البروتوكول الآمن بدون منفذ
+      const wsUrl = `${protocol}//${host}/ws`;
+      console.log('🔗 Using domain WebSocket URL:', wsUrl);
       return wsUrl;
     }
     
-    // للتطوير المحلي
-    const wsPort = ENV_CONFIG.websocket.port || 6000;
-    if (!wsPort || wsPort === 0 || isNaN(wsPort)) {
-      console.warn('Invalid WebSocket port, using default 6000');
-      return `${protocol}//${host}:6000/ws`;
-    }
-    
-    return `${protocol}//${host}:${wsPort}/ws`;
+    // للتطوير المحلي، استخدم المنفذ المحدد
+    const wsPort = port || '6000';
+    const wsUrl = `${protocol}//${host}:${wsPort}/ws`;
+    console.log('🏠 Using local WebSocket URL:', wsUrl);
+    return wsUrl;
   }
   
-  // في الخادم - التحقق من صحة القيم
+  // في الخادم
   const protocol = ENV_CONFIG.websocket.protocol || 'ws';
   const host = ENV_CONFIG.websocket.host || 'localhost';
   const port = ENV_CONFIG.websocket.port || 6000;
@@ -283,17 +280,25 @@ export function logEnvironmentInfo(): void {
   console.log(`🔌 WS URL: ${getWebSocketUrl()}`);
   console.log(`🔐 CORS Origins:`, ENV_CONFIG.cors.origin);
   
-  // إضافة تشخيص للمشاكل الشائعة
+  // تشخيص أفضل للمشاكل
   const wsUrl = getWebSocketUrl();
-  if (wsUrl.includes('undefined') || wsUrl.includes('NaN')) {
-    console.error('❌ خطأ: WebSocket URL يحتوي على قيم غير صالحة!');
+  if (wsUrl.includes('undefined') || wsUrl.includes('NaN') || wsUrl.includes('null')) {
+    console.error('❌ خطأ: WebSocket URL يحتوي على قيم غير صالحة!', wsUrl);
+    console.error('❌ Environment Config Debug:', ENV_CONFIG);
+  } else {
+    console.log('✅ WebSocket URL صالح:', wsUrl);
   }
   
   if (typeof window !== 'undefined') {
     console.log(`🌐 Current URL: ${window.location.href}`);
     console.log(`🔒 Protocol: ${window.location.protocol}`);
     console.log(`🏠 Hostname: ${window.location.hostname}`);
-    console.log(`🚪 Port: ${window.location.port}`);
+    console.log(`🚪 Port: ${window.location.port || 'default'}`);
+    
+    // تشخيص اكتشاف Replit
+    const isReplitDetected = window.location.hostname.includes('replit.dev') || 
+                            window.location.hostname.includes('repl.co');
+    console.log(`🔍 Replit Domain Detected: ${isReplitDetected}`);
   }
   
   // التحقق من توفر process.env
@@ -301,4 +306,8 @@ export function logEnvironmentInfo(): void {
   console.log(`🔧 NODE_ENV: ${processEnv.NODE_ENV || 'undefined'}`);
   console.log(`🔧 PORT: ${processEnv.PORT || 'undefined'}`);
   console.log(`🔧 REPL_ID: ${processEnv.REPL_ID ? 'defined' : 'undefined'}`);
+  
+  // معلومات إضافية للتشخيص
+  console.log(`🔧 Browser ENV: ${typeof window !== 'undefined' ? 'browser' : 'server'}`);
+  console.log(`🔧 Process Available: ${typeof process !== 'undefined'}`);
 }

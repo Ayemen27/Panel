@@ -49,20 +49,20 @@ export function useWebSocket() {
         console.error('❌ Environment config:', ENV_CONFIG);
         console.error('❌ Current location:', typeof window !== 'undefined' ? window.location : 'server');
         
-        // محاولة إنشاء URL احتياطي
+        // محاولة إنشاء URL احتياطي محسن
         if (typeof window !== 'undefined') {
-          const fallbackUrl = `wss://${window.location.hostname}/ws`;
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const fallbackUrl = `${protocol}//${window.location.hostname}/ws`;
           console.log('🔄 Trying fallback URL:', fallbackUrl);
           wsRef.current = new WebSocket(fallbackUrl);
         } else {
+          console.error('❌ Cannot create fallback URL in server environment');
           return;
         }
       } else {
         console.log('🔌 Connecting to WebSocket:', wsUrl);
         wsRef.current = new WebSocket(wsUrl);
       }
-
-      wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
         console.log('WebSocket connected');
