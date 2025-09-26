@@ -1467,8 +1467,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Health check route
-  app.get('/api/health', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  // Health check route (public - no authentication required)
+  app.get('/api/health', async (req, res) => {
     try {
       const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
@@ -1476,6 +1476,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error checking health:", error);
       res.status(500).json({ message: "Failed to check health status" });
     }
+  });
+
+  // Authentication test endpoint (public - for testing auth status)
+  app.get('/api/auth-test', (req: any, res) => {
+    const isLoggedIn = req.isAuthenticated && req.isAuthenticated();
+    res.json({
+      authenticated: isLoggedIn,
+      user: isLoggedIn ? req.user?.username : null,
+      sessionId: req.sessionID || null,
+      message: isLoggedIn ? 'User is authenticated' : 'User is not authenticated'
+    });
   });
 
   // System health check route (for HealthCheck page)
