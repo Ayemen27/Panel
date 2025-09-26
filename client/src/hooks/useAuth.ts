@@ -33,22 +33,39 @@ export function useAuth() {
     queryFn: async (): Promise<User | null> => {
       try {
         const response = await fetch("/api/user", {
+          method: "GET",
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
 
-        if (!response.ok) {
+        if (response.status === 401) {
+          // غير مصادق عليه
           return null;
         }
 
-        const user = await response.json();
-        return user;
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const userData = await response.json();
+        console.log('Auth check result:', userData);
+        return userData;
       } catch (error) {
         console.error('Auth error:', error);
         return null;
       }
     },
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => {
+      // عدم إعادة المحاولة في حالة 401 (غير مصادق عليه)
+      if (error && error.message.includes('401')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    staleTime: 2 * 60 * 1000, // دقيقتان
+    refetchOnWindowFocus: false,
   });
 
   const isAuthenticated = !!user;
@@ -60,11 +77,21 @@ export function useAuth() {
 
   // معالجة إعادة التوجيه بعد المصادقة الناجحة
   useEffect(() => {
-    if (isAuthenticated && user && !isLoading) {
+    if (!isLoading && user && isAuthenticated) {
       const currentPath = window.location.pathname;
-      // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing
-      if (currentPath === '/' || currentPath === '/login') {
+      console.log('Authenticated user detected, current path:', currentPath);
+      
+      // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing أو auth
+      if (currentPath === '/' || currentPath === '/login' || currentPath === '/auth') {
+        console.log('Redirecting to dashboard...');
         navigate('/dashboard');
+      }
+    } else if (!isLoading && !user && !isAuthenticated) {
+      const currentPath = window.location.pathname;
+      // إعادة التوجيه لصفحة تسجيل الدخول إذا كان المستخدم غير مصادق عليه وفي صفحة محمية
+      if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/auth') {
+        console.log('Unauthenticated user detected, redirecting to login...');
+        navigate('/');
       }
     }
   }, [isAuthenticated, user, isLoading, navigate]);

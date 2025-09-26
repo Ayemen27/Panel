@@ -50,25 +50,47 @@ export default function AuthPage() {
   // طلب تسجيل الدخول
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error || "فشل في تسجيل الدخول");
+      try {
+        const response = await fetch("/api/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(credentials),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "فشل في تسجيل الدخول");
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Login error:', error);
+        throw error;
       }
-      return await res.json();
     },
     onSuccess: (user) => {
+      console.log('Login successful:', user);
       queryClient.setQueryData(["/api/user"], user);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: `أهلاً بك ${user.firstName || user.username}`,
       });
-      navigate("/dashboard");
+      
+      // انتظار قصير قبل التوجيه للتأكد من تحديث البيانات
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 100);
     },
     onError: (error: Error) => {
+      console.error('Login mutation error:', error);
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: error.message,
+        description: error.message || "فشل في تسجيل الدخول",
         variant: "destructive",
       });
     },
@@ -110,17 +132,18 @@ export default function AuthPage() {
               <div className="space-y-3">
                 <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 font-medium flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  اسم المستخدم أو البريد الإلكتروني
+                  اسم المستخدم
                 </Label>
                 <div className="relative group">
                   <Input
                     id="username"
                     data-testid="input-username"
                     {...loginForm.register("username")}
-                    placeholder="أدخل اسم المستخدم أو البريد الإلكتروني"
+                    placeholder="أدخل اسم المستخدم"
                     disabled={loginMutation.isPending}
                     className="h-12 bg-white/60 dark:bg-slate-800/60 border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 text-right transition-all duration-300 rounded-xl shadow-sm group-hover:shadow-md focus:shadow-lg pl-4 pr-4"
                     dir="ltr"
+                    autoComplete="username"
                   />
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>

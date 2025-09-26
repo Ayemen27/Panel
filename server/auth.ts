@@ -39,17 +39,21 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
+  const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    name: 'connect.sid',
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production" || process.env.REPLIT_DEPLOYMENT_DOMAIN != null,
+      secure: !isDevelopment,
       maxAge: sessionTtl,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      domain: process.env.REPLIT_DEPLOYMENT_DOMAIN ? `.${process.env.REPLIT_DEPLOYMENT_DOMAIN}` : undefined,
+      sameSite: isDevelopment ? "lax" : "none",
+      domain: undefined, // دع المتصفح يحدد
     },
   });
 }
@@ -120,8 +124,33 @@ export function setupAuth(app: Express) {
   });
 
   // تسجيل الدخول
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    console.log('Login attempt for user:', req.body.username);
+    
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('Login error:', err);
+        return res.status(500).json({ error: "خطأ في الخادم" });
+      }
+      
+      if (!user) {
+        console.log('Login failed for user:', req.body.username, 'Info:', info);
+        return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      }
+      
+      req.logIn(user, (err: any) => {
+        if (err) {
+          console.error('Session creation error:', err);
+          return res.status(500).json({ error: "فشل في إنشاء الجلسة" });
+        }
+        
+        console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
+        
+        // إرجاع بيانات المستخدم بدون كلمة المرور
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
+      });
+    })(req, res, next);
   });
 
   // تسجيل الخروج
