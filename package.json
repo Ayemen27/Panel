@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "npm run build:client && npm run build:server",
+    "build": "npm run build:client && npm run build:server && dotenv -e .env -- npm run audit:comprehensive",
     "build:client": "vite build",
     "build:server": "tsc --project tsconfig.server.json",
     "dev": "NODE_ENV=development tsx server/index.ts",
@@ -12,7 +12,7 @@
     "start": "NODE_ENV=production node dist/server/index.js",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
-    "audit:comprehensive": "tsx server/scripts/run-audit.ts"
+    "audit:comprehensive": "dotenv -e .env -- tsx server/scripts/run-audit.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

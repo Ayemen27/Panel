@@ -1,11 +1,16 @@
-
+// تحميل متغيرات البيئة أولاً
+import dotenv from 'dotenv';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
-import * as path from 'path';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { systemService } from './systemService';
 import { storage } from '../storage';
 import { AuditHelpers } from '../utils/auditHelpers';
+
+dotenv.config({ path: path.join(process.cwd(), '.env') });
+dotenv.config({ path: path.join(process.cwd(), 'server', '.env') });
 
 const execAsync = promisify(exec);
 
@@ -63,22 +68,22 @@ export class AuditService {
 
       // A - فحص الإعداد والتشغيل
       await this.auditSetupAndBuild();
-      
+
       // B - فحص APIs
       await this.auditAPIs();
-      
+
       // C - فحص الواجهة الأمامية
       await this.auditFrontend();
-      
+
       // D - فحص الأمان
       await this.auditSecurity();
-      
+
       // E - فحص الأداء
       await this.auditPerformance();
-      
+
       // F - فحص UX/UI
       await this.auditUXUI();
-      
+
       // G - فحص جاهزية النشر
       const checklist = await this.auditDeploymentReadiness();
 
@@ -127,7 +132,7 @@ export class AuditService {
       const buildStart = Date.now();
       await execAsync('npm run build');
       const buildTime = Date.now() - buildStart;
-      
+
       if (buildTime > 120000) { // أكثر من دقيقتين
         this.addIssue({
           title: 'وقت بناء طويل',
@@ -174,7 +179,7 @@ export class AuditService {
           `curl -s -w "%{http_code}\\n%{time_total}\\n" -o /dev/null http://localhost:6000${endpoint.path}`
         );
         const responseTime = Date.now() - start;
-        
+
         const lines = stdout.trim().split('\n');
         const statusCode = parseInt(lines[0]);
         const curlTime = parseFloat(lines[1]) * 1000;
@@ -230,7 +235,7 @@ export class AuditService {
       // فحص الثغرات الأمنية
       const criticalVulns = securityScan.vulnerabilities.filter((v: any) => v.severity === 'critical').length;
       const highVulns = securityScan.vulnerabilities.filter((v: any) => v.severity === 'high').length;
-      
+
       if (criticalVulns > 0) {
         this.addIssue({
           title: 'ثغرات أمنية حرجة في التبعيات',
@@ -242,7 +247,7 @@ export class AuditService {
           suggestedFix: 'تشغيل npm audit fix أو تحديث التبعيات يدوياً'
         });
       }
-      
+
       if (highVulns > 0) {
         this.addIssue({
           title: 'ثغرات أمنية عالية في التبعيات',
@@ -319,9 +324,9 @@ export class AuditService {
         if (distStats.isDirectory()) {
           const { stdout } = await execAsync('du -sh dist');
           const bundleSize = stdout.split('\t')[0];
-          
+
           this.evidence.bundleSize = bundleSize;
-          
+
           // تحذير إذا كان الحجم كبيراً
           if (bundleSize.includes('M') && parseFloat(bundleSize) > 50) {
             this.addIssue({
@@ -368,7 +373,7 @@ export class AuditService {
       try {
         const pagePath = path.join('client/src/pages', page);
         const pageContent = await fs.readFile(pagePath, 'utf8');
-        
+
         // فحص أساسي للمشاكل الشائعة
         if (!pageContent.includes('aria-label') && !pageContent.includes('aria-labelledby')) {
           this.addIssue({
@@ -407,7 +412,7 @@ export class AuditService {
     // فحص ملف CSS الرئيسي
     try {
       const cssContent = await fs.readFile('client/src/index.css', 'utf8');
-      
+
       // فحص وجود CSS للـ responsive design
       if (!cssContent.includes('@media')) {
         this.addIssue({
@@ -479,14 +484,14 @@ export class AuditService {
     // فحص متغيرات البيئة
     const requiredEnvVars = ['DATABASE_URL'];
     let envVarsValid = true;
-    
+
     for (const envVar of requiredEnvVars) {
       if (!process.env[envVar]) {
         envVarsValid = false;
         break;
       }
     }
-    
+
     checklist['Environment Variables'] = envVarsValid ? 'PASS' : 'FAIL';
 
     // فحص الثغرات الحرجة
@@ -508,7 +513,7 @@ export class AuditService {
       status: 'Open',
       ...issue
     };
-    
+
     this.issues.push(fullIssue);
   }
 
@@ -521,7 +526,7 @@ export class AuditService {
       total: this.issues.length
     };
 
-    const readyForDeployment = summary.critical === 0 && 
+    const readyForDeployment = summary.critical === 0 &&
                               Object.values(checklist).filter(v => v === 'FAIL').length === 0;
 
     return {

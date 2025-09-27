@@ -1,8 +1,17 @@
 
+// تحميل متغيرات البيئة أولاً
+import dotenv from 'dotenv';
+import * as path from 'path';
+
+// تحميل ملف .env من الجذر
+dotenv.config({ path: path.join(process.cwd(), '.env') });
+
+// تحميل ملف .env من مجلد server أيضاً (إن وجد)
+dotenv.config({ path: path.join(process.cwd(), 'server', '.env') });
+
 import { auditService } from '../services/auditService';
 import { AuditHelpers } from '../utils/auditHelpers';
 import { promises as fs } from 'fs';
-import * as path from 'path';
 
 async function runAudit() {
   console.log('🔍 بدء الفحص الشامل للتطبيق...\n');
