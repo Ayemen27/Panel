@@ -205,6 +205,8 @@ export class PM2Service {
     
     if (pm2Available) {
       try {
+        console.log(`🚀 Starting application "${application.name}" at path: ${application.path}`);
+        
         // Extract the main file from command if it's a node command
         let startCommand = application.command;
         let mainFile = '';
@@ -212,10 +214,12 @@ export class PM2Service {
         
         // Check if command is empty or only contains flags
         if (!startCommand || startCommand.trim() === '') {
+          console.log(`🔍 No command specified, auto-detecting main file for ${application.name}`);
+          
           // Try common entry points - check TypeScript files first, then JavaScript
           const commonFiles = [
-            'index.ts', 'server.ts', 'app.ts', 'main.ts',
-            'index.js', 'server.js', 'app.js', 'main.js'
+            'index.ts', 'server.ts', 'app.ts', 'main.ts', 'bot.ts', 'src/index.ts', 'src/bot.ts', 'src/main.ts',
+            'index.js', 'server.js', 'app.js', 'main.js', 'bot.js', 'src/index.js', 'src/bot.js', 'src/main.js'
           ];
           const fs = await import('fs').then(m => m.promises);
           
@@ -223,9 +227,12 @@ export class PM2Service {
           try {
             const pathStats = await fs.stat(application.path);
             if (!pathStats.isDirectory()) {
+              console.error(`❌ Application path is not a directory: ${application.path}`);
               throw new Error(`Application path is not a directory: ${application.path}`);
             }
+            console.log(`✅ Application path exists and is a directory: ${application.path}`);
           } catch (error) {
+            console.error(`❌ Application path error:`, error);
             throw new Error(`Application path does not exist or is not accessible: ${application.path}. Please check the path and permissions.`);
           }
 
@@ -235,41 +242,69 @@ export class PM2Service {
             directoryContents = await fs.readdir(application.path);
             console.log(`📁 Contents of ${application.path}:`, directoryContents);
           } catch (error) {
-            console.warn(`Warning: Could not read directory contents: ${error}`);
+            console.warn(`⚠️ Warning: Could not read directory contents: ${error}`);
           }
           
-          for (const file of commonFiles) {
-            try {
-              const fullPath = `${application.path}/${file}`;
-              await fs.access(fullPath);
-              const stats = await fs.stat(fullPath);
-              if (stats.isFile()) {
-                mainFile = file;
-                useTypeScript = file.endsWith('.ts');
-                console.log(`✅ Found main file: ${fullPath}`);
-                break;
+          // Check for package.json and its main/start scripts
+          try {
+            const packageJsonPath = `${application.path}/package.json`;
+            await fs.access(packageJsonPath);
+            const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+            console.log(`📦 Found package.json for ${application.name}`);
+            
+            if (packageJson.scripts?.start) {
+              startCommand = `npm start`;
+              console.log(`✅ Using npm start command from package.json`);
+            } else if (packageJson.main) {
+              mainFile = packageJson.main;
+              useTypeScript = mainFile.endsWith('.ts');
+              console.log(`✅ Using main file from package.json: ${mainFile}`);
+            }
+          } catch (error) {
+            console.log(`📦 No package.json found or readable, continuing with file detection`);
+          }
+          
+          // If no command found yet, search for common files
+          if (!startCommand && !mainFile) {
+            for (const file of commonFiles) {
+              try {
+                const fullPath = `${application.path}/${file}`;
+                await fs.access(fullPath);
+                const stats = await fs.stat(fullPath);
+                if (stats.isFile()) {
+                  mainFile = file;
+                  useTypeScript = file.endsWith('.ts');
+                  console.log(`✅ Found main file: ${fullPath}`);
+                  break;
+                }
+              } catch {
+                continue;
               }
-            } catch {
-              continue;
             }
           }
           
-          if (!mainFile) {
+          if (!startCommand && !mainFile) {
             // Create helpful error message with directory contents
             const contentsInfo = directoryContents.length > 0 
               ? `\n\nDirectory contents: ${directoryContents.join(', ')}`
               : '\n\nDirectory appears to be empty or unreadable.';
             
-            throw new Error(`No main file found in ${application.path}.${contentsInfo}\n\nPlease add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`);
+            const errorMsg = `No main file found in ${application.path}.${contentsInfo}\n\nPlease add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`;
+            console.error(`❌ ${errorMsg}`);
+            throw new Error(errorMsg);
           }
           
           // Set appropriate command based on file type
-          if (useTypeScript) {
-            startCommand = `tsx ${mainFile}`;
-          } else {
-            startCommand = `node ${mainFile}`;
+          if (!startCommand) {
+            if (useTypeScript) {
+              startCommand = `tsx ${mainFile}`;
+            } else {
+              startCommand = `node ${mainFile}`;
+            }
           }
         }
+        
+        console.log(`🔧 Final command for ${application.name}: ${startCommand}`);
         
         // Check if the main file is TypeScript
         if (startCommand.includes('.ts') || startCommand.startsWith('tsx ')) {

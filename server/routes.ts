@@ -413,34 +413,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ message: "Application started successfully" });
     } catch (error) {
-      console.error("Error starting application:", error);
+        console.error("Error starting application:", error);
 
-      // Provide specific error messages based on error type
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        // Update application status to error
+        await storage.updateApplication(id, { status: 'error' });
 
-      if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
-        res.status(503).json({ 
-          message: "Process manager is unavailable", 
-          details: errorMessage,
-          solution: "Please ensure PM2 is installed or use fallback mode"
+        // Provide specific error messages based on error type
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Log detailed error for debugging
+        console.error(`Application "${application.name}" failed to start:`, {
+          path: application.path,
+          command: application.command,
+          error: errorMessage
         });
-      } else if (errorMessage.includes('ENOENT') || errorMessage.includes('command not found')) {
-        res.status(404).json({ 
-          message: "Application command or path not found", 
-          details: errorMessage 
-        });
-      } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
-        res.status(403).json({ 
-          message: "Permission denied", 
-          details: errorMessage 
-        });
-      } else {
-        res.status(500).json({ 
-          message: "Failed to start application", 
-          details: errorMessage 
-        });
+
+        if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
+          res.status(503).json({ 
+            message: "Process manager is unavailable", 
+            details: errorMessage,
+            solution: "Please ensure PM2 is installed or use fallback mode"
+          });
+        } else if (errorMessage.includes('ENOENT') || errorMessage.includes('command not found')) {
+          res.status(404).json({ 
+            message: "Application command or path not found", 
+            details: errorMessage,
+            suggestions: [
+              "Check if the application path exists",
+              "Verify the main file is present",
+              "Ensure package.json has correct main field"
+            ]
+          });
+        } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
+          res.status(403).json({ 
+            message: "Permission denied", 
+            details: errorMessage,
+            solution: "Check file permissions and ownership"
+          });
+        } else if (errorMessage.includes('No main file found')) {
+          res.status(400).json({ 
+            message: "No executable file found", 
+            details: errorMessage,
+            suggestions: [
+              "Add index.js, main.js, bot.js, or similar entry file",
+              "Specify a command in application settings",
+              "Check package.json main or scripts.start"
+            ]
+          });
+        } else {
+          res.status(500).json({ 
+            message: "Failed to start application", 
+            details: errorMessage,
+            troubleshooting: "Check application logs for more details"
+          });
+        }
       }
-    }
   });
 
   app.post('/api/applications/:id/stop', isAuthenticated, async (req: AuthenticatedRequest, res) => {

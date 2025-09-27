@@ -192,7 +192,7 @@ export function ApplicationTable({
                         >
                           <FileText className="w-4 h-4 text-blue-500" />
                         </Button>
-                        
+
                         <Button
                           variant="ghost"
                           size="sm"
@@ -232,7 +232,7 @@ export function ApplicationTable({
                             size="sm"
                             onClick={() => onStart(app.id)}
                             disabled={startLoading}
-                            title="تشغيل"
+                            title={app.status === 'error' ? `خطأ: ${app.path}` : 'تشغيل'}
                             data-testid={`button-start-${app.id!}`}
                           >
                             <Play className="w-4 h-4 text-green-500" />

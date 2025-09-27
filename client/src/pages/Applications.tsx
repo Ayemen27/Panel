@@ -65,11 +65,13 @@ export default function Applications() {
         }, 500);
         return;
       }
+      const errorMessage = error instanceof Error ? error.message : "فشل في تشغيل التطبيق";
       toast({
         title: "خطأ في التشغيل",
-        description: "فشل في تشغيل التطبيق",
+        description: errorMessage,
         variant: "destructive",
       });
+      console.error("Application start error:", error);
     },
   });
 
