@@ -62,6 +62,9 @@ export function getSession() {
   
   const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
   
+  // تحديد ما إذا كنا في بيئة Replit (HTTPS دائماً)
+  const isReplit = !!process.env.REPL_ID;
+  
   return session({
     secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
     store: sessionStore,
@@ -70,9 +73,9 @@ export function getSession() {
     name: 'connect.sid',
     cookie: {
       httpOnly: true,
-      secure: !isDevelopment,
+      secure: isReplit || !isDevelopment, // آمن في Replit أو production
       maxAge: sessionTtl,
-      sameSite: isDevelopment ? "lax" : "none",
+      sameSite: "lax", // استخدم 'lax' لتوافق أفضل
       domain: undefined, // دع المتصفح يحدد
     },
   });
