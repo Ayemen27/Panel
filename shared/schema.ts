@@ -59,6 +59,10 @@ export const auditActionEnum = pgEnum('audit_action', ['create', 'update', 'dele
 export const lockTypeEnum = pgEnum('lock_type', ['read', 'write', 'exclusive']);
 export const pathTypeEnum = pgEnum('path_type', ['allowed', 'blocked']);
 
+// Frontend error tracking enums
+export const errorTypeEnum = pgEnum('error_type', ['javascript', 'react', 'network', 'navigation', 'user_action', 'component']);
+export const errorSeverityEnum = pgEnum('error_severity', ['low', 'medium', 'high', 'critical']);
+
 // Applications table
 export const applications = pgTable("applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -139,6 +143,38 @@ export const systemLogs = pgTable("system_logs", {
   timestamp: timestamp("timestamp").defaultNow(),
   metadata: jsonb("metadata"),
 });
+
+// Frontend errors table for tracking client-side errors
+export const frontendErrors = pgTable("frontend_errors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: errorTypeEnum("type").notNull(),
+  severity: errorSeverityEnum("severity").notNull(),
+  message: text("message").notNull(),
+  stack: text("stack"),
+  url: text("url").notNull(), // Page URL where error occurred
+  component: varchar("component"), // React component name if applicable
+  action: varchar("action"), // User action that triggered the error
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: varchar("session_id"),
+  userAgent: text("user_agent"),
+  browserInfo: jsonb("browser_info"),
+  appState: jsonb("app_state"), // Application state context
+  errorBoundary: boolean("error_boundary").default(false), // If caught by error boundary
+  resolved: boolean("resolved").default(false),
+  occurrenceCount: integer("occurrence_count").default(1), // Count for duplicate errors
+  lastOccurrence: timestamp("last_occurrence").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("IDX_frontend_errors_type").on(table.type),
+  index("IDX_frontend_errors_severity").on(table.severity),
+  index("IDX_frontend_errors_user").on(table.userId),
+  index("IDX_frontend_errors_session").on(table.sessionId),
+  index("IDX_frontend_errors_url").on(table.url),
+  index("IDX_frontend_errors_created_at").on(table.createdAt),
+  index("IDX_frontend_errors_last_occurrence").on(table.lastOccurrence),
+  index("IDX_frontend_errors_resolved").on(table.resolved),
+]);
 
 // Files table for tracking files and folders
 export const files = pgTable("files", {
@@ -301,6 +337,7 @@ export const allowedPaths = pgTable("allowed_paths", {
 export const usersRelations = relations(users, ({ many }) => ({
   applications: many(applications),
   notifications: many(notifications),
+  frontendErrors: many(frontendErrors),
   files: many(files),
   deletedFiles: many(fileTrash),
   fileBackups: many(fileBackups),
@@ -359,6 +396,13 @@ export const systemLogsRelations = relations(systemLogs, ({ one }) => ({
   application: one(applications, {
     fields: [systemLogs.applicationId],
     references: [applications.id],
+  }),
+}));
+
+export const frontendErrorsRelations = relations(frontendErrors, ({ one }) => ({
+  user: one(users, {
+    fields: [frontendErrors.userId],
+    references: [users.id],
   }),
 }));
 
@@ -473,6 +517,9 @@ export type InsertNotification = typeof notifications.$inferInsert;
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type InsertSystemLog = typeof systemLogs.$inferInsert;
 
+export type FrontendError = typeof frontendErrors.$inferSelect;
+export type InsertFrontendError = typeof frontendErrors.$inferInsert;
+
 // File management types
 export type File = typeof files.$inferSelect;
 export type InsertFile = typeof files.$inferInsert;
@@ -543,6 +590,13 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 export const insertSystemLogSchema = createInsertSchema(systemLogs).omit({
   id: true,
   timestamp: true,
+});
+
+export const insertFrontendErrorSchema = createInsertSchema(frontendErrors).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastOccurrence: true,
 });
 
 // File management insert schemas
