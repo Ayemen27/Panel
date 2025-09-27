@@ -371,7 +371,7 @@ export class PM2Service {
         }
         
         // Enhanced error context
-        throw new Error(`Failed to start application with PM2: ${errorMessage}\n\nApplication path: ${application.path}\nCommand: ${startCommand || 'auto-detect'}`);
+        throw new Error(`Failed to start application with PM2: ${errorMessage}\n\nApplication path: ${application.path}\nCommand: ${startCommand || application.command || 'auto-detect'}`);
       }
     } else {
       await this.startApplicationFallback(application);
