@@ -318,7 +318,14 @@ export function useWebSocket(token?: string) {
 
   useEffect(() => {
     isMountedRef.current = true;
-    connect();
+    
+    // فقط اتصل إذا كان هناك token صالح
+    if (tokenRef.current) {
+      console.log('🔑 Token available, connecting WebSocket...');
+      connect();
+    } else {
+      console.log('⚠️ No token available, skipping WebSocket connection');
+    }
 
     return () => {
       isMountedRef.current = false;
@@ -340,12 +347,26 @@ export function useWebSocket(token?: string) {
 
   // تحديث التوكن
   const updateToken = useCallback((newToken: string) => {
+    const previousToken = tokenRef.current;
     tokenRef.current = newToken;
-    console.log('🔄 WebSocket token updated');
-    // إعادة الاتصال بالتوكن الجديد
-    if (isConnected) {
+    
+    if (newToken && !previousToken) {
+      // أول مرة نحصل على token - ابدأ الاتصال
+      console.log('🔑 Token received for first time, connecting WebSocket...');
+      connect();
+    } else if (newToken && previousToken && newToken !== previousToken) {
+      // تغيير في التوكن - أعد الاتصال
+      console.log('🔄 WebSocket token updated, reconnecting...');
+      if (isConnected) {
+        disconnect();
+        setTimeout(() => connect(), 100);
+      } else {
+        connect();
+      }
+    } else if (!newToken && previousToken) {
+      // تم حذف التوكن - قطع الاتصال
+      console.log('❌ Token removed, disconnecting WebSocket...');
       disconnect();
-      setTimeout(() => connect(), 100);
     }
   }, [isConnected, disconnect, connect]);
 

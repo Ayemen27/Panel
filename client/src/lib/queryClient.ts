@@ -156,11 +156,11 @@ export const queryClient = new QueryClient({
       staleTime: 60 * 1000, // 1 minute
       refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          console.log('Not retrying unauthorized error');
+        // إذا كان الخطأ 401 (Unauthorized)، لا تعيد المحاولة
+        if (error instanceof Error && error.message.includes('401')) {
+          console.log('🚫 401 Unauthorized - not retrying query');
           return false;
         }
-        console.log('Retrying query, attempt:', failureCount + 1);
         return failureCount < 3;
       },
     },

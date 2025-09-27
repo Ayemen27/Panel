@@ -70,19 +70,26 @@ const PageLoader = () => (
 function Router() {
   // ✅ جميع الـ hooks يجب أن تكون في أعلى المكون قبل أي شرطيات أو early returns
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { isConnected: wsConnected, connectionDiagnostics } = useWebSocket(user?.id);
+  const { isConnected: wsConnected, connectionDiagnostics, updateToken } = useWebSocket(user?.token);
 
   // ✅ useEffect hooks يجب أن تكون دائماً في نفس الترتيب
   useEffect(() => {
-    if (user?.id) {
-      runWebSocketDiagnostics(user.id).then(diagnostics => {
+    if (user?.token) {
+      // تحديث token في WebSocket
+      updateToken(user.token);
+      
+      // تشغيل التشخيص
+      runWebSocketDiagnostics(user.token).then(diagnostics => {
         console.log('🔍 WebSocket diagnostics completed:', diagnostics);
         if (!diagnostics.success) {
           console.warn('⚠️ WebSocket connection issues detected');
         }
       });
+    } else if (user === null) {
+      // المستخدم غير مسجل دخول - امسح التوكن
+      updateToken('');
     }
-  }, [user?.id]);
+  }, [user?.token, updateToken]);
 
   console.log('Router - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
 
