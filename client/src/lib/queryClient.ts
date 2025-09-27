@@ -84,43 +84,64 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: async ({ queryKey, meta }) => {
-        const url = queryKey[0] as string;
+      queryFn: async ({ queryKey, signal }) => {
+        const [path] = queryKey as [string];
 
-        // Validate URL before making request
-        if (!url || url.includes('undefined')) {
-          throw new Error('Invalid URL detected');
+        console.log('Fetching:', path);
+
+        try {
+          const res = await fetch(path, {
+            signal,
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          console.log('Response status for', path, ':', res.status);
+
+          if (!res.ok) {
+            if (res.status === 401) {
+              console.log('Unauthorized response for:', path);
+              throw new Error('Unauthorized');
+            }
+
+            let errorMessage = `HTTP ${res.status}`;
+            try {
+              const errorData = await res.json();
+              errorMessage = errorData.message || errorMessage;
+            } catch {
+              // If JSON parsing fails, use the status text
+              errorMessage = res.statusText || errorMessage;
+            }
+
+            console.error('API Error:', errorMessage);
+            throw new Error(errorMessage);
+          }
+
+          const data = await res.json();
+          console.log('Success response for', path, ':', data);
+          return data;
+        } catch (error) {
+          // Network errors or other fetch errors
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw error; // Re-throw abort errors
+          }
+
+          console.error(`Query error for ${path}:`, error);
+          throw error;
         }
-
-        const response = await fetch(url, {
-          credentials: "include", // استخدام session cookies لـ Replit Auth
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          ...(meta as RequestInit),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        return response.json();
       },
-      // Set global defaults for better performance
-      staleTime: 30000, // 30 seconds - data is considered fresh
-      gcTime: 300000, // 5 minutes - keep data in cache
-      refetchOnWindowFocus: false, // Disable refetch on window focus
-      refetchOnReconnect: 'always', // Refetch when internet reconnects
+      staleTime: 60 * 1000, // 1 minute
+      refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
-        // Don't retry on 401/403 errors
-        if (error.message.includes('401') || error.message.includes('403')) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          console.log('Not retrying unauthorized error');
           return false;
         }
-        return failureCount < 2;
+        console.log('Retrying query, attempt:', failureCount + 1);
+        return failureCount < 3;
       },
-    },
-    mutations: {
-      retry: false,
     },
   },
 });

@@ -68,16 +68,31 @@ const PageLoader = () => (
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  console.log('Router - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+
   // إذا كان التحميل جارياً، عرض loading
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري التحميل...</p>
+          <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground text-lg">جاري التحميل...</p>
+          <p className="text-xs text-muted-foreground mt-2">يرجى الانتظار...</p>
         </div>
       </div>
     );
+  }
+
+  // If authentication check fails, show auth page
+  if (isAuthenticated === false) {
+    console.log('User not authenticated, showing AuthPage');
+    return <AuthPage />;
+  }
+
+  // If authentication is still undefined after loading, show landing
+  if (isAuthenticated === undefined || isAuthenticated === null) {
+    console.log('Authentication state undefined, showing Landing');
+    return <Landing />;
   }
 
   return (

@@ -4,6 +4,17 @@ import "./index.css";
 import { logEnvironmentInfo, ENV_CONFIG, getWebSocketUrl } from "@shared/environment";
 import { errorLogger, updateAppState } from "./lib/errorLogger";
 
+// Fix Node.js process polyfill for browser
+if (typeof window !== 'undefined' && typeof window.process === 'undefined') {
+  window.process = {
+    env: { NODE_ENV: 'development' },
+    cwd: () => '/',
+    platform: 'browser',
+    version: 'v18.0.0',
+    versions: { node: '18.0.0' }
+  } as any;
+}
+
 // إصلاح مشكلة Vite HMR WebSocket في بيئة Replit
 if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
   // تعطيل error overlay للـ HMR لتجنب أخطاء WebSocket
@@ -12,8 +23,9 @@ if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
       // تصفية أخطاء WebSocket المتعلقة بـ HMR
       if (payload.err && payload.err.message && 
           (payload.err.message.includes('WebSocket') || 
-           payload.err.message.includes('localhost:undefined'))) {
-        console.warn('⚠️ Vite HMR WebSocket issue (safe to ignore in Replit):', payload.err.message);
+           payload.err.message.includes('localhost:undefined') ||
+           payload.err.message.includes('process.cwd'))) {
+        console.warn('⚠️ Vite HMR issue (safe to ignore in Replit):', payload.err.message);
         return; // تجاهل هذه الأخطاء
       }
     });

@@ -21,13 +21,15 @@ export const ROLE_HIERARCHY = {
   viewer: 1,
 } as const;
 
-export function useAuth() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [, navigate] = useLocation();
-  const queryClient = useQueryClient();
+// Helper function to check for unauthorized errors
+function isUnauthorizedError(error: Error): boolean {
+  // This is a placeholder, you might need to adjust this based on how your backend returns errors
+  // For example, you might check error.message for a specific string or error.status === 401
+  return error.message.includes('401');
+}
 
-  // التحقق من المصادقة الجديدة
-  const { data: user, isLoading: isAuthLoading, error } = useQuery({
+export function useAuth() {
+  const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/user"],
     queryFn: async (): Promise<User | null> => {
       try {
@@ -56,27 +58,44 @@ export function useAuth() {
         return null;
       }
     },
-    retry: (failureCount, error) => {
-      // عدم إعادة المحاولة في حالة 401 (غير مصادق عليه)
-      if (error && error.message.includes('401')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    staleTime: 2 * 60 * 1000, // دقيقتان
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      if (isUnauthorizedError(error as Error)) {
+        console.log('Auth failed - unauthorized error, not retrying');
+        return false; // Don't retry unauthorized errors
+      }
+      console.log('Auth retry attempt:', failureCount);
+      return failureCount < 3;
+    },
   });
 
-  const isAuthenticated = !!user;
+  console.log('useAuth - user:', user, 'isLoading:', isLoading, 'error:', error);
+
+  // Handle different authentication states
+  const isAuthenticated = user ? true : (error && isUnauthorizedError(error as Error)) ? false : undefined;
+
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+
 
   // تحديث isLoading
   useEffect(() => {
-    setIsLoading(isAuthLoading);
-  }, [isAuthLoading]);
+    // This useEffect is no longer directly tied to isAuthLoading from useQuery
+    // The isLoading from useQuery is now directly returned.
+    // If there's a need for a separate isLoading state managed by this hook,
+    // it would need to be re-introduced with its own useState and setters.
+  }, [isLoading]); // Dependency on isLoading from useQuery
 
   // معالجة إعادة التوجيه بعد المصادقة الناجحة
   useEffect(() => {
-    if (!isLoading && user && isAuthenticated) {
+    // Ensure we don't navigate if the authentication state is still undefined
+    if (isAuthenticated === undefined) {
+      return;
+    }
+
+    if (isAuthenticated && user) {
       const currentPath = window.location.pathname;
       console.log('Authenticated user detected, current path:', currentPath);
 
@@ -85,7 +104,7 @@ export function useAuth() {
         console.log('Redirecting to dashboard...');
         navigate('/dashboard');
       }
-    } else if (!isLoading && !user && !isAuthenticated) {
+    } else if (!isAuthenticated) {
       const currentPath = window.location.pathname;
       // إعادة التوجيه لصفحة تسجيل الدخول إذا كان المستخدم غير مصادق عليه وفي صفحة محمية
       if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/auth') {
@@ -93,7 +112,7 @@ export function useAuth() {
         navigate('/');
       }
     }
-  }, [isAuthenticated, user, isLoading, navigate]);
+  }, [isAuthenticated, user, navigate]); // Dependencies are isAuthenticated, user, and navigate
 
   const logout = async () => {
     try {
