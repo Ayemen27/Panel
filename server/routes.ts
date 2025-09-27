@@ -14,7 +14,8 @@ import {
   insertFilePermissionSchema,
   insertFileLockSchema,
   insertFileBackupSchema,
-  insertAllowedPathSchema
+  insertAllowedPathSchema,
+  insertFrontendErrorSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { pm2Service } from "./services/pm2Service";
@@ -254,6 +255,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Frontend errors routes
+  app.post('/api/frontend-errors', async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req); // قد يكون null للمستخدمين غير المسجلين
+      const errorData = insertFrontendErrorSchema.parse({
+        ...req.body,
+        userId,
+        userAgent: req.headers['user-agent'],
+        url: req.body.url || req.headers.referer || 'unknown'
+      });
+
+      const frontendError = await storage.createFrontendError(errorData);
+
+      // إرسال تحديث فوري للمديرين عبر WebSocket
+      broadcast({
+        type: 'frontend_error',
+        data: frontendError
+      });
+
+      res.status(201).json({ success: true, id: frontendError.id });
+    } catch (error) {
+      console.error("Error saving frontend error:", error);
+      res.status(500).json({ message: "Failed to save frontend error" });
+    }
+  });
+
+  app.post('/api/frontend-errors/batch', async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req); // قد يكون null للمستخدمين غير المسجلين
+      const errorsData = req.body;
+
+      if (!Array.isArray(errorsData)) {
+        return res.status(400).json({ message: "Expected array of errors" });
+      }
+
+      const processedErrors = errorsData.map(errorData => 
+        insertFrontendErrorSchema.parse({
+          ...errorData,
+          userId,
+          userAgent: errorData.userAgent || req.headers['user-agent'],
+          url: errorData.url || req.headers.referer || 'unknown'
+        })
+      );
+
+      const savedErrors = await Promise.all(
+        processedErrors.map(errorData => storage.createFrontendError(errorData))
+      );
+
+      // إرسال تحديث فوري للمديرين عبر WebSocket
+      broadcast({
+        type: 'frontend_errors_batch',
+        data: {
+          count: savedErrors.length,
+          errors: savedErrors
+        }
+      });
+
+      res.status(201).json({ 
+        success: true, 
+        count: savedErrors.length,
+        ids: savedErrors.map(error => error.id)
+      });
+    } catch (error) {
+      console.error("Error saving frontend errors batch:", error);
+      res.status(500).json({ message: "Failed to save frontend errors batch" });
+    }
+  });
+
+  app.get('/api/frontend-errors', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { 
+        page = 1, 
+        limit = 50, 
+        type,
+        severity,
+        resolved,
+        userId: filterUserId,
+        startDate,
+        endDate
+      } = req.query;
+
+      const filters = {
+        type: type as string,
+        severity: severity as string,
+        resolved: resolved === 'true' ? true : resolved === 'false' ? false : undefined,
+        userId: filterUserId as string,
+        startDate: startDate as string,
+        endDate: endDate as string
+      };
+
+      const errors = await storage.getFrontendErrors({
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        filters
+      });
+
+      res.json(errors);
+    } catch (error) {
+      console.error("Error fetching frontend errors:", error);
+      res.status(500).json({ message: "Failed to fetch frontend errors" });
+    }
+  });
+
+  app.patch('/api/frontend-errors/:id/resolve', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { resolved = true } = req.body;
+
+      const updatedError = await storage.updateFrontendError(id, { resolved });
+
+      broadcast({
+        type: 'frontend_error_resolved',
+        data: updatedError
+      });
+
+      res.json(updatedError);
+    } catch (error) {
+      console.error("Error updating frontend error:", error);
+      res.status(500).json({ message: "Failed to update frontend error" });
+    }
+  });
+
+  app.get('/api/frontend-errors/stats', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const stats = await storage.getFrontendErrorStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching frontend error stats:", error);
+      res.status(500).json({ message: "Failed to fetch frontend error stats" });
     }
   });
 

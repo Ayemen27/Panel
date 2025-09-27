@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { logEnvironmentInfo, ENV_CONFIG, getWebSocketUrl } from "@shared/environment";
+import { errorLogger, updateAppState } from "./lib/errorLogger";
 
 // إصلاح مشكلة Vite HMR WebSocket في بيئة Replit
 if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
@@ -51,6 +52,22 @@ console.log("Port:", ENV_CONFIG.port);
 console.log("WebSocket URL:", getWebSocketUrl());
 console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server');
 logEnvironmentInfo();
+
+// تهيئة نظام تسجيل الأخطاء
+if (typeof window !== 'undefined') {
+  // تحديث حالة التطبيق مع معلومات البيئة
+  updateAppState({
+    environment: ENV_CONFIG.name,
+    isReplit: ENV_CONFIG.isReplit,
+    host: ENV_CONFIG.host,
+    port: ENV_CONFIG.port,
+    startupTime: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    url: window.location.href
+  });
+
+  console.log('🔍 ErrorLogger initialized in main.tsx');
+}
 
 // اختبار الاتصالات تلقائياً
 if (typeof window !== 'undefined') {

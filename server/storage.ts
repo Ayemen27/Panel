@@ -6,6 +6,7 @@ import {
   nginxConfigs,
   notifications,
   systemLogs,
+  frontendErrors,
   files,
   fileTrash,
   fileBackups,
@@ -27,6 +28,8 @@ import {
   type InsertNotification,
   type SystemLog,
   type InsertSystemLog,
+  type FrontendError,
+  type InsertFrontendError,
   type File,
   type InsertFile,
   type FileTrash,
@@ -94,6 +97,35 @@ export interface IStorage {
   // System Log operations
   getSystemLogs(filters?: { source?: string; level?: string; applicationId?: string; limit?: number }): Promise<SystemLog[]>;
   createSystemLog(log: InsertSystemLog): Promise<SystemLog>;
+
+  // Frontend Error operations
+  createFrontendError(error: InsertFrontendError): Promise<FrontendError>;
+  getFrontendErrors(options?: {
+    page?: number;
+    limit?: number;
+    filters?: {
+      type?: string;
+      severity?: string;
+      resolved?: boolean;
+      userId?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+  }): Promise<{
+    errors: FrontendError[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }>;
+  updateFrontendError(id: string, updates: Partial<FrontendError>): Promise<FrontendError>;
+  getFrontendErrorStats(): Promise<{
+    total: number;
+    byType: { type: string; count: number }[];
+    bySeverity: { severity: string; count: number }[];
+    resolved: number;
+    unresolved: number;
+    last24Hours: number;
+  }>;
 
   // Database connection test
   testConnection(): Promise<void>;

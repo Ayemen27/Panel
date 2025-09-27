@@ -5,8 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ErrorProvider } from "@/contexts/ErrorContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, lazy, Suspense } from "react";
+import { errorLogger, updateAppState } from "@/lib/errorLogger";
 import NotFound from "@/pages/not-found";
 import MainLayout from "@/components/Layout/MainLayout";
 import { AdminOnly, ModeratorAndAbove } from "@/components/auth/RoleGuard";
@@ -188,38 +190,31 @@ function Router() {
 }
 
 function App() {
-  // معالج أخطاء عام لـ JavaScript
+  // تهيئة نظام تسجيل الأخطاء
   useEffect(() => {
-    const handleError = (event: ErrorEvent) => {
-      console.error('Global error:', event.error);
-      // يمكن إضافة معالجة إضافية هنا
-    };
+    // تحديث حالة التطبيق عند بداية التطبيق
+    updateAppState({
+      appInitialized: true,
+      initTime: new Date().toISOString(),
+      environment: import.meta.env.MODE,
+      version: '1.0.0'
+    });
 
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      // منع إظهار الخطأ في وحدة التحكم
-      event.preventDefault();
-    };
-
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
+    console.log('🔍 ErrorLogger system initialized in App.tsx');
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <NotificationProvider>
-            <Toaster />
-            <Router />
-          </NotificationProvider>
-        </TooltipProvider>
-      </ThemeProvider>
+      <ErrorProvider>
+        <ThemeProvider defaultTheme="light">
+          <TooltipProvider>
+            <NotificationProvider>
+              <Toaster />
+              <Router />
+            </NotificationProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </ErrorProvider>
     </QueryClientProvider>
   );
 }
