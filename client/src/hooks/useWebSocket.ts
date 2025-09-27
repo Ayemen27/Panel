@@ -115,7 +115,10 @@ export function useWebSocket() {
           }
           
           console.log('🔄 Trying fallback URL:', fallbackUrl);
-          wsRef.current = new WebSocket(fallbackUrl);
+          console.log('🔑 WebSocket token:', token);
+          const url = `${ENV_CONFIG.websocket.protocol}://${ENV_CONFIG.websocket.host}:${ENV_CONFIG.websocket.port}/ws?token=${token}`;
+          wsRef.current = new WebSocket(url);
+          //wsRef.current = new WebSocket(fallbackUrl);
         } else {
           console.error('❌ Cannot create fallback URL in server environment');
           return;
