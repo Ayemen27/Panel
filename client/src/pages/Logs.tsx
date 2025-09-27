@@ -23,7 +23,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Play,
-  Square
+  Square,
+  Bug,
+  Activity
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -36,8 +38,34 @@ interface LogEntry {
   applicationId?: string;
 }
 
+interface FrontendErrorEntry {
+  id: string;
+  type: string;
+  severity: string;
+  message: string;
+  stack?: string;
+  url: string;
+  userAgent: string;
+  timestamp: Date;
+  userId?: string;
+  sessionId?: string;
+}
+
+interface UserActivityEntry {
+  id: string;
+  action: string;
+  page: string;
+  element?: string;
+  details?: any;
+  timestamp: Date;
+  userId?: string;
+  sessionId?: string;
+}
+
 export default function Logs() {
   const [activeTab, setActiveTab] = useState("all");
+  const [errorTypeFilter, setErrorTypeFilter] = useState("all");
+  const [activityFilter, setActivityFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -99,6 +127,24 @@ export default function Logs() {
     enabled: isAuthenticated && activeTab === "system",
     retry: 1,
     retryOnMount: false
+  });
+
+  const { data: frontendErrors, isLoading: errorsLoading } = useQuery({
+    queryKey: ["/api/frontend-errors", { 
+      type: errorTypeFilter !== "all" ? errorTypeFilter : undefined,
+      limit: 100
+    }],
+    enabled: isAuthenticated && activeTab === "errors",
+    retry: 1
+  });
+
+  const { data: userActivities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ["/api/user-activities", {
+      action: activityFilter !== "all" ? activityFilter : undefined,
+      limit: 100
+    }],
+    enabled: isAuthenticated && activeTab === "activities",
+    retry: 1
   });
 
   if (error && isUnauthorizedError(error as Error)) {
