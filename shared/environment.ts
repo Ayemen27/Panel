@@ -1,4 +1,3 @@
-
 // ملاحظة: تحميل متغيرات البيئة يجب أن يتم في ملفات الخادم، ليس هنا
 
 // Type declarations for server-side compatibility
@@ -55,44 +54,44 @@ function detectServerEnvironment(): {
   serverType: 'replit' | 'external' | 'local';
 } {
   const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
-  
+
   // اكتشاف Replit من متغيرات البيئة المختلفة
   const replitIndicators = [
     'REPL_ID',
-    'REPLIT_DB_URL', 
+    'REPLIT_DB_URL',
     'REPL_SLUG',
     'REPLIT_CLUSTER',
     'REPLIT_ENVIRONMENT',
     'REPLIT_URL'
   ];
-  
+
   const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]);
-  
+
   // اكتشاف إضافي من hostname
   const hostname = processEnv.HOSTNAME || '';
   const isReplitByHostname = hostname.includes('replit') || hostname.includes('nix');
-  
+
   // اكتشاف السيرفر الخارجي من IP أو hostname
-  const isExternalServer = hostname.includes('93.127.142.144') || 
+  const isExternalServer = hostname.includes('93.127.142.144') ||
                           processEnv.EXTERNAL_SERVER === 'true' ||
                           processEnv.SERVER_TYPE === 'external';
-  
+
   const nodeEnv = processEnv.NODE_ENV || 'development';
   const isProduction = nodeEnv === 'production';
   const isDevelopment = nodeEnv === 'development';
-  
+
   // اكتشاف النطاق المخصص
   const isCustomDomain = processEnv.CUSTOM_DOMAIN === 'true' ||
                         processEnv.DOMAIN === 'panel.binarjoinanelytic.info';
-  
+
   let serverType: 'replit' | 'external' | 'local' = 'local';
-  
+
   if (isReplitServer || isReplitByHostname) {
     serverType = 'replit';
   } else if (isExternalServer || isCustomDomain) {
     serverType = 'external';
   }
-  
+
   return {
     isReplit: isReplitServer || isReplitByHostname,
     isProduction,
@@ -126,9 +125,9 @@ function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): Envir
     local: {
       root: (() => {
         try {
-          return typeof process !== 'undefined' && 
-                 process.cwd && 
-                 typeof process.cwd === 'function' && 
+          return typeof process !== 'undefined' &&
+                 process.cwd &&
+                 typeof process.cwd === 'function' &&
                  typeof window === 'undefined' ? process.cwd() : '.';
         } catch {
           return '.';
@@ -142,7 +141,7 @@ function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): Envir
       pm2: './pm2'
     }
   };
-  
+
   return basePaths[serverType];
 }
 
@@ -165,17 +164,17 @@ export function detectEnvironment(): EnvironmentConfig {
       // Check for common Vite environment variables in window object
       const viteEnv = (window as any).__VITE_ENV__ || {};
       const importMetaEnv = viteEnv;
-      
+
       // أولاً: محاولة قراءة من window.process.env
       if (windowProcess?.PORT) {
         return parseInt(windowProcess.PORT, 10);
       }
-      
+
       // ثانياً: محاولة قراءة من import.meta.env
       if (importMetaEnv && (importMetaEnv as any).VITE_PORT) {
         return parseInt((importMetaEnv as any).VITE_PORT, 10);
       }
-      
+
       // ثالثاً: استخدام القيمة الافتراضية
       return 5000;
     } else {
@@ -192,15 +191,15 @@ export function detectEnvironment(): EnvironmentConfig {
       // Check for common Vite environment variables in window object
       const viteEnv = (window as any).__VITE_ENV__ || {};
       const importMetaEnv = viteEnv;
-      
+
       if (windowProcess?.WS_PORT) {
         return parseInt(windowProcess.WS_PORT, 10);
       }
-      
+
       if (importMetaEnv && (importMetaEnv as any).WS_PORT) {
         return parseInt((importMetaEnv as any).WS_PORT, 10);
       }
-      
+
       return 5000; // استخدام نفس منفذ HTTP server
     } else {
       return parseInt(processEnv.WS_PORT || processEnv.PORT || '5000', 10);
@@ -215,15 +214,15 @@ export function detectEnvironment(): EnvironmentConfig {
       // Check for common Vite environment variables in window object
       const viteEnv = (window as any).__VITE_ENV__ || {};
       const importMetaEnv = viteEnv;
-      
+
       if (windowProcess?.HMR_PORT) {
         return parseInt(windowProcess.HMR_PORT, 10);
       }
-      
+
       if (importMetaEnv && (importMetaEnv as any).HMR_PORT) {
         return parseInt((importMetaEnv as any).HMR_PORT, 10);
       }
-      
+
       return 24678;
     } else {
       return parseInt(processEnv.HMR_PORT || '24678', 10);
@@ -245,7 +244,7 @@ export function detectEnvironment(): EnvironmentConfig {
 
   // اكتشاف البيئة من جانب الخادم (أكثر دقة)
   const serverEnvDetection = typeof window === 'undefined' ? detectServerEnvironment() : null;
-  
+
   const isReplitServer = serverEnvDetection?.isReplit || !!(
     processEnv.REPL_ID ||
     processEnv.REPLIT_DB_URL ||
@@ -269,9 +268,9 @@ export function detectEnvironment(): EnvironmentConfig {
   const isProduction = nodeEnv === 'production';
 
   // تحديد نوع السيرفر والمسارات
-  const serverType = serverEnvDetection?.serverType || 
+  const serverType = serverEnvDetection?.serverType ||
     (isReplit ? 'replit' : (isCustomDomain ? 'external' : 'local'));
-  
+
   const paths = getEnvironmentPaths(serverType);
 
   // إذا كان النطاق المخصص، استخدم إعدادات الإنتاج
@@ -448,9 +447,9 @@ function validateWebSocketUrl(url: string): boolean {
   try {
     const urlObj = new URL(url);
     const validProtocols = ['ws:', 'wss:'];
-    return validProtocols.includes(urlObj.protocol) && 
-           urlObj.hostname !== '' && 
-           urlObj.hostname !== 'undefined' && 
+    return validProtocols.includes(urlObj.protocol) &&
+           urlObj.hostname !== '' &&
+           urlObj.hostname !== 'undefined' &&
            urlObj.hostname !== 'null';
   } catch {
     return false;
@@ -460,21 +459,21 @@ function validateWebSocketUrl(url: string): boolean {
 // Helper function to get fallback URLs in order of preference
 function getFallbackUrls(originalHost: string, originalProtocol: string): string[] {
   const fallbacks: string[] = [];
-  
+
   // Try different port configurations
   const ports = originalProtocol === 'wss:' ? ['', ':443', ':5001', ':5000'] : [':5001', ':5000', ':6000', ''];
-  
+
   ports.forEach(port => {
     fallbacks.push(`${originalProtocol}//${originalHost}${port}/ws`);
   });
-  
+
   // If original host fails, try localhost as last resort (for development)
   if (originalHost !== 'localhost' && originalHost !== '127.0.0.1') {
     const localhostProtocol = originalProtocol === 'wss:' ? 'ws:' : originalProtocol;
     fallbacks.push(`${localhostProtocol}//localhost:5001/ws`);
     fallbacks.push(`${localhostProtocol}//127.0.0.1:5001/ws`);
   }
-  
+
   return fallbacks;
 }
 
@@ -489,43 +488,42 @@ export function getWebSocketUrl(token?: string): string {
     if (!host || host === 'undefined' || host === 'null' || host.length === 0) {
       console.error('❌ Invalid hostname detected:', host);
       console.error('❌ Window location:', window.location);
-      
+
       // محاولة استخدام fallback ذكي مع hostname الحالي
       const currentHost = window.location.hostname || 'localhost';
-      const fallbackUrl = protocol === 'wss:' ? `wss://${currentHost}:5000/ws` : `ws://${currentHost}:5000/ws`;
+      const fallbackUrl = protocol === 'wss:' ? `wss://${currentHost}/ws` : `ws://${currentHost}:5000/ws`;
       console.warn('🔄 Using emergency fallback URL:', fallbackUrl);
       return fallbackUrl;
     }
 
     // تحديد نوع النطاق مع تحسينات
-    const isReplitDomain = host.includes('replit.dev') || 
+    const isReplitDomain = host.includes('replit.dev') ||
                           host.includes('repl.co') ||
                           host.includes('sisko.replit.dev') ||
                           host.includes('pike.replit.dev') ||
                           host.includes('worf.replit.dev');
-                          
+
     const isCustomDomain = host === 'panel.binarjoinanelytic.info';
     const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.');
 
     let primaryUrl: string;
-    
-    if (isReplitDomain) {
-      // لنطاقات Replit، استخدم منفذ الخادم الحالي
-      const wsPort = window.location.port || (protocol === 'wss:' ? '443' : '80');
-      primaryUrl = `${protocol}//${host}:${wsPort}/ws`;
-      console.log('🔗 Using Replit domain WebSocket URL:', primaryUrl);
-    } else if (isCustomDomain) {
-      // للنطاق المخصص، استخدم بدون منفذ (يستخدم 443/80 افتراضياً)
-      primaryUrl = `${protocol}//${host}/ws`;
+
+    if (isCustomDomain) {
+      // للنطاق المخصص، استخدم بدون منفذ (يستخدم 443 افتراضياً)
+      primaryUrl = `wss://panel.binarjoinanelytic.info/ws`;
       console.log('🔗 Using Custom domain WebSocket URL:', primaryUrl);
+    } else if (isReplitDomain) {
+      // لنطاقات Replit، استخدم منفذ الخادم الحالي
+      primaryUrl = `${protocol}//${host}/ws`;
+      console.log('🔗 Using Replit domain WebSocket URL:', primaryUrl);
     } else if (isLocalhost) {
       // للتطوير المحلي، استخدم منفذ مخصص
-      const wsPort = ENV_CONFIG.websocket.port || 5001;
+      const wsPort = 5000;
       primaryUrl = `${protocol}//${host}:${wsPort}/ws`;
       console.log('🏠 Using localhost WebSocket URL:', primaryUrl);
     } else {
       // للحالات الأخرى، حاول استخدام المنفذ الحالي أو الافتراضي
-      const wsPort = port || ENV_CONFIG.websocket.port || (protocol === 'wss:' ? 443 : 5001);
+      const wsPort = port || (protocol === 'wss:' ? 443 : 5000);
       primaryUrl = `${protocol}//${host}:${wsPort}/ws`;
       console.log('🌐 Using generic WebSocket URL:', primaryUrl);
     }
@@ -542,38 +540,43 @@ export function getWebSocketUrl(token?: string): string {
       return primaryUrl;
     } else {
       console.error('❌ Primary WebSocket URL validation failed:', primaryUrl);
-      
+
       // جرب URLs احتياطية
       const fallbackUrls = getFallbackUrls(host, protocol);
-      
+
       for (const fallbackUrl of fallbackUrls) {
         if (validateWebSocketUrl(fallbackUrl)) {
-          console.warn('🔄 Using fallback WebSocket URL:', fallbackUrl);
+          console.warn('🔄 Using validated fallback URL:', fallbackUrl);
+          if (token) {
+            const separator = fallbackUrl.includes('?') ? '&' : '?';
+            return `${fallbackUrl}${separator}token=${encodeURIComponent(token)}`;
+          }
           return fallbackUrl;
         }
       }
-      
-      // إذا فشل كل شيء، استخدم URL طوارئ
-      const emergencyUrl = protocol === 'wss:' ? 'wss://localhost:5001/ws' : 'ws://localhost:5001/ws';
-      console.error('❌ All WebSocket URLs failed validation, using emergency URL:', emergencyUrl);
-      return emergencyUrl;
+
+      // إذا فشلت جميع المحاولات، استخدم URL افتراضي
+      const defaultUrl = 'wss://panel.binarjoinanelytic.info/ws';
+      console.error('❌ All URLs failed validation, using default:', defaultUrl);
+      if (token) {
+        return `${defaultUrl}?token=${encodeURIComponent(token)}`;
+      }
+      return defaultUrl;
     }
-  }
+  } else {
+    // في الخادم - استخدم إعدادات ENV_CONFIG
+    const protocol = ENV_CONFIG.websocket.protocol || 'ws:';
+    const host = ENV_CONFIG.websocket.host || 'localhost';
+    const port = ENV_CONFIG.websocket.port || 5000;
 
-  // في الخادم
-  const protocol = ENV_CONFIG.websocket.protocol || 'ws';
-  const host = ENV_CONFIG.websocket.host || '0.0.0.0';
-  const port = ENV_CONFIG.websocket.port || 5001;
+    let serverUrl = `${protocol}//${host}:${port}/ws`;
 
-  const serverUrl = `${protocol}://${host}:${port}/ws`;
-  
-  // التحقق من صحة URL الخادم
-  if (!validateWebSocketUrl(serverUrl)) {
-    console.error('❌ Server WebSocket URL validation failed:', serverUrl);
-    console.error('❌ ENV_CONFIG.websocket:', ENV_CONFIG.websocket);
+    if (token) {
+      serverUrl += `?token=${encodeURIComponent(token)}`;
+    }
+
+    return serverUrl;
   }
-  
-  return serverUrl;
 }
 
 // دالة للحصول على المسار الصحيح حسب البيئة
@@ -587,7 +590,7 @@ export function pathExists(pathType: keyof EnvironmentConfig['paths']): boolean 
     // في المتصفح، لا يمكن التحقق من المسارات
     return false;
   }
-  
+
   try {
     const fs = require('fs');
     const path = getPath(pathType);
@@ -629,14 +632,14 @@ export function logEnvironmentInfo(): void {
   // تشخيص محسن للمشاكل مع اختبار URL
   const wsUrl = getWebSocketUrl();
   const isValidUrl = validateWebSocketUrl(wsUrl);
-  
+
   if (wsUrl.includes('undefined') || wsUrl.includes('NaN') || wsUrl.includes('null')) {
     console.error('❌ خطأ: WebSocket URL يحتوي على قيم غير صالحة!', wsUrl);
     console.error('❌ Environment Config Debug:', ENV_CONFIG);
   } else if (!isValidUrl) {
     console.error('❌ خطأ: WebSocket URL غير صالح!', wsUrl);
     console.error('❌ URL Validation Failed - checking fallbacks...');
-    
+
     // اختبار URLs احتياطية
     if (typeof window !== 'undefined') {
       const fallbacks = getFallbackUrls(window.location.hostname, window.location.protocol === 'https:' ? 'wss:' : 'ws:');
@@ -659,12 +662,12 @@ export function logEnvironmentInfo(): void {
     // تشخيص اكتشاف النطاقات المختلفة
     const isReplitDetected = window.location.hostname.includes('replit.dev') ||
                             window.location.hostname.includes('repl.co');
-    const isLocalhostDetected = window.location.hostname === 'localhost' || 
+    const isLocalhostDetected = window.location.hostname === 'localhost' ||
                                window.location.hostname === '127.0.0.1' ||
                                window.location.hostname.startsWith('192.168.') ||
                                window.location.hostname.startsWith('10.');
     const isCustomDetected = window.location.hostname === 'panel.binarjoinanelytic.info';
-    
+
     console.log(`🔍 Domain Type Analysis:`);
     console.log(`   - Replit Domain: ${isReplitDetected}`);
     console.log(`   - Custom Domain: ${isCustomDetected}`);
@@ -677,7 +680,7 @@ export function logEnvironmentInfo(): void {
     console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
     console.log(`🔧 PORT: ${process.env.PORT || 'undefined'}`);
     console.log(`🔧 REPL_ID: ${process.env.REPL_ID ? 'defined' : 'undefined'}`);
-    
+
     // معلومات اكتشاف البيئة على الخادم
     const serverDetection = detectServerEnvironment();
     console.log(`🔧 Server Type: ${serverDetection.serverType}`);
