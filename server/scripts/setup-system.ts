@@ -1,9 +1,8 @@
-
 import { execSync } from 'child_process';
 
 export async function setupSystem() {
   console.log('🔧 Setting up system for production...');
-  
+
   try {
     // Check if PM2 is installed and working
     console.log('Checking PM2...');
@@ -19,7 +18,7 @@ export async function setupSystem() {
         console.error('❌ Failed to install PM2:', installError);
       }
     }
-    
+
     // Check Nginx
     console.log('Checking Nginx...');
     try {
@@ -28,7 +27,7 @@ export async function setupSystem() {
     } catch (error) {
       console.log('⚠️ Nginx not found. Please install nginx manually.');
     }
-    
+
     // Setup PM2 startup
     try {
       console.log('Setting up PM2 startup...');
@@ -37,21 +36,21 @@ export async function setupSystem() {
     } catch (error) {
       console.log('⚠️ PM2 startup setup failed:', error);
     }
-    
+
     // Create necessary directories
     console.log('Creating directories...');
     execSync('mkdir -p /home/administrator/logs', { stdio: 'pipe' });
     execSync('mkdir -p /home/administrator/backups', { stdio: 'pipe' });
     console.log('✅ Directories created');
-    
+
     console.log('🎉 System setup completed!');
-    
+
   } catch (error) {
     console.error('❌ System setup failed:', error);
   }
 }
 
 // Run setup if called directly
-if (require.main === module) {
-  setupSystem();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  setupSystem().catch(console.error);
 }
