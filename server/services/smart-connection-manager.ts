@@ -171,44 +171,6 @@ class SmartConnectionManager {
       }
     }
   }
-    // تجميع استعلامات SELECT البسيطة
-    if (this.shouldBatchQuery(text)) {
-      return new Promise((resolve, reject) => {</old_str>
-    // تجميع استعلامات SELECT البسيطة
-    if (this.shouldBatchQuery(text)) {
-      return new Promise((resolve, reject) => {
-        this.queryQueue.push({ text, params, resolve, reject });
-        this.processQueue();
-      });
-    }
-
-    // للاستعلامات المعقدة، استخدم المعالجة المباشرة
-    const start = Date.now();
-    let client: PoolClient | null = null;
-
-    try {
-      client = await this.getConnection();
-      const result = await client.query(text, params);
-
-      const duration = Date.now() - start;
-      this.updateMetrics('query', duration, true);
-
-      if (duration > 500) {
-        console.warn(`⚠️ Slow query detected (${duration}ms):`, text.substring(0, 100));
-      }
-
-      return result;
-    } catch (error) {
-      const duration = Date.now() - start;
-      this.updateMetrics('query', duration, false);
-      console.error('🔴 Database query error:', error);
-      throw error;
-    } finally {
-      if (client) {
-        this.releaseConnection(client);
-      }
-    }
-  }
 
   private shouldBatchQuery(text: string): boolean {
     // تجميع استعلامات SELECT البسيطة
