@@ -83,21 +83,27 @@ function Router() {
     );
   }
 
-  // If user is not authenticated (false), show auth page
-  if (isAuthenticated === false) {
+  // If authentication state is still loading, show loading screen
+  if (isAuthenticated === undefined) {
+    console.log('Authentication state loading, showing Loading');
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground text-lg">جاري التحقق من المصادقة...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not authenticated, show auth page
+  if (!isAuthenticated) {
     console.log('User not authenticated, showing AuthPage');
     return <AuthPage />;
   }
 
-  // If user is authenticated (true), show protected routes
-  if (isAuthenticated === true) {
-    console.log('User authenticated, showing protected routes');
-    // Continue to protected routes below
-  } else {
-    // If authentication state is still undefined, show landing
-    console.log('Authentication state undefined, showing Landing');
-    return <Landing />;
-  }
+  // If user is authenticated, show protected routes
+  console.log('User authenticated, showing protected routes');
 
   return (
     <Switch>

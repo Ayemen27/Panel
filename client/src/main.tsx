@@ -18,14 +18,25 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // Fix Node.js process polyfill for browser
-if (typeof window !== 'undefined' && typeof window.process === 'undefined') {
-  window.process = {
-    env: { NODE_ENV: 'development' },
-    cwd: () => '/',
-    platform: 'browser',
-    version: 'v18.0.0',
-    versions: { node: '18.0.0' }
-  } as any;
+if (typeof window !== 'undefined') {
+  if (!window.process) {
+    window.process = {} as any;
+  }
+  
+  // Ensure process.env exists
+  if (!window.process.env) {
+    window.process.env = { NODE_ENV: 'development' };
+  }
+  
+  // Fix process.cwd to prevent errors
+  if (!window.process.cwd || typeof window.process.cwd !== 'function') {
+    window.process.cwd = () => '/';
+  }
+  
+  // Add other required process properties
+  window.process.platform = 'browser';
+  window.process.version = 'v18.0.0';
+  window.process.versions = window.process.versions || { node: '18.0.0' };
 }
 
 // إصلاح مشكلة Vite HMR WebSocket في بيئة Replit

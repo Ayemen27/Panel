@@ -493,8 +493,9 @@ export function getWebSocketUrl(): string {
     let primaryUrl: string;
     
     if (isReplitDomain) {
-      // لنطاقات Replit، استخدم بدون منفذ صريح
-      primaryUrl = `${protocol}//${host}/ws`;
+      // لنطاقات Replit، استخدم منفذ الخادم الحالي
+      const wsPort = window.location.port || (protocol === 'wss:' ? '443' : '80');
+      primaryUrl = `${protocol}//${host}:${wsPort}/ws`;
       console.log('🔗 Using Replit domain WebSocket URL:', primaryUrl);
     } else if (isCustomDomain) {
       // للنطاق المخصص، استخدم بدون منفذ (يستخدم 443/80 افتراضياً)

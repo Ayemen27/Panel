@@ -42,12 +42,14 @@ export function useAuth() {
         });
 
         if (response.status === 401) {
-          // غير مصادق عليه
+          // غير مصادق عليه - return null بدلاً من throwing error
+          console.log('User not authenticated (401)');
           return null;
         }
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          console.warn(`Auth check failed with status: ${response.status}`);
+          return null;
         }
 
         const userData = await response.json();
@@ -55,6 +57,7 @@ export function useAuth() {
         return userData;
       } catch (error) {
         console.error('Auth error:', error);
+        // في حالة network errors، return null بدلاً من throwing
         return null;
       }
     },
