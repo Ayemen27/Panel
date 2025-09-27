@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "tsc --project . --outDir dist/server --rootDir server",
+    "build:server": "tsc --project tsconfig.server.json",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "preview": "vite preview",
     "start": "NODE_ENV=production node dist/server/index.js",
