@@ -440,11 +440,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
         // Log detailed error for debugging
-        console.error(`Application "${application.name}" failed to start:`, {
-          path: application.path,
-          command: application.command,
-          error: errorMessage
-        });
+        if (application) {
+          console.error(`Application "${application.name}" failed to start:`, {
+            path: application.path,
+            command: application.command,
+            error: errorMessage
+          });
+        }
 
         if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
           res.status(503).json({
