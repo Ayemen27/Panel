@@ -125,7 +125,7 @@ export class PM2Service {
         }
         
         if (!mainFile) {
-          throw new Error('No main file found. Please specify a valid command.');
+          throw new Error(`No main file found in ${application.path}. Please add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`);
         }
         
         // Set appropriate command based on file type
@@ -231,7 +231,7 @@ export class PM2Service {
           }
           
           if (!mainFile) {
-            throw new Error('No main file found. Please specify a valid command.');
+            throw new Error(`No main file found in ${application.path}. Please add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`);
           }
           
           // Set appropriate command based on file type
@@ -288,6 +288,11 @@ export class PM2Service {
           } else {
             // If not a node command, assume it's the file directly
             mainFile = startCommand.split(' ')[0];
+          }
+          
+          // Validate mainFile is not empty before starting PM2
+          if (!mainFile || mainFile.trim() === '') {
+            throw new Error('Invalid command: main file cannot be empty. Please specify a valid file to run.');
           }
           
           const command = `cd ${application.path} && pm2 start "${mainFile}" --name "${application.name}"`;
