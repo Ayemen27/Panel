@@ -53,7 +53,7 @@ export function detectEnvironment(): EnvironmentConfig {
 
   // Use import.meta.env in browser, process.env on server
   const nodeEnv = typeof window !== 'undefined'
-    ? ((typeof import !== 'undefined' && import.meta && (import.meta as any).env?.MODE) || 'development')
+    ? (import.meta?.env?.MODE || 'development')
     : (processEnv.NODE_ENV || 'development');
 
   // قراءة المنفذ من متغيرات البيئة بشكل تلقائي في المتصفح والخادم
@@ -510,7 +510,7 @@ export function logEnvironmentInfo(): void {
     console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
     console.log(`🔧 PORT: ${process.env.PORT || 'undefined'}`);
     console.log(`🔧 REPL_ID: ${process.env.REPL_ID ? 'defined' : 'undefined'}`);
-  } else if (typeof window !== 'undefined' && typeof import !== 'undefined' && import.meta && (import.meta as any).env) {
+  } else if (typeof window !== 'undefined' && import.meta?.env) {
     const metaEnv = (import.meta as any).env;
     console.log(`🔧 Browser MODE: ${metaEnv.MODE || 'undefined'}`);
     console.log(`🔧 Vite DEV: ${metaEnv.DEV ? 'true' : 'false'}`);
