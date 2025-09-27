@@ -81,10 +81,11 @@ export default function AuthPage() {
         description: `أهلاً بك ${user.firstName || user.username}`,
       });
       
-      // انتظار قصير قبل التوجيه للتأكد من تحديث البيانات
+      // انتظار أطول قليلاً للتأكد من تحديث الجلسة والتوكن
       setTimeout(() => {
-        navigate("/dashboard");
-      }, 100);
+        // إعادة تحميل الصفحة لضمان تحديث حالة التوثيق بالكامل
+        window.location.href = "/dashboard";
+      }, 500);
     },
     onError: (error: Error) => {
       console.error('Login mutation error:', error);

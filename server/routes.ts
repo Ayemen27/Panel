@@ -75,8 +75,8 @@ function setupCORS(app: Express) {
       credentials: ENV_CONFIG.cors.credentials,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       allowedHeaders: [
-        'Content-Type', 
-        'Authorization', 
+        'Content-Type',
+        'Authorization',
         'X-Requested-With',
         'Accept',
         'Origin',
@@ -347,8 +347,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      res.status(201).json({ 
-        success: true, 
+      res.status(201).json({
+        success: true,
         count: savedErrors.length,
         ids: savedErrors.map(error => error.id)
       });
@@ -360,9 +360,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/frontend-errors', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
-      const { 
-        page = 1, 
-        limit = 50, 
+      const {
+        page = 1,
+        limit = 50,
         type,
         severity,
         resolved,
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Expected array of activities" });
       }
 
-      const processedActivities = activitiesData.map(activityData => 
+      const processedActivities = activitiesData.map(activityData =>
         insertUserActivitySchema.parse({
           ...activityData,
           userId,
@@ -482,8 +482,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      res.status(201).json({ 
-        success: true, 
+      res.status(201).json({
+        success: true,
         count: savedActivities.length,
         ids: savedActivities.map(activity => activity.id)
       });
@@ -495,15 +495,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user-activities', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
-      const { 
-        page = 1, 
-        limit = 50, 
-        userId: filterUserId, 
+      const {
+        page = 1,
+        limit = 50,
+        userId: filterUserId,
         sessionId,
         activityType,
         pageUrl,
         startDate,
-        endDate 
+        endDate
       } = req.query;
 
       const options = {
@@ -529,10 +529,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user-activities/stats', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
-      const { 
-        userId, 
-        sessionId, 
-        timeframe = '24h' 
+      const {
+        userId,
+        sessionId,
+        timeframe = '24h'
       } = req.query;
 
       const options = {
@@ -2122,9 +2122,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log('📨 Received WebSocket message:', { 
-          type: message.type, 
-          from: clientIP 
+        console.log('📨 Received WebSocket message:', {
+          type: message.type,
+          from: clientIP
         });
 
         switch (message.type) {

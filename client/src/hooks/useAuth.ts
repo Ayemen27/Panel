@@ -38,6 +38,7 @@ export function useAuth() {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
           },
         });
 
@@ -61,16 +62,17 @@ export function useAuth() {
         return null;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60 * 1000, // Re-check every 5 minutes
     retry: (failureCount, error) => {
       if (isUnauthorizedError(error as Error)) {
         console.log('Auth failed - unauthorized error, not retrying');
         return false; // Don't retry unauthorized errors
       }
       console.log('Auth retry attempt:', failureCount);
-      return failureCount < 3;
+      return failureCount < 2;
     },
   });
 

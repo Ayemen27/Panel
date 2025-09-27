@@ -175,6 +175,18 @@ export function useWebSocket(token?: string) {
         
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          
+          // Handle authentication success from WebSocket
+          if (message.type === 'CONNECTION_SUCCESS' || message.type === 'CONNECTED') {
+            console.log('✅ WebSocket authentication successful');
+            // Force refresh of user data from React Query
+            if (typeof window !== 'undefined') {
+              setTimeout(() => {
+                window.location.reload();
+              }, 100);
+            }
+          }
+          
           setLastMessage(message);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);

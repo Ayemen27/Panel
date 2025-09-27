@@ -170,7 +170,7 @@ export class LogService {
         const validatedAppName = SecurityUtils.validateAppName(appName);
         const logPath = `/home/administrator/${validatedAppName}/logs/app.log`;
         const validatedLogPath = SecurityUtils.validateLogPath(logPath);
-        const content = await fs.readFile(validatedLogPath, 'utf8');
+        const content = await fs.promises.readFile(validatedLogPath, 'utf8');
         return this.parseGenericLogs(content, lines);
       } catch (fileError) {
         return [];
@@ -339,7 +339,7 @@ export class LogService {
         }
       }
 
-      return LogService.filterAndSortLogs(logs, options);
+      return this.filterAndSortLogs(logs, options);
     } catch (error) {
       console.error('Error reading application logs:', error);
       return [];
@@ -387,7 +387,7 @@ export class LogService {
         }
       }
 
-      return LogService.filterAndSortLogs(logs, options);
+      return this.filterAndSortLogs(logs, options);
     } catch (error) {
       console.error('Error reading nginx logs:', error);
       return [];
@@ -399,16 +399,16 @@ export class LogService {
     // This is a placeholder and needs to be implemented based on actual log formats.
     // It should parse the content and return an array of LogEntry objects.
     // For now, it returns generic logs.
-    return LogService.parseGenericLogs(content, undefined, source, appId, type);
+    return this.parseGenericLogs(content, undefined, source, appId, type);
   }
 
-  private static filterAndSortLogs(logs: LogEntry[], options: LogOptions): LogEntry[] {
+  private filterAndSortLogs(logs: LogEntry[], options: LogOptions): LogEntry[] {
     // This is a placeholder and needs to be implemented.
     // It should filter and sort logs based on options like lines, level, startDate, endDate.
     return logs.slice(0, options.lines || 100);
   }
 
-  private static parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
+  private parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
     const logLines = content.split('\n').filter(line => line.trim());
 
     if (lines) {
@@ -417,13 +417,13 @@ export class LogService {
 
     return logLines.map(line => ({
       timestamp: new Date().toISOString(),
-      level: LogService.detectLogLevel(line),
+      level: this.detectLogLevel(line),
       message: line,
       source: source
     }));
   }
 
-  private static detectLogLevel(message: string): string {
+  private detectLogLevel(message: string): string {
     const lowerMessage = message.toLowerCase();
 
     if (lowerMessage.includes('error') || lowerMessage.includes('err')) {
