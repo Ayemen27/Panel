@@ -1,0 +1,297 @@
+7
+
+:
+
+۲
+
++
+
+①
+
+devtools://devtools/bu
+
+الأمان
+
+الأداء المصادر الذاكرة التعليمية
+
+العناصر
+
+الشركة وحدة التحكم
+
+top
+
+Lighthouse >>>
+
+281
+
+لم احد رسالا واحدة
+
+ما من مشاكل
+
+المستويات النقابة
+
+Failed to load resource: net: ERR NAME_NOT_RESOLVED
+
+UcC73Fwrk31LTekus nV. a1ZL760050м.ко112.1
+
+websocket connection to ass//panel.binarjeinanclytic.info/ms failed: Error during WebSocket handshake: Un handshake: Unexpected response code: 200
+
+websocket error Event
+
+WebSocket disconnected 1006
+
+Attempting to reconnect in 3000ms (attenpt 1/3)
+
+Running automatic connection tests...
+
+API connection successful
+
+Using Custom domain WebSocket URL WEs://panel.banarjoinanelytic.info/ws
+
+Connecting to websocket: ss://panel,biner joinanelytic.info/ws
+
+websocket connection to Iss://panel.binarioinonelyric.info/wa' failed: Error during
+
+WebSocket handshake: Unexpected response code: 200
+
+Connection Test Results:
+
+API:
+
+WebSocket: X
+
+X Errors
+
+Websocket test failed: WebSocket connection failed
+
+اكتشفت مشاكل في الاتصال يرجى تحقق من الأخطاء اعلام 4
+
+websocket connection to wss//poncl.biner joinanelytic.info/ws' failed: Error during WebSocket handshake: Unexpected response code: 200
+
+usewebsocket.ts.74
+
+useWebSocket-13:99
+
+useWebSocket.ts:117
+
+main.tsx:60
+
+connectionTest.is:30
+
+environment 15:321
+
+usewebSocket.ts:73
+
+connectionTest.ts:40
+
+connectionTest.ts.82
+
+connectionTest.ts:83
+
+connectionTest.ts:84
+
+connectionTest.ts.67
+
+connectionTest.ts:68
+
+usewebsocket.ts:74
+
+hook 15.608
+
+usewebsocket.ts.99
+
+useWebSocket.ts:117
+
+AuthPage.tsx:75
+
+useAuth.ts 01
+
+WebSocket error Event
+
+WebSocket disconnected 1005
+
+Attempting το reconnect in 6000ms (attempt 2/3)
+
+Login successful: Chject
+
+Authenticated user detected, current path: /
+
+Redirecting to dashboard.....
+
+A soft navigation has been detected https://panel.binarjoinanelytic.info/dashboard
+
+use-browser-location.15:09
+
+Authenticated user detected, current path: /dashboard
+
+useduth. 15.01
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Unauthenticated user detected, redirecting to login...
+
+/api/user 1
+
+useAuth. 13:92
+
+/api/dashboardfatats 1
+
+useAuth, cs: 05
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Using Custom domain kebSocket URL: wss://panel.binar joinanelytic.info/ws
+
+Connecting to websocket: ass://panel,binar joinanelytic.info/ws
+
+WebSocket connection to wss//panel.binarioinanelytic.info/wa' failed: Error during websocket handshake: Unexpected response code: 200
+
+websocket error Event
+
+Websocket disconnected 1006
+
+Altempting to reconnect in 12000ms (altempt 1/3)
+
+Using Custom domain webSocket URL: wss://panel binar joinanelytic.info/es
+
+Connecting to websocket ass://panel.binar joinanelytic.info/ws
+
+WebSocket connection to ass//panel.binar joinanelysic.info/ws' failed: Error during WebSocket handshake: Unexpected response code: 200
+
+websocket error Event
+
+WebSocket disconnected 1006
+
+Login successful: Object
+
+Authenticated user detected, current path: /
+
+Redirecting to dashboard...
+
+A soft navigation has been detected: https://panel.binarioinonelytic.info/dashboard
+
+Authenticated user detected, current path: /dashboard
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Failed to load resource: the responded with a status of 401 (Unauthorized)
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Unauthenticated user detected, redirecting to login...
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Using Custom domain webSocket URL:Ws://panel.binarisinanelytic.info/ws
+
+Connecting to websocket: wss://panel.binar joinanelytic.info/ws
+
+webSocket connection to wss //panel binarioinanelytic.info/ws failed: Error during WebSocket handshake: Unexpected response code: 200
+
+WebSocket error: Event
+
+WebSocket disconnected 1000
+
+Login successful: Object
+
+Authenticated user detected, current path: /
+
+Redirecting to dashboard...
+
+A soft navigation has been detected: https://panel,binar joinanelytic.info/dashboard
+
+Authenticated user detected, current path: /dashboard
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+Unauthenticated user detected, redirecting to login...
+
+Capizapplications 1
+
+/api/system/infa
+
+environment.ts:321
+
+useWebSocket.ts.73
+
+useWebSocket.ts.74
+
+books:600
+
+useWebSocket.ts:99
+
+usewebSocket.IS:117
+
+environment.ts:321
+
+useWebSocket.ts:73
+
+useWebSocket.ts:74
+
+hook.js:608
+
+usewebsocket.99
+
+AuthPage.tsx:73
+
+useAuth.ts:81
+
+useAuth.ts:83
+
+use-browser-location.15:69
+
+useAuth.ts:81
+
+Zapi/user 1
+
+/api/applications 1
+
+/api/dashboard/stats:1
+
+useAuth.rs/92
+
+/api/system/info:1
+
+environment.ts:321
+
+useWebSocket.ts-73
+
+usewebsocket.ts:74
+
+hook.15:608
+
+usewebsocket.ts: 99
+
+AuthPage Esx:75
+
+uscAuth.ts:81
+
+useAuth.ts 05
+
+useAuth,ts:86
+
+useAuth.ts.al
+
+rapi/user:1
+
+/api/applications:1
+
+/ani/dashboard/stats 1
+
+/api/system/infoai
+
+useAuth.ts:92
+
+وحدة التحكم :
+
+000
