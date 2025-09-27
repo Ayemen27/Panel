@@ -9,7 +9,7 @@
     "build:server": "tsc --project tsconfig.server.json",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "preview": "vite preview",
-    "start": "NODE_ENV=production node dist/server/index.js",
+    "start": "NODE_ENV=production node dist/server/server/index.js",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
     "audit:comprehensive": "tsx server/scripts/run-audit.ts"
