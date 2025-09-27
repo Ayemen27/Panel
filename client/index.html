@@ -12,7 +12,12 @@
       // حماية شاملة من خطأ process قبل تحميل أي شيء آخر
       if (typeof window !== 'undefined') {
         if (!window.process) {
-          window.process = { env: {} };
+          window.process = { 
+            env: {},
+            cwd: function() { return '/'; },
+            platform: 'browser',
+            browser: true
+          };
         }
         if (!window.global) {
           window.global = window;
@@ -21,6 +26,13 @@
         if (!window.Buffer) {
           window.Buffer = { isBuffer: function() { return false; } };
         }
+        // إضافة حماية من الأخطاء
+        window.addEventListener('error', function(e) {
+          if (e.message && e.message.includes('process.cwd')) {
+            e.preventDefault();
+            console.warn('Prevented process.cwd error in browser');
+          }
+        });
       }
     </script>
   </head>

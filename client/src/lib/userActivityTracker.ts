@@ -92,7 +92,7 @@ class ActivityQueue {
 
   add(activity: ActivityData): void {
     this.queue.push(activity);
-    
+
     if (this.config.enableLocalStorage) {
       this.saveToLocalStorage();
     }
@@ -182,7 +182,7 @@ class ActivityQueue {
       } catch (error) {
         attempts++;
         console.warn(`Attempt ${attempts} failed:`, error);
-        
+
         if (attempts < this.config.maxRetries) {
           await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
         } else {
@@ -246,7 +246,7 @@ export class UserActivityTracker {
     this.sessionId = this.generateSessionId();
     this.pageStartTime = Date.now();
     this.lastActivityTime = Date.now();
-    this.currentPage = window.location.href;
+    this.currentPage = typeof window !== 'undefined' ? window.location.href : '';
     this.queue = new ActivityQueue(this.config);
 
     this.init();
@@ -320,45 +320,50 @@ export class UserActivityTracker {
     document.addEventListener('drop', this.handleDrop.bind(this), true);
 
     // تتبع تغييرات التاريخ (navigation)
-    window.addEventListener('popstate', this.handleNavigation.bind(this));
-    this.interceptNavigationMethods();
-  }
-
-  private handleClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target || this.shouldExcludeElement(target)) {
-      return;
+    if (typeof window !== 'undefined') {
+      window.addEventListener('popstate', this.handleNavigation.bind(this));
+      this.interceptNavigationMethods();
     }
-
-    const activityData: ActivityData = {
-      activityType: 'click',
-      page: this.currentPage,
-      targetElement: this.getElementIdentifier(target),
-      targetText: this.getElementText(target),
-      targetType: target.tagName.toLowerCase(),
-      interactionMode: 'mouse',
-      browserInfo: this.getBrowserInfo(),
-      viewport: this.getViewportInfo(),
-      coordinates: {
-        x: event.clientX,
-        y: event.clientY,
-        pageX: event.pageX,
-        pageY: event.pageY
-      },
-      pageDuration: Date.now() - this.pageStartTime,
-      scrollPosition: window.pageYOffset,
-      userAgent: navigator.userAgent,
-      sessionId: this.sessionId,
-      metadata: {
-        ctrlKey: event.ctrlKey,
-        altKey: event.altKey,
-        shiftKey: event.shiftKey,
-        button: event.button
-      }
-    };
-
-    this.trackActivity(activityData);
   }
+
+  private handleClick = (event: MouseEvent): void => {
+    if (!this.isEnabled || !event.target) return;
+
+    try {
+      const element = event.target as Element;
+      if (!element || !element.tagName) return;
+
+      const identifier = this.getElementIdentifier(element);
+      this.trackActivity({
+        activityType: 'click',
+        page: this.currentPage,
+        targetElement: identifier,
+        targetText: this.getElementText(element),
+        targetType: element.tagName.toLowerCase(),
+        interactionMode: 'mouse',
+        browserInfo: this.getBrowserInfo(),
+        viewport: this.getViewportInfo(),
+        coordinates: {
+          x: event.clientX,
+          y: event.clientY,
+          pageX: event.pageX,
+          pageY: event.pageY
+        },
+        pageDuration: Date.now() - this.pageStartTime,
+        scrollPosition: window.pageYOffset,
+        userAgent: navigator.userAgent,
+        sessionId: this.sessionId,
+        metadata: {
+          ctrlKey: event.ctrlKey,
+          altKey: event.altKey,
+          shiftKey: event.shiftKey,
+          button: event.button
+        }
+      });
+    } catch (error) {
+      console.warn('Error in click tracking:', error);
+    }
+  };
 
   private handleInput(event: Event): void {
     const target = event.target as HTMLInputElement;
@@ -524,37 +529,41 @@ export class UserActivityTracker {
     this.trackActivity(activityData);
   }
 
-  private handleHover(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target || this.shouldExcludeElement(target)) {
-      return;
+  private handleHover = (event: MouseEvent): void => {
+    if (!this.isEnabled || !event.target) return;
+
+    try {
+      const element = event.target as Element;
+      if (!element || !element.tagName) return;
+
+      const identifier = this.getElementIdentifier(element);
+      this.trackActivity({
+        activityType: 'hover',
+        page: this.currentPage,
+        targetElement: identifier,
+        targetText: this.getElementText(element),
+        targetType: element.tagName.toLowerCase(),
+        interactionMode: 'mouse',
+        browserInfo: this.getBrowserInfo(),
+        viewport: this.getViewportInfo(),
+        coordinates: {
+          x: event.clientX,
+          y: event.clientY,
+          pageX: event.pageX,
+          pageY: event.pageY
+        },
+        pageDuration: Date.now() - this.pageStartTime,
+        scrollPosition: window.pageYOffset,
+        userAgent: navigator.userAgent,
+        sessionId: this.sessionId,
+        metadata: {
+          eventType: event.type
+        }
+      });
+    } catch (error) {
+      console.warn('Error in hover tracking:', error);
     }
-
-    const activityData: ActivityData = {
-      activityType: 'hover',
-      page: this.currentPage,
-      targetElement: this.getElementIdentifier(target),
-      targetType: target.tagName.toLowerCase(),
-      interactionMode: 'mouse',
-      browserInfo: this.getBrowserInfo(),
-      viewport: this.getViewportInfo(),
-      coordinates: {
-        x: event.clientX,
-        y: event.clientY,
-        pageX: event.pageX,
-        pageY: event.pageY
-      },
-      pageDuration: Date.now() - this.pageStartTime,
-      scrollPosition: window.pageYOffset,
-      userAgent: navigator.userAgent,
-      sessionId: this.sessionId,
-      metadata: {
-        eventType: event.type
-      }
-    };
-
-    this.trackActivity(activityData);
-  }
+  };
 
   private handleScroll(): void {
     const activityData: ActivityData = {
@@ -581,7 +590,7 @@ export class UserActivityTracker {
 
   private handleKeyPress(event: KeyboardEvent): void {
     const target = event.target as HTMLElement;
-    
+
     // تجاهل المفاتيح الحساسة
     if (this.isSensitiveKeyPress(event) || (target && this.isSensitiveField(target))) {
       return;
@@ -767,7 +776,7 @@ export class UserActivityTracker {
   private setupVisibilityHandling(): void {
     document.addEventListener('visibilitychange', () => {
       this.isVisible = !document.hidden;
-      
+
       if (this.isVisible) {
         // المستخدم عاد للصفحة
         this.lastActivityTime = Date.now();
@@ -878,26 +887,46 @@ export class UserActivityTracker {
     }, this.config.batchTimeout);
   }
 
-  private getElementIdentifier(element: HTMLElement): string {
-    if (element.id) {
-      return `#${element.id}`;
-    }
-    
-    if (element.className) {
-      return `.${element.className.split(' ').join('.')}`;
-    }
+  private getElementIdentifier(element: Element): string {
+    try {
+      // التحقق من وجود element وخصائصه
+      if (!element) return 'unknown-element';
 
-    // إنشاء selector فريد
-    let selector = element.tagName.toLowerCase();
-    const parent = element.parentElement;
-    
-    if (parent) {
-      const siblings = Array.from(parent.children);
-      const index = siblings.indexOf(element);
-      selector = `${parent.tagName.toLowerCase()} > ${selector}:nth-child(${index + 1})`;
-    }
+      const tagName = element.tagName ? element.tagName.toLowerCase() : 'unknown';
 
-    return selector;
+      // التحقق من className بطريقة آمنة
+      let classes = '';
+      if (element.className && typeof element.className === 'string') {
+        classes = element.className.split(' ').filter(c => c).slice(0, 3).join(' ');
+      } else if (element.classList && element.classList.length > 0) {
+        classes = Array.from(element.classList).slice(0, 3).join(' ');
+      }
+
+      const id = element.id || '';
+
+      if (id) {
+        return `#${id}`;
+      }
+
+      if (classes) {
+        return `.${classes.split(' ').join('.')}`;
+      }
+
+      // إنشاء selector فريد
+      let selector = tagName;
+      const parent = element.parentElement;
+
+      if (parent) {
+        const siblings = Array.from(parent.children);
+        const index = siblings.indexOf(element);
+        selector = `${parent.tagName.toLowerCase()} > ${selector}:nth-child(${index + 1})`;
+      }
+
+      return selector;
+    } catch (error) {
+      console.warn('Error getting element identifier:', error);
+      return 'unknown-element';
+    }
   }
 
   private getElementText(element: HTMLElement): string {
@@ -906,6 +935,18 @@ export class UserActivityTracker {
   }
 
   private getBrowserInfo(): BrowserInfo {
+    if (typeof window === 'undefined') {
+      return {
+        userAgent: 'unknown',
+        language: 'unknown',
+        platform: 'unknown',
+        cookieEnabled: false,
+        onLine: false,
+        screen: { width: 0, height: 0, colorDepth: 0 },
+        timezone: 'unknown',
+        doNotTrack: null
+      };
+    }
     return {
       userAgent: navigator.userAgent,
       language: navigator.language,
@@ -923,6 +964,9 @@ export class UserActivityTracker {
   }
 
   private getViewportInfo(): ViewportInfo {
+    if (typeof window === 'undefined') {
+      return { width: 0, height: 0, devicePixelRatio: 1 };
+    }
     return {
       width: window.innerWidth,
       height: window.innerHeight,
@@ -950,7 +994,7 @@ export class UserActivityTracker {
     const fieldName = (element as HTMLInputElement).name?.toLowerCase() || '';
     const fieldType = (element as HTMLInputElement).type?.toLowerCase() || '';
     const fieldId = element.id?.toLowerCase() || '';
-    
+
     return this.config.sensitiveFields.some(sensitive => 
       fieldName.includes(sensitive) || 
       fieldType.includes(sensitive) || 
@@ -970,11 +1014,12 @@ export class UserActivityTracker {
     }
 
     const fullActivityData: ActivityData = {
-      activityType: 'click',
+      activityType: 'click', // Default, will be overridden
       page: this.currentPage,
-      interactionMode: 'other',
+      interactionMode: 'other', // Default, will be overridden
       browserInfo: this.getBrowserInfo(),
-      userAgent: navigator.userAgent,
+      viewport: this.getViewportInfo(),
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
       sessionId: this.sessionId,
       ...activityData
     };
@@ -985,7 +1030,7 @@ export class UserActivityTracker {
 
   public trackCustomAction(action: string, metadata?: Record<string, any>): void {
     this.trackActivity({
-      activityType: 'click',
+      activityType: 'click', // Assuming custom actions are a form of click or interaction
       targetElement: action,
       metadata: {
         customAction: action,
@@ -1075,7 +1120,7 @@ export function createActivityTracker(config?: Partial<ActivityTrackerConfig>): 
   if (globalTracker) {
     globalTracker.destroy();
   }
-  
+
   globalTracker = new UserActivityTracker(config);
   return globalTracker;
 }

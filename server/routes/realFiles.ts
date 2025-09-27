@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { RealFileSystemService } from '../services/realFileSystemService';
 import { storage } from '../storage';
@@ -22,7 +21,7 @@ router.get('/browse', isAuthenticated, async (req, res) => {
     }
 
     const result = await realFileService.listDirectory(path, userId);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -54,7 +53,7 @@ router.get('/content', isAuthenticated, async (req, res) => {
     }
 
     const result = await realFileService.readFileContent(path, userId);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -97,7 +96,7 @@ router.post('/create', isAuthenticated, async (req, res) => {
         mode: mode || 0o644
       });
     }
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -129,7 +128,7 @@ router.delete('/delete', isAuthenticated, async (req, res) => {
     }
 
     const result = await realFileService.deleteItem(path, userId);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -161,7 +160,7 @@ router.put('/rename', isAuthenticated, async (req, res) => {
     }
 
     const result = await realFileService.renameItem(oldPath, newPath, userId);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -193,7 +192,7 @@ router.post('/copy', isAuthenticated, async (req, res) => {
     }
 
     const result = await realFileService.copyItem(sourcePath, destinationPath, userId);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -225,7 +224,7 @@ router.get('/info', isAuthenticated, async (req, res) => {
     }
 
     const result = await realFileService.getFileInfo(path, userId);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
