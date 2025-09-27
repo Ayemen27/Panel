@@ -123,10 +123,8 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // لا تحسب المحاولات الناجحة
-  keyGenerator: (req) => {
-    // استخدم IP + username للحد من محاولات كل مستخدم
-    return `${req.ip}-${req.body?.username || 'unknown'}`;
-  }
+  // 🛡️ SECURITY FIX: Remove custom keyGenerator to use default IPv6-safe one
+  // Default generator handles IPv6 properly
 });
 
 export function setupAuth(app: Express) {
