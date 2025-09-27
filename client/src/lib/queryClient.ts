@@ -14,22 +14,43 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   endpoint: string,
-  data?: any
+  data?: any,
+  options: RequestInit = {}
 ): Promise<Response> {
-  const options: RequestInit = {
+  // تحقق من نوع الطلب وإزالة body للطلبات GET و HEAD
+  const isGetOrHead = method.toUpperCase() === 'GET' || method.toUpperCase() === 'HEAD';
+
+  // إعداد URL مع query parameters للطلبات GET
+  let url = endpoint;
+  if (isGetOrHead && data && typeof data === 'object') {
+    const params = new URLSearchParams();
+    Object.keys(data).forEach(key => {
+      if (data[key] !== undefined && data[key] !== null) {
+        params.append(key, String(data[key]));
+      }
+    });
+    if (params.toString()) {
+      url += (url.includes('?') ? '&' : '?') + params.toString();
+    }
+  }
+
+  const config: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
+      ...options.headers,
     },
     credentials: 'include',
+    ...options,
   };
 
-  if (data) {
-    options.body = JSON.stringify(data);
+  // إضافة body فقط للطلبات غير GET/HEAD
+  if (data && !isGetOrHead) {
+    config.body = JSON.stringify(data);
   }
 
   try {
-    const response = await fetch(endpoint, options);
+    const response = await fetch(url, config);
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;

@@ -87,7 +87,7 @@ function Router() {
   console.log('Router - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
 
   // الآن يمكن إجراء الشرطيات بعد استدعاء جميع الـ hooks
-  
+
   // إذا كان التحميل جارياً، عرض loading
   if (isLoading) {
     return (

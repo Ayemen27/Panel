@@ -216,6 +216,10 @@ export class UserActivityTracker {
   private isVisible: boolean = true;
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
   private flushTimer?: NodeJS.Timeout;
+  
+  private get isEnabled(): boolean {
+    return this.initialized && this.isVisible;
+  }
 
   constructor(config: Partial<ActivityTrackerConfig> = {}) {
     this.config = {
@@ -890,7 +894,7 @@ export class UserActivityTracker {
   private getElementIdentifier(element: Element): string {
     try {
       // التحقق من وجود element وخصائصه
-      if (!element) return 'unknown-element';
+      if (!element || !element.tagName) return 'unknown-element';
 
       const tagName = element.tagName ? element.tagName.toLowerCase() : 'unknown';
 
@@ -930,6 +934,7 @@ export class UserActivityTracker {
   }
 
   private getElementText(element: HTMLElement): string {
+    if (!element) return '';
     const text = element.textContent || element.innerText || '';
     return text.trim().slice(0, 100);
   }

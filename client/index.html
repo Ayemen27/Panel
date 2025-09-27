@@ -11,26 +11,61 @@
     <script>
       // حماية شاملة من خطأ process قبل تحميل أي شيء آخر
       if (typeof window !== 'undefined') {
+        // إنشاء process object آمن
         if (!window.process) {
           window.process = { 
-            env: {},
+            env: {
+              NODE_ENV: 'development'
+            },
             cwd: function() { return '/'; },
             platform: 'browser',
-            browser: true
+            browser: true,
+            version: 'v18.0.0',
+            versions: { node: '18.0.0' },
+            nextTick: function(fn) { setTimeout(fn, 0); },
+            exit: function() { /* نفعل شيء في المتصفح */ },
+            argv: ['node'],
+            pid: 1
           };
         }
+        
+        // التأكد من أن process.cwd دالة صالحة
+        if (!window.process.cwd || typeof window.process.cwd !== 'function') {
+          window.process.cwd = function() { return '/'; };
+        }
+        
+        // إضافة global
         if (!window.global) {
           window.global = window;
         }
-        // إضافة Buffer إذا لم يكن موجود
+        
+        // إضافة Buffer
         if (!window.Buffer) {
-          window.Buffer = { isBuffer: function() { return false; } };
+          window.Buffer = { 
+            isBuffer: function() { return false; },
+            from: function() { return new Uint8Array(); }
+          };
         }
-        // إضافة حماية من الأخطاء
+        
+        // حماية شاملة من الأخطاء
         window.addEventListener('error', function(e) {
-          if (e.message && e.message.includes('process.cwd')) {
+          if (e.message && (
+            e.message.includes('process.cwd') || 
+            e.message.includes('process is not defined') ||
+            e.message.includes('cwd is not a function')
+          )) {
             e.preventDefault();
-            console.warn('Prevented process.cwd error in browser');
+            console.warn('Prevented Node.js compatibility error in browser:', e.message);
+            return false;
+          }
+        });
+        
+        // حماية من unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e.reason && e.reason.message && e.reason.message.includes('process.cwd')) {
+            e.preventDefault();
+            console.warn('Prevented process.cwd promise rejection in browser');
+            return false;
           }
         });
       }

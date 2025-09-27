@@ -490,8 +490,9 @@ export function getWebSocketUrl(token?: string): string {
       console.error('❌ Invalid hostname detected:', host);
       console.error('❌ Window location:', window.location);
       
-      // محاولة استخدام fallback ذكي
-      const fallbackUrl = protocol === 'wss:' ? 'wss://localhost:5001/ws' : 'ws://localhost:5001/ws';
+      // محاولة استخدام fallback ذكي مع hostname الحالي
+      const currentHost = window.location.hostname || 'localhost';
+      const fallbackUrl = protocol === 'wss:' ? `wss://${currentHost}:5000/ws` : `ws://${currentHost}:5000/ws`;
       console.warn('🔄 Using emergency fallback URL:', fallbackUrl);
       return fallbackUrl;
     }
