@@ -8,6 +8,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorProvider } from "@/contexts/ErrorContext";
 import { ActivityProvider } from "@/contexts/ActivityContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { runWebSocketDiagnostics } from "@/utils/websocketDiagnostics";
 import { useEffect, lazy, Suspense } from "react";
 import { errorLogger, updateAppState } from "@/lib/errorLogger";
 import NotFound from "@/pages/not-found";
@@ -67,6 +69,7 @@ const PageLoader = () => (
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { isConnected: wsConnected, connectionDiagnostics } = useWebSocket(user?.id);
 
   console.log('Router - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
 
@@ -104,6 +107,18 @@ function Router() {
 
   // If user is authenticated, show protected routes
   console.log('User authenticated, showing protected routes');
+
+  // تشغيل تشخيص WebSocket عند التحميل
+  useEffect(() => {
+    if (user?.id) {
+      runWebSocketDiagnostics(user.id).then(diagnostics => {
+        console.log('🔍 WebSocket diagnostics completed:', diagnostics);
+        if (!diagnostics.success) {
+          console.warn('⚠️ WebSocket connection issues detected');
+        }
+      });
+    }
+  }, [user?.id]);
 
   return (
     <Switch>

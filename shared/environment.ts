@@ -248,10 +248,13 @@ export function detectEnvironment(): EnvironmentConfig {
 
   const isReplit = isReplitBrowser || isReplitServer;
 
-  // اكتشاف النطاق المخصص
+  // اكتشاف النطاق المخصص - إضافة دعم أكثر شمولية
   const isCustomDomain = (typeof window !== 'undefined' &&
-    window.location.hostname === 'panel.binarjoinanelytic.info') ||
-    (serverEnvDetection?.isCustomDomain);
+    (window.location.hostname === 'panel.binarjoinanelytic.info' ||
+     window.location.hostname.includes('binarjoinanelytic.info'))) ||
+    (serverEnvDetection?.isCustomDomain) ||
+    (processEnv.CUSTOM_DOMAIN === 'true') ||
+    (processEnv.DOMAIN?.includes('binarjoinanelytic.info'));
 
   const isDevelopment = nodeEnv === 'development';
   const isProduction = nodeEnv === 'production';
@@ -283,6 +286,10 @@ export function detectEnvironment(): EnvironmentConfig {
         origin: [
           'https://panel.binarjoinanelytic.info',
           'http://panel.binarjoinanelytic.info',
+          'https://binarjoinanelytic.info',
+          'http://binarjoinanelytic.info',
+          /^https:\/\/.*\.binarjoinanelytic\.info$/,
+          /^http:\/\/.*\.binarjoinanelytic\.info$/,
         ],
         credentials: true,
       },
@@ -462,7 +469,7 @@ function getFallbackUrls(originalHost: string, originalProtocol: string): string
   return fallbacks;
 }
 
-export function getWebSocketUrl(): string {
+export function getWebSocketUrl(token?: string): string {
   if (typeof window !== 'undefined') {
     // في المتصفح - استخدم الهوست الحالي مع البروتوكول المناسب
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -492,6 +499,8 @@ export function getWebSocketUrl(): string {
 
     let primaryUrl: string;
     
+    let primaryUrl: string;
+    
     if (isReplitDomain) {
       // لنطاقات Replit، استخدم منفذ الخادم الحالي
       const wsPort = window.location.port || (protocol === 'wss:' ? '443' : '80');
@@ -511,6 +520,13 @@ export function getWebSocketUrl(): string {
       const wsPort = port || ENV_CONFIG.websocket.port || (protocol === 'wss:' ? 443 : 5001);
       primaryUrl = `${protocol}//${host}:${wsPort}/ws`;
       console.log('🌐 Using generic WebSocket URL:', primaryUrl);
+    }
+
+    // إضافة التوكن إذا كان متاحاً
+    if (token) {
+      const separator = primaryUrl.includes('?') ? '&' : '?';
+      primaryUrl += `${separator}token=${encodeURIComponent(token)}`;
+      console.log('🔑 Added token to WebSocket URL');
     }
 
     // التحقق من صحة URL الأساسي

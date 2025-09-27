@@ -2027,18 +2027,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // WebSocket server setup with CORS inheritance and Origin checking
+  // WebSocket server setup with enhanced security and token verification
   const wss = new WebSocketServer({
     server,
     path: '/ws',
     verifyClient: (info: any) => {
       // Verify Origin for security
       const origin = info.origin;
+      const url = new URL(info.req.url, `http://${info.req.headers.host}`);
+      const token = url.searchParams.get('token');
+      
+      console.log('🔍 WebSocket connection attempt:');
+      console.log('   Origin:', origin);
+      console.log('   Host:', info.req.headers.host);
+      console.log('   Has Token:', !!token);
+      console.log('   User-Agent:', info.req.headers['user-agent']?.substring(0, 50) + '...');
+
+      // التحقق من النطاق المخصص أولاً
+      const host = info.req.headers.host;
+      const isCustomDomain = host?.includes('binarjoinanelytic.info');
       const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
 
-      if (!origin) return true; // السماح بالاتصالات بدون origin
+      console.log('   Is Custom Domain:', isCustomDomain);
+      console.log('   Is Development:', isDevelopment);
 
-      const isAllowed = ENV_CONFIG.cors.origin.some(allowedOrigin => {
+      if (!origin && !isCustomDomain) {
+        console.log('   ⚠️ No origin provided for non-custom domain');
+        return true; // السماح للاتصالات المحلية
+      }
+
+      // التحقق من النطاقات المسموحة
+      const isAllowed = !origin || ENV_CONFIG.cors.origin.some(allowedOrigin => {
         if (typeof allowedOrigin === 'string') {
           // مطابقة مباشرة أو wildcard
           if (allowedOrigin.includes('*')) {
@@ -2053,10 +2072,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!isAllowed) {
-        console.warn(`Security: Blocked WebSocket connection from unauthorized origin: ${origin}`);
+        console.warn(`🚫 Security: Blocked WebSocket connection from unauthorized origin: ${origin}`);
         return false;
       }
 
+      console.log('✅ WebSocket connection approved');
       return true;
     }
   });
@@ -2064,10 +2084,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   wss.on('connection', async (ws, req) => {
     // 🛡️ SECURITY: Origin validation already done in verifyClient
     wsClients.add(ws);
-    console.log('✅ WebSocket client connected (origin-verified)');
-
+    
+    // استخراج معلومات الاتصال
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    const token = url.searchParams.get('token');
+    const origin = req.headers.origin;
+    const userAgent = req.headers['user-agent'];
+    const host = req.headers.host;
+    
+    console.log('✅ WebSocket client connected:');
+    console.log('   Host:', host);
+    console.log('   Origin:', origin);
+    console.log('   Has Token:', !!token);
+    console.log('   Custom Domain:', host?.includes('binarjoinanelytic.info'));
+    
     let isTerminalAuthenticated = false;
     let activeProcess: any = null;
+    let clientToken = token;
 
     const parseCookies = (cookieHeader: string) => {
       const cookies: Record<string, string> = {};

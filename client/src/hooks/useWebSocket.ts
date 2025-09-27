@@ -10,9 +10,10 @@ interface WebSocketMessage {
   [key: string]: any; // Allow additional properties
 }
 
-export function useWebSocket() {
+export function useWebSocket(token?: string) {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
+  const [connectionDiagnostics, setConnectionDiagnostics] = useState<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -20,6 +21,7 @@ export function useWebSocket() {
   const maxReconnectAttempts = 5;
   const baseReconnectInterval = 1000; // Start with 1 second
   const maxReconnectInterval = 30000; // Max 30 seconds
+  const tokenRef = useRef(token);
 
   // Helper function to determine if we should attempt reconnection based on close code
   const shouldAttemptReconnect = (code: number, attempts: number): boolean => {
@@ -85,8 +87,23 @@ export function useWebSocket() {
     }
 
     try {
+      // استخدام التوكن المحدث
+      const currentToken = tokenRef.current;
+      console.log('🔑 Using token for WebSocket connection:', currentToken ? 'Yes' : 'No');
+      
       // Use the current domain for WebSocket connection with proper error handling
-      const wsUrl = getWebSocketUrl();
+      const wsUrl = getWebSocketUrl(currentToken);
+      
+      // إضافة تشخيص الاتصال
+      const diagnostics = {
+        url: wsUrl,
+        hasToken: !!currentToken,
+        environment: ENV_CONFIG.name,
+        timestamp: new Date().toISOString(),
+        hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+      };
+      setConnectionDiagnostics(diagnostics);
+      console.log('🔍 WebSocket connection diagnostics:', diagnostics);
 
       // تحسين التحقق من صحة URL مع fallback ذكي
       if (!wsUrl || 
@@ -129,7 +146,10 @@ export function useWebSocket() {
       }
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('✅ WebSocket connected successfully');
+        console.log('🔗 Connection URL:', wsUrl.replace(/token=[^&]+/, 'token=***'));
+        console.log('🌐 Domain:', typeof window !== 'undefined' ? window.location.hostname : 'server');
+        
         if (isMountedRef.current) {
           setIsConnected(true);
           reconnectAttemptsRef.current = 0;
@@ -139,6 +159,14 @@ export function useWebSocket() {
             clearTimeout(reconnectTimeoutRef.current);
             reconnectTimeoutRef.current = null;
           }
+
+          // إرسال رسالة اختبار الاتصال
+          setLastMessage({
+            type: 'CONNECTION_SUCCESS',
+            message: 'تم الاتصال بـ WebSocket بنجاح',
+            timestamp: Date.now(),
+            diagnostics: connectionDiagnostics
+          });
         }
       };
 
@@ -298,11 +326,24 @@ export function useWebSocket() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [isConnected, connect]);
 
+  // تحديث التوكن
+  const updateToken = useCallback((newToken: string) => {
+    tokenRef.current = newToken;
+    console.log('🔄 WebSocket token updated');
+    // إعادة الاتصال بالتوكن الجديد
+    if (isConnected) {
+      disconnect();
+      setTimeout(() => connect(), 100);
+    }
+  }, [isConnected, disconnect, connect]);
+
   return {
     isConnected,
     lastMessage,
+    connectionDiagnostics,
     sendMessage,
     reconnect: connect,
-    disconnect
+    disconnect,
+    updateToken
   };
 }
