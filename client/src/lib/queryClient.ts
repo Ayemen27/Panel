@@ -103,7 +103,7 @@ export const queryClient = new QueryClient({
           if (!res.ok) {
             if (res.status === 401) {
               console.log('Unauthorized response for:', path);
-              throw new Error('Unauthorized');
+              throw new Error('401: Unauthorized');
             }
 
             let errorMessage = `HTTP ${res.status}`;

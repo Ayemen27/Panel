@@ -1,8 +1,21 @@
+import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App";
+import App from "./App.tsx";
 import "./index.css";
 import { logEnvironmentInfo, ENV_CONFIG, getWebSocketUrl } from "@shared/environment";
 import { errorLogger, updateAppState } from "./lib/errorLogger";
+
+// Add global error handler for better debugging
+window.addEventListener('error', (event) => {
+  console.error('Global error caught:', event.error);
+  if (event.error?.message?.includes('process.cwd')) {
+    console.error('Browser compatibility issue: process.cwd() called in browser context');
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+});
 
 // Fix Node.js process polyfill for browser
 if (typeof window !== 'undefined' && typeof window.process === 'undefined') {
@@ -30,7 +43,7 @@ if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
       }
     });
   }
-  
+
   // إصلاح Vite client WebSocket URL إذا كان غير صحيح
   const originalWebSocket = window.WebSocket;
   const WebSocketConstructor = class extends originalWebSocket {
@@ -49,7 +62,7 @@ if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
       }
     }
   };
-  
+
   // استبدال WebSocket العالمي
   window.WebSocket = WebSocketConstructor as any;
 }
@@ -90,7 +103,7 @@ if (typeof window !== 'undefined') {
       try {
         const result = await testConnections();
         logConnectionTestResults(result);
-        
+
         if (result.errors.length > 0) {
           console.warn('⚠️ اكتشفت مشاكل في الاتصال. يرجى التحقق من الأخطاء أعلاه.');
         } else {

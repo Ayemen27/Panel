@@ -23,9 +23,9 @@ export const ROLE_HIERARCHY = {
 
 // Helper function to check for unauthorized errors
 function isUnauthorizedError(error: Error): boolean {
-  // This is a placeholder, you might need to adjust this based on how your backend returns errors
-  // For example, you might check error.message for a specific string or error.status === 401
-  return error.message.includes('401');
+  return error.message.includes('401') || 
+         error.message.includes('Unauthorized') ||
+         error.message.toLowerCase().includes('unauthorized');
 }
 
 export function useAuth() {
@@ -74,7 +74,9 @@ export function useAuth() {
   console.log('useAuth - user:', user, 'isLoading:', isLoading, 'error:', error);
 
   // Handle different authentication states
-  const isAuthenticated = user ? true : (error && isUnauthorizedError(error as Error)) ? false : undefined;
+  const isAuthenticated = user ? true : 
+    (error && isUnauthorizedError(error as Error)) ? false : 
+    (!isLoading && !user && !error) ? false : undefined;
 
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();

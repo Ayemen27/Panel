@@ -83,14 +83,18 @@ function Router() {
     );
   }
 
-  // If authentication check fails, show auth page
+  // If user is not authenticated (false), show auth page
   if (isAuthenticated === false) {
     console.log('User not authenticated, showing AuthPage');
     return <AuthPage />;
   }
 
-  // If authentication is still undefined after loading, show landing
-  if (isAuthenticated === undefined || isAuthenticated === null) {
+  // If user is authenticated (true), show protected routes
+  if (isAuthenticated === true) {
+    console.log('User authenticated, showing protected routes');
+    // Continue to protected routes below
+  } else {
+    // If authentication state is still undefined, show landing
     console.log('Authentication state undefined, showing Landing');
     return <Landing />;
   }

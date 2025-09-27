@@ -124,7 +124,7 @@ function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): Envir
       pm2: '/home/administrator/.pm2'
     },
     local: {
-      root: process.cwd(),
+      root: typeof process !== 'undefined' && process.cwd ? process.cwd() : '.',
       logs: './logs',
       uploads: './uploads',
       config: './.config',
