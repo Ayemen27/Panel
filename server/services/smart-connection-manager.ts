@@ -135,7 +135,10 @@ class SmartConnectionManager {
     // console.log(`Metric: ${type}, Duration: ${duration}ms, Success: ${success}`);
   }
 
-  async query<T extends any = any>(text: string, params?: any[]): Promise<QueryResult<T>> {</old_str>
+  async query<T extends any = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
+    // تجميع استعلامات SELECT البسيطة
+    if (this.shouldBatchQuery(text)) {
+      return new Promise((resolve, reject) => {</old_str>
     // تجميع استعلامات SELECT البسيطة
     if (this.shouldBatchQuery(text)) {
       return new Promise((resolve, reject) => {

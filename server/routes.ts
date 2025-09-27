@@ -71,10 +71,28 @@ function setupCORS(app: Express) {
         }
       },
       credentials: ENV_CONFIG.cors.credentials,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+      allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'Cache-Control',
+        'Cookie'
+      ],
+      exposedHeaders: ['Set-Cookie'],
+      optionsSuccessStatus: 200, // لدعم المتصفحات القديمة
+      preflightContinue: false
     })
   );
+
+  // إضافة middleware لمعالجة preflight requests
+  app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Vary', 'Origin');
+    res.sendStatus(200);
+  });
 }
 
 // Enhanced authentication middleware for custom auth system

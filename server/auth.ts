@@ -31,11 +31,19 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// تحديد متغيرات البيئة
+const ENV_CONFIG = {
+  isDevelopment: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined,
+  isProduction: process.env.NODE_ENV === 'production',
+  isReplit: !!process.env.REPL_ID,
+  host: process.env.HOST || 'localhost', // افترض localhost إذا لم يتم تحديده
+};
+
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // أسبوع واحد
-  
+
   let sessionStore;
-  
+
   // Try to use PostgreSQL store with fallback to MemoryStore
   try {
     if (process.env.DATABASE_URL) {
@@ -53,35 +61,29 @@ export function getSession() {
   } catch (error) {
     console.warn('Failed to initialize PostgreSQL session store, falling back to MemoryStore:', error instanceof Error ? error.message : 'Unknown error');
     // Fallback to MemoryStore
-    sessionStore = MemoryStore(session);
-    sessionStore = new sessionStore({
+    const MemoryStoreSession = MemoryStore(session);
+    sessionStore = new MemoryStoreSession({
       checkPeriod: sessionTtl, // prune expired entries every 24h
     });
     console.log('Using MemoryStore for sessions');
   }
-  
-  const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
-  
-  // تحديد ما إذا كنا في بيئة Replit (HTTPS دائماً)
-  const isReplit = !!process.env.REPL_ID;
-  const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // إعدادات متقدمة للكوكيز لحل مشاكل المتصفحات المختلفة
   const cookieSettings = {
     httpOnly: true,
-    secure: isReplit || isProduction, // آمن في Replit أو production
+    secure: ENV_CONFIG.isProduction, // آمن في production (يتطلب HTTPS)
     maxAge: sessionTtl,
-    sameSite: isReplit || isProduction ? "none" as const : "lax" as const, // none للمتصفحات المختلفة في production
-    domain: undefined, // دع المتصفح يحدد
+    sameSite: ENV_CONFIG.isProduction ? "none" as const : "lax" as const, // none للمتصفحات المختلفة في production
+    domain: ENV_CONFIG.isReplit ? undefined : ENV_CONFIG.host, // دع المتصفح يحدد أو استخدم المضيف المحدد
   };
 
-  // في حالة الإنتاج أو Replit، استخدم إعدادات مرنة أكثر
-  if (isReplit || isProduction) {
+  // في حالة الإنتاج، استخدم إعدادات مرنة أكثر
+  if (ENV_CONFIG.isProduction) {
     // للتوافق مع المتصفحات المختلفة
     cookieSettings.sameSite = "none";
-    cookieSettings.secure = true;
+    cookieSettings.secure = true; // يجب استخدام HTTPS في الإنتاج
   }
-  
+
   return session({
     secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
     store: sessionStore,
@@ -94,8 +96,10 @@ export function getSession() {
 }
 
 export function setupAuth(app: Express) {
-  app.set("trust proxy", 1);
+  // يجب أن يكون express-session قبل passport.session
   app.use(getSession());
+
+  // يجب أن يكون passport.initialize و passport.session بعد express-session
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -130,7 +134,7 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res, next) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
-      
+
       const existingUser = await storage.getUserByUsername(validatedData.username!);
       if (existingUser) {
         return res.status(400).json({ error: "اسم المستخدم موجود بالفعل" });
@@ -166,42 +170,42 @@ export function setupAuth(app: Express) {
       'origin': req.headers.origin,
       'referer': req.headers.referer
     });
-    
+
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error('Login error:', err);
         return res.status(500).json({ error: "خطأ في الخادم" });
       }
-      
+
       if (!user) {
         console.log('Login failed for user:', req.body.username, 'Info:', info);
         return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
-      
+
       req.logIn(user, { session: true }, (err: any) => {
         if (err) {
           console.error('Session creation error:', err);
           return res.status(500).json({ error: "فشل في إنشاء الجلسة" });
         }
-        
+
         // التأكد من حفظ الجلسة قبل الاستجابة
         req.session.save((saveErr: any) => {
           if (saveErr) {
             console.error('Session save error:', saveErr);
             return res.status(500).json({ error: "فشل في حفظ الجلسة" });
           }
-          
+
           console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
           console.log('Session saved successfully');
-          
+
           // إرجاع بيانات المستخدم بدون كلمة المرور
           const { password, ...userWithoutPassword } = user;
-          
+
           // إضافة headers إضافية للتوافق
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           res.setHeader('Pragma', 'no-cache');
           res.setHeader('Expires', '0');
-          
+
           res.status(200).json(userWithoutPassword);
         });
       });
@@ -236,19 +240,19 @@ export function requireRole(role: 'admin' | 'moderator' | 'user' | 'viewer') {
     if (!req.isAuthenticated()) {
       return res.sendStatus(401);
     }
-    
+
     const roleHierarchy = {
       admin: 4,
       moderator: 3,
       user: 2,
       viewer: 1,
     };
-    
+
     const userRole = req.user?.role || 'viewer';
     if (roleHierarchy[userRole as keyof typeof roleHierarchy] >= roleHierarchy[role]) {
       return next();
     }
-    
+
     res.sendStatus(403);
   };
 }
