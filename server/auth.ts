@@ -64,20 +64,32 @@ export function getSession() {
   
   // تحديد ما إذا كنا في بيئة Replit (HTTPS دائماً)
   const isReplit = !!process.env.REPL_ID;
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // إعدادات متقدمة للكوكيز لحل مشاكل المتصفحات المختلفة
+  const cookieSettings = {
+    httpOnly: true,
+    secure: isReplit || isProduction, // آمن في Replit أو production
+    maxAge: sessionTtl,
+    sameSite: isReplit || isProduction ? "none" as const : "lax" as const, // none للمتصفحات المختلفة في production
+    domain: undefined, // دع المتصفح يحدد
+  };
+
+  // في حالة الإنتاج أو Replit، استخدم إعدادات مرنة أكثر
+  if (isReplit || isProduction) {
+    // للتوافق مع المتصفحات المختلفة
+    cookieSettings.sameSite = "none";
+    cookieSettings.secure = true;
+  }
   
   return session({
     secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // تغيير إلى true لحل مشاكل الجلسة
+    saveUninitialized: true, // تغيير إلى true لضمان حفظ الجلسة
     name: 'connect.sid',
-    cookie: {
-      httpOnly: true,
-      secure: isReplit || !isDevelopment, // آمن في Replit أو production
-      maxAge: sessionTtl,
-      sameSite: "lax", // استخدم 'lax' لتوافق أفضل
-      domain: undefined, // دع المتصفح يحدد
-    },
+    cookie: cookieSettings,
+    rolling: true, // تجديد الجلسة مع كل طلب
   });
 }
 
@@ -149,6 +161,11 @@ export function setupAuth(app: Express) {
   // تسجيل الدخول
   app.post("/api/login", (req, res, next) => {
     console.log('Login attempt for user:', req.body.username);
+    console.log('Request headers:', {
+      'user-agent': req.headers['user-agent'],
+      'origin': req.headers.origin,
+      'referer': req.headers.referer
+    });
     
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
@@ -161,17 +178,32 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
       
-      req.logIn(user, (err: any) => {
+      req.logIn(user, { session: true }, (err: any) => {
         if (err) {
           console.error('Session creation error:', err);
           return res.status(500).json({ error: "فشل في إنشاء الجلسة" });
         }
         
-        console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
-        
-        // إرجاع بيانات المستخدم بدون كلمة المرور
-        const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+        // التأكد من حفظ الجلسة قبل الاستجابة
+        req.session.save((saveErr: any) => {
+          if (saveErr) {
+            console.error('Session save error:', saveErr);
+            return res.status(500).json({ error: "فشل في حفظ الجلسة" });
+          }
+          
+          console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
+          console.log('Session saved successfully');
+          
+          // إرجاع بيانات المستخدم بدون كلمة المرور
+          const { password, ...userWithoutPassword } = user;
+          
+          // إضافة headers إضافية للتوافق
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          
+          res.status(200).json(userWithoutPassword);
+        });
       });
     })(req, res, next);
   });

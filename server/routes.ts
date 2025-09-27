@@ -4,9 +4,9 @@ import { Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage.js";
 import { setupAuth, isAuthenticated, requireRole } from "./auth";
-import { 
-  insertApplicationSchema, 
-  insertDomainSchema, 
+import {
+  insertApplicationSchema,
+  insertDomainSchema,
   insertSslCertificateSchema,
   insertNginxConfigSchema,
   insertNotificationSchema,
@@ -14,7 +14,7 @@ import {
   insertFilePermissionSchema,
   insertFileLockSchema,
   insertFileBackupSchema,
-  insertAllowedPathSchema 
+  insertAllowedPathSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { pm2Service } from "./services/pm2Service";
@@ -356,8 +356,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedApp);
     } catch (error) {
       console.error("Error updating application:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Unknown error occurred" 
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Unknown error occurred"
       });
     }
   });
@@ -429,14 +429,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
-          res.status(503).json({ 
-            message: "Process manager is unavailable", 
+          res.status(503).json({
+            message: "Process manager is unavailable",
             details: errorMessage,
             solution: "Please ensure PM2 is installed or use fallback mode"
           });
         } else if (errorMessage.includes('ENOENT') || errorMessage.includes('command not found')) {
-          res.status(404).json({ 
-            message: "Application command or path not found", 
+          res.status(404).json({
+            message: "Application command or path not found",
             details: errorMessage,
             suggestions: [
               "Check if the application path exists",
@@ -445,14 +445,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]
           });
         } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
-          res.status(403).json({ 
-            message: "Permission denied", 
+          res.status(403).json({
+            message: "Permission denied",
             details: errorMessage,
             solution: "Check file permissions and ownership"
           });
         } else if (errorMessage.includes('No main file found')) {
-          res.status(400).json({ 
-            message: "No executable file found", 
+          res.status(400).json({
+            message: "No executable file found",
             details: errorMessage,
             suggestions: [
               "Add index.js, main.js, bot.js, or similar entry file",
@@ -461,8 +461,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]
           });
         } else {
-          res.status(500).json({ 
-            message: "Failed to start application", 
+          res.status(500).json({
+            message: "Failed to start application",
             details: errorMessage,
             troubleshooting: "Check application logs for more details"
           });
@@ -496,25 +496,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
-        res.status(503).json({ 
-          message: "Process manager is unavailable", 
+        res.status(503).json({
+          message: "Process manager is unavailable",
           details: errorMessage,
           solution: "Please ensure PM2 is installed or use fallback mode"
         });
       } else if (errorMessage.includes('not found') || errorMessage.includes('ESRCH')) {
-        res.status(404).json({ 
-          message: "Application process not found", 
-          details: errorMessage 
+        res.status(404).json({
+          message: "Application process not found",
+          details: errorMessage
         });
       } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
-        res.status(403).json({ 
-          message: "Permission denied", 
-          details: errorMessage 
+        res.status(403).json({
+          message: "Permission denied",
+          details: errorMessage
         });
       } else {
-        res.status(500).json({ 
-          message: "Failed to stop application", 
-          details: errorMessage 
+        res.status(500).json({
+          message: "Failed to stop application",
+          details: errorMessage
         });
       }
     }
@@ -544,31 +544,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
-        res.status(503).json({ 
-          message: "Process manager is unavailable", 
+        res.status(503).json({
+          message: "Process manager is unavailable",
           details: errorMessage,
           solution: "Please ensure PM2 is installed or use fallback mode"
         });
       } else if (errorMessage.includes('not found') || errorMessage.includes('ESRCH')) {
-        res.status(404).json({ 
-          message: "Application process not found", 
-          details: errorMessage 
+        res.status(404).json({
+          message: "Application process not found",
+          details: errorMessage
         });
       } else if (errorMessage.includes('fallback mode')) {
-        res.status(501).json({ 
-          message: "Restart not supported in fallback mode", 
+        res.status(501).json({
+          message: "Restart not supported in fallback mode",
           details: errorMessage,
           solution: "Please stop and start the application manually"
         });
       } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
-        res.status(403).json({ 
-          message: "Permission denied", 
-          details: errorMessage 
+        res.status(403).json({
+          message: "Permission denied",
+          details: errorMessage
         });
       } else {
-        res.status(500).json({ 
-          message: "Failed to restart application", 
-          details: errorMessage 
+        res.status(500).json({
+          message: "Failed to restart application",
+          details: errorMessage
         });
       }
     }
@@ -778,7 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { parentId, type } = req.query;
 
       const files = await storage.getFiles(
-        parentId as string || null, 
+        parentId as string || null,
         userId
       );
 
@@ -831,7 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: result.message });
       }
 
-      res.json({ 
+      res.json({
         content: result.data.content,
         mimeType: result.data.mimeType,
         size: result.data.size
@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update file metadata
-      await storage.updateFile(id, { 
+      await storage.updateFile(id, {
         size: Buffer.byteLength(content, 'utf8'),
         checksum: result.data?.checksum
       }, userId);
@@ -943,7 +943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newValue: { size: Buffer.byteLength(content, 'utf8') }
       });
 
-      res.json({ 
+      res.json({
         message: "File saved successfully",
         backup: backup ? "created" : "skipped",
         checksum: result.data?.checksum
@@ -974,7 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Move to trash
         const trashItem = await storage.moveToTrash(id, userId);
 
-        res.json({ 
+        res.json({
           message: "File moved to trash",
           trashId: trashItem.id
         });
@@ -1032,7 +1032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Restored from trash: ${restoredFile.name}`
       });
 
-      res.json({ 
+      res.json({
         message: "File restored successfully",
         file: restoredFile
       });
@@ -1114,7 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Restored from backup: ${restoredFile.name}`
       });
 
-      res.json({ 
+      res.json({
         message: "File restored from backup successfully",
         file: restoredFile
       });
@@ -1485,7 +1485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(processes);
     } catch (error) {
       console.error("Error fetching processes:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to fetch processes",
         error: error instanceof Error ? error.message : 'Unknown error',
         processes: [] // Return empty array as fallback
@@ -1580,9 +1580,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ status: 'connected', message: 'Database connection successful' });
     } catch (error) {
       console.error("Database connection test failed:", error);
-      res.status(500).json({ 
-        status: 'error', 
-        message: error instanceof Error ? error.message : 'Database connection failed' 
+      res.status(500).json({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Database connection failed'
       });
     }
   });
@@ -1602,9 +1602,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Comprehensive audit failed:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Audit failed' 
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Audit failed'
       });
     }
   });
@@ -1637,8 +1637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Failed to generate audit report:", error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : 'Failed to generate report' 
+      res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to generate report'
       });
     }
   });
@@ -1672,8 +1672,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // WebSocket server setup with CORS inheritance and Origin checking
-  const wss = new WebSocketServer({ 
-    server, 
+  const wss = new WebSocketServer({
+    server,
     path: '/ws',
     verifyClient: (info: any) => {
       // Verify Origin for security
@@ -1742,8 +1742,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For now, simulated - in production, validate against session store
         if (sessionId && sessionId.length > 10) {
           // Mock user - in production, get from authenticated session
-          return { 
-            isAuthenticated: true, 
+          return {
+            isAuthenticated: true,
             role: 'admin', // Get from actual session/database
             id: 'authenticated-user-id' // Get from actual session
           };
@@ -1859,7 +1859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             // Additional security: Check for dangerous characters
-            if (trimmedCommand.includes('|') || trimmedCommand.includes(';') || 
+            if (trimmedCommand.includes('|') || trimmedCommand.includes(';') ||
                 trimmedCommand.includes('&') || trimmedCommand.includes('`') ||
                 trimmedCommand.includes('$') || trimmedCommand.includes('>') ||
                 trimmedCommand.includes('<')) {
@@ -1891,8 +1891,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Use direct binary execution (NO SHELL) for security
               const childProcess = spawn(commandSpec.binary, commandSpec.args, {
                 stdio: ['pipe', 'pipe', 'pipe'],
-                env: { 
-                  ...process.env, 
+                env: {
+                  ...process.env,
                   TERM: 'xterm-256color',
                   PATH: process.env.PATH // Ensure PATH is available
                 },
@@ -2104,9 +2104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await realFileSystemService.listDirectory(dirPath, userId);
 
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: result.message,
-          error: result.error 
+          error: result.error
         });
       }
 
@@ -2130,9 +2130,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await realFileSystemService.getFileInfo(filePath, userId);
 
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: result.message,
-          error: result.error 
+          error: result.error
         });
       }
 
@@ -2156,9 +2156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await realFileSystemService.readFileContent(filePath, userId, encoding as BufferEncoding);
 
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: result.message,
-          error: result.error 
+          error: result.error
         });
       }
 
@@ -2199,9 +2199,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: result.message,
-          error: result.error 
+          error: result.error
         });
       }
 
@@ -2225,9 +2225,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await realFileSystemService.deleteItem(itemPath, userId);
 
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: result.message,
-          error: result.error 
+          error: result.error
         });
       }
 
@@ -2251,9 +2251,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await realFileSystemService.renameItem(oldPath, newPath, userId);
 
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: result.message,
-          error: result.error 
+          error: result.error
         });
       }
 
@@ -2277,9 +2277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await realFileSystemService.copyItem(sourcePath, destinationPath, userId);
 
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: result.message,
-          error: result.error 
+          error: result.error
         });
       }
 
@@ -2391,8 +2391,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, data: stats });
     } catch (error) {
       console.error("Error fetching storage stats:", error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         message: "Failed to fetch storage statistics",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -2404,15 +2404,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       storageStatsService.clearCache();
       const stats = await storageStatsService.getStorageStats();
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "Storage statistics refreshed successfully",
-        data: stats 
+        data: stats
       });
     } catch (error) {
       console.error("Error refreshing storage stats:", error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         message: "Failed to refresh storage statistics",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
