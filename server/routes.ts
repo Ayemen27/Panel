@@ -1,5 +1,5 @@
 replit_final_file>
-import type { Express, Request } from "express";
+import { Express, Request } from "express";
 import { createServer } from "http";
 import type { Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
