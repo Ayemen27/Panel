@@ -13,6 +13,10 @@ import { ENV_CONFIG, logEnvironmentInfo } from "../shared/environment";
 
 logEnvironmentInfo();
 
+// تشخيص المسارات
+import { pathManager } from './utils/pathManager';
+pathManager.logPathsDiagnostic();
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

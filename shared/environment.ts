@@ -1,3 +1,4 @@
+
 // ملاحظة: تحميل متغيرات البيئة يجب أن يتم في ملفات الخادم، ليس هنا
 
 // Type declarations for server-side compatibility
@@ -34,6 +35,106 @@ export interface EnvironmentConfig {
     ssl: boolean;
     connectionPooling: boolean;
   };
+  paths: {
+    root: string;
+    logs: string;
+    uploads: string;
+    config: string;
+    ssl: string;
+    nginx: string;
+    pm2: string;
+  };
+}
+
+// دالة ذكية لاكتشاف البيئة من جانب الخادم
+function detectServerEnvironment(): {
+  isReplit: boolean;
+  isProduction: boolean;
+  isDevelopment: boolean;
+  isCustomDomain: boolean;
+  serverType: 'replit' | 'external' | 'local';
+} {
+  const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
+  
+  // اكتشاف Replit من متغيرات البيئة المختلفة
+  const replitIndicators = [
+    'REPL_ID',
+    'REPLIT_DB_URL', 
+    'REPL_SLUG',
+    'REPLIT_CLUSTER',
+    'REPLIT_ENVIRONMENT',
+    'REPLIT_URL'
+  ];
+  
+  const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]);
+  
+  // اكتشاف إضافي من hostname
+  const hostname = processEnv.HOSTNAME || '';
+  const isReplitByHostname = hostname.includes('replit') || hostname.includes('nix');
+  
+  // اكتشاف السيرفر الخارجي من IP أو hostname
+  const isExternalServer = hostname.includes('93.127.142.144') || 
+                          processEnv.EXTERNAL_SERVER === 'true' ||
+                          processEnv.SERVER_TYPE === 'external';
+  
+  const nodeEnv = processEnv.NODE_ENV || 'development';
+  const isProduction = nodeEnv === 'production';
+  const isDevelopment = nodeEnv === 'development';
+  
+  // اكتشاف النطاق المخصص
+  const isCustomDomain = processEnv.CUSTOM_DOMAIN === 'true' ||
+                        processEnv.DOMAIN === 'panel.binarjoinanelytic.info';
+  
+  let serverType: 'replit' | 'external' | 'local' = 'local';
+  
+  if (isReplitServer || isReplitByHostname) {
+    serverType = 'replit';
+  } else if (isExternalServer || isCustomDomain) {
+    serverType = 'external';
+  }
+  
+  return {
+    isReplit: isReplitServer || isReplitByHostname,
+    isProduction,
+    isDevelopment,
+    isCustomDomain,
+    serverType
+  };
+}
+
+// دالة لتحديد المسارات حسب البيئة
+function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): EnvironmentConfig['paths'] {
+  const basePaths = {
+    replit: {
+      root: '/home/runner',
+      logs: '/home/runner/logs',
+      uploads: '/home/runner/uploads',
+      config: '/home/runner/.config',
+      ssl: '/home/runner/ssl',
+      nginx: '/etc/nginx',
+      pm2: '/home/runner/.pm2'
+    },
+    external: {
+      root: '/home/administrator',
+      logs: '/var/log',
+      uploads: '/home/administrator/uploads',
+      config: '/home/administrator/.config',
+      ssl: '/etc/ssl',
+      nginx: '/etc/nginx',
+      pm2: '/home/administrator/.pm2'
+    },
+    local: {
+      root: process.cwd(),
+      logs: './logs',
+      uploads: './uploads',
+      config: './.config',
+      ssl: './ssl',
+      nginx: '/usr/local/etc/nginx',
+      pm2: './pm2'
+    }
+  };
+  
+  return basePaths[serverType];
 }
 
 export function detectEnvironment(): EnvironmentConfig {
@@ -124,7 +225,7 @@ export function detectEnvironment(): EnvironmentConfig {
   const wsPort = getWSPortFromEnv();
   const hmrPort = getHMRPortFromEnv();
 
-  // تحسين اكتشاف Replit في المتصفح والخادم
+  // اكتشاف البيئة من جانب المتصفح
   const isReplitBrowser = typeof window !== 'undefined' && window.location && (
     window.location.hostname.includes('replit.dev') ||
     window.location.hostname.includes('repl.co') ||
@@ -133,7 +234,10 @@ export function detectEnvironment(): EnvironmentConfig {
     window.location.hostname.includes('worf.replit.dev')
   );
 
-  const isReplitServer = !!(
+  // اكتشاف البيئة من جانب الخادم (أكثر دقة)
+  const serverEnvDetection = typeof window === 'undefined' ? detectServerEnvironment() : null;
+  
+  const isReplitServer = serverEnvDetection?.isReplit || !!(
     processEnv.REPL_ID ||
     processEnv.REPLIT_DB_URL ||
     processEnv.REPL_SLUG ||
@@ -145,11 +249,18 @@ export function detectEnvironment(): EnvironmentConfig {
   const isReplit = isReplitBrowser || isReplitServer;
 
   // اكتشاف النطاق المخصص
-  const isCustomDomain = typeof window !== 'undefined' &&
-    window.location.hostname === 'panel.binarjoinanelytic.info';
+  const isCustomDomain = (typeof window !== 'undefined' &&
+    window.location.hostname === 'panel.binarjoinanelytic.info') ||
+    (serverEnvDetection?.isCustomDomain);
 
   const isDevelopment = nodeEnv === 'development';
   const isProduction = nodeEnv === 'production';
+
+  // تحديد نوع السيرفر والمسارات
+  const serverType = serverEnvDetection?.serverType || 
+    (isReplit ? 'replit' : (isCustomDomain ? 'external' : 'local'));
+  
+  const paths = getEnvironmentPaths(serverType);
 
   // إذا كان النطاق المخصص، استخدم إعدادات الإنتاج
   if (isCustomDomain) {
@@ -179,6 +290,7 @@ export function detectEnvironment(): EnvironmentConfig {
         ssl: true,
         connectionPooling: true,
       },
+      paths
     };
   }
 
@@ -238,6 +350,7 @@ export function detectEnvironment(): EnvironmentConfig {
         ssl: true,
         connectionPooling: true,
       },
+      paths
     };
   }
 
@@ -264,6 +377,7 @@ export function detectEnvironment(): EnvironmentConfig {
         ssl: true,
         connectionPooling: true,
       },
+      paths
     };
   }
 
@@ -295,6 +409,7 @@ export function detectEnvironment(): EnvironmentConfig {
       ssl: false,
       connectionPooling: false,
     },
+    paths
   };
 }
 
@@ -436,6 +551,27 @@ export function getWebSocketUrl(): string {
   return serverUrl;
 }
 
+// دالة للحصول على المسار الصحيح حسب البيئة
+export function getPath(pathType: keyof EnvironmentConfig['paths']): string {
+  return ENV_CONFIG.paths[pathType];
+}
+
+// دالة للتحقق من وجود مسار في البيئة الحالية
+export function pathExists(pathType: keyof EnvironmentConfig['paths']): boolean {
+  if (typeof window !== 'undefined') {
+    // في المتصفح، لا يمكن التحقق من المسارات
+    return false;
+  }
+  
+  try {
+    const fs = require('fs');
+    const path = getPath(pathType);
+    return fs.existsSync(path);
+  } catch {
+    return false;
+  }
+}
+
 export function logEnvironmentInfo(): void {
   const isCustomDomain = typeof window !== 'undefined' &&
     window.location.hostname === 'panel.binarjoinanelytic.info';
@@ -457,6 +593,13 @@ export function logEnvironmentInfo(): void {
   console.log(`📡 API Base: ${getApiBaseUrl()}`);
   console.log(`🔌 WS URL: ${getWebSocketUrl()}`);
   console.log(`🔐 CORS Origins:`, ENV_CONFIG.cors.origin);
+
+  // عرض المسارات المكتشفة
+  console.log(`📁 Environment Paths:`);
+  Object.entries(ENV_CONFIG.paths).forEach(([key, value]) => {
+    const exists = pathExists(key as keyof EnvironmentConfig['paths']);
+    console.log(`   ${key}: ${value} ${exists ? '✅' : '❓'}`);
+  });
 
   // تشخيص محسن للمشاكل مع اختبار URL
   const wsUrl = getWebSocketUrl();
@@ -509,6 +652,12 @@ export function logEnvironmentInfo(): void {
     console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
     console.log(`🔧 PORT: ${process.env.PORT || 'undefined'}`);
     console.log(`🔧 REPL_ID: ${process.env.REPL_ID ? 'defined' : 'undefined'}`);
+    
+    // معلومات اكتشاف البيئة على الخادم
+    const serverDetection = detectServerEnvironment();
+    console.log(`🔧 Server Type: ${serverDetection.serverType}`);
+    console.log(`🔧 Is External Server: ${serverDetection.serverType === 'external'}`);
+    console.log(`🔧 Custom Domain Detected: ${serverDetection.isCustomDomain}`);
   } else if (typeof window !== 'undefined') {
     // In browser, try to detect Vite environment
     const isDev = window.location.hostname === 'localhost' || window.location.hostname.includes('replit');

@@ -3,6 +3,7 @@ import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
+import { pathManager, getLogsPath, getNginxPath, getPM2Path } from '../utils/pathManager';
 
 const execAsync = promisify(exec);
 
@@ -16,16 +17,16 @@ class SecurityUtils {
     if (!appName || typeof appName !== 'string') {
       throw new Error('Application name must be a non-empty string');
     }
-    
+
     // Only allow safe characters: letters, numbers, hyphens, underscores
     if (!/^[a-zA-Z0-9_-]+$/.test(appName)) {
       throw new Error('Application name contains invalid characters');
     }
-    
+
     if (appName.length > 50) {
       throw new Error('Application name too long');
     }
-    
+
     return appName;
   }
 
@@ -47,16 +48,16 @@ class SecurityUtils {
     if (!service || typeof service !== 'string') {
       throw new Error('Service name must be a non-empty string');
     }
-    
+
     // Allow letters, numbers, hyphens, dots, and @ symbols (systemd naming)
     if (!/^[a-zA-Z0-9_.-]+(@[a-zA-Z0-9_.-]+)?$/.test(service)) {
       throw new Error('Service name contains invalid characters');
     }
-    
+
     if (service.length > 100) {
       throw new Error('Service name too long');
     }
-    
+
     return service;
   }
 
@@ -67,19 +68,19 @@ class SecurityUtils {
     if (!query || typeof query !== 'string') {
       throw new Error('Search query must be a non-empty string');
     }
-    
+
     if (query.length > 500) {
       throw new Error('Search query too long');
     }
-    
+
     // Remove dangerous characters that could be used for command injection
     // Allow letters, numbers, spaces, basic punctuation, but not shell metacharacters
     const sanitized = query.replace(/[`$()\\|&;<>"']/g, '');
-    
+
     if (sanitized !== query) {
       console.warn('Search query contained potentially dangerous characters and was sanitized');
     }
-    
+
     return sanitized;
   }
 
@@ -107,27 +108,27 @@ class SecurityUtils {
    */
   static validateLogPath(logPath: string): string {
     const normalizedPath = path.normalize(logPath);
-    
+
     // Prevent directory traversal
     if (normalizedPath.includes('..')) {
       throw new Error('Invalid log path: directory traversal detected');
     }
-    
+
     // Only allow specific log directories
     const allowedPaths = [
       '/var/log/nginx/',
       '/home/administrator/',
       '/var/log/',
     ];
-    
+
     const isAllowed = allowedPaths.some(allowedPath => 
       normalizedPath.startsWith(allowedPath)
     );
-    
+
     if (!isAllowed) {
       throw new Error('Access to this log path is not allowed');
     }
-    
+
     return normalizedPath;
   }
 }
@@ -139,17 +140,29 @@ export interface LogEntry {
   source: string;
 }
 
+// Placeholder for LogOptions and parseLogContent, parseGenericLogs, filterAndSortLogs, parsePM2Logs, parseNginxLogs, parseJournalLogs if they are defined elsewhere or need to be implemented.
+interface LogOptions {
+  lines?: number;
+  level?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
 export class LogService {
+  private static readonly LOG_DIR = getLogsPath();
+  private static readonly NGINX_LOG_DIR = path.join(getNginxPath(), 'logs');
+  private static readonly PM2_LOG_DIR = path.join(getPM2Path(), 'logs');
+
   async getApplicationLogs(appName: string, lines = 100): Promise<LogEntry[]> {
     try {
       // Validate inputs to prevent command injection
       const validatedAppName = SecurityUtils.validateAppName(appName);
       const validatedLines = SecurityUtils.validateLines(lines);
-      
+
       // Try PM2 logs first - use escaped parameters
       const escapedAppName = SecurityUtils.escapeShellArg(validatedAppName);
       const { stdout } = await execAsync(`pm2 logs ${escapedAppName} --lines ${validatedLines} --nostream --raw`);
-      
+
       return this.parsePM2Logs(stdout);
     } catch (error) {
       // Fallback to application log file if it exists
@@ -171,11 +184,11 @@ export class LogService {
       const validatedLines = SecurityUtils.validateLines(lines);
       const logPath = type === 'access' ? '/var/log/nginx/access.log' : '/var/log/nginx/error.log';
       const validatedLogPath = SecurityUtils.validateLogPath(logPath);
-      
+
       // Use escaped parameters for shell command
       const escapedLogPath = SecurityUtils.escapeShellArg(validatedLogPath);
       const { stdout } = await execAsync(`sudo tail -n ${validatedLines} ${escapedLogPath}`);
-      
+
       return this.parseNginxLogs(stdout, type);
     } catch (error) {
       console.warn(`Failed to get nginx logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -189,13 +202,13 @@ export class LogService {
       // Validate inputs
       const validatedLines = SecurityUtils.validateLines(lines);
       let command = `journalctl --no-pager -n ${validatedLines}`;
-      
+
       if (service) {
         const validatedService = SecurityUtils.validateServiceName(service);
         const escapedService = SecurityUtils.escapeShellArg(validatedService);
         command += ` -u ${escapedService}`;
       }
-      
+
       const { stdout } = await execAsync(command);
       return this.parseJournalLogs(stdout);
     } catch (error) {
@@ -210,9 +223,9 @@ export class LogService {
       // Validate and sanitize inputs - CRITICAL for preventing command injection
       const validatedQuery = SecurityUtils.validateSearchQuery(query);
       const escapedQuery = SecurityUtils.escapeShellArg(validatedQuery);
-      
+
       let grepCommand = `grep -i ${escapedQuery}`;
-      
+
       if (source === 'nginx') {
         SecurityUtils.validateLogSource(source);
         grepCommand = `sudo ${grepCommand} /var/log/nginx/*.log`;
@@ -223,7 +236,7 @@ export class LogService {
         // Search PM2 logs
         grepCommand = `pm2 logs --raw | ${grepCommand}`;
       }
-      
+
       const { stdout } = await execAsync(grepCommand);
       return this.parseGenericLogs(stdout);
     } catch (error) {
@@ -233,15 +246,15 @@ export class LogService {
 
   async tailLogs(source: string, appName?: string): Promise<AsyncIterable<LogEntry>> {
     const controller = new AbortController();
-    
+
     return {
       [Symbol.asyncIterator]: async function* () {
         let command = '';
-        
+
         try {
           // Validate source parameter
           const validatedSource = SecurityUtils.validateLogSource(source);
-          
+
           if (validatedSource === 'nginx') {
             command = 'sudo tail -f /var/log/nginx/error.log';
           } else if (validatedSource === 'system') {
@@ -252,15 +265,15 @@ export class LogService {
             const escapedAppName = SecurityUtils.escapeShellArg(validatedAppName);
             command = `pm2 logs ${escapedAppName} --raw --lines 0`;
           }
-          
+
           if (!command) {
             console.warn('Invalid log source or missing app name for PM2 logs');
             return;
           }
-        
+
           try {
             const process = exec(command, { signal: controller.signal });
-            
+
             if (process.stdout) {
               for await (const chunk of process.stdout) {
                 const lines = chunk.toString().split('\n');
@@ -286,13 +299,122 @@ export class LogService {
     };
   }
 
+  static async getApplicationLogs(applicationId: string, options: LogOptions = {}): Promise<LogEntry[]> {
+    try {
+      // محاولة مسارات PM2 متعددة حسب البيئة
+      const possiblePM2Paths = [
+        this.PM2_LOG_DIR,
+        path.join(require('os').homedir(), '.pm2/logs'),
+        path.join(process.cwd(), '.pm2/logs'),
+        '/home/runner/.pm2/logs',
+        '/home/administrator/.pm2/logs'
+      ];
+
+      const logs: LogEntry[] = [];
+
+      for (const pm2LogDir of possiblePM2Paths) {
+        if (!fs.existsSync(pm2LogDir)) continue;
+
+        const pm2LogPath = path.join(pm2LogDir, `${applicationId}-out.log`);
+        const pm2ErrorLogPath = path.join(pm2LogDir, `${applicationId}-error.log`);
+
+        // Read PM2 output logs
+        if (fs.existsSync(pm2LogPath)) {
+          const content = await fs.promises.readFile(pm2LogPath, 'utf8');
+          const logLines = this.parseLogContent(content, 'pm2', applicationId);
+          logs.push(...logLines);
+        }
+
+        // Read PM2 error logs
+        if (fs.existsSync(pm2ErrorLogPath)) {
+          const content = await fs.promises.readFile(pm2ErrorLogPath, 'utf8');
+          const errorLines = this.parseLogContent(content, 'pm2', applicationId, 'error');
+          logs.push(...errorLines);
+        }
+
+        // إذا وجدت سجلات، توقف عن البحث
+        if (logs.length > 0) {
+          console.log(`📁 وُجدت سجلات PM2 في: ${pm2LogDir}`);
+          break;
+        }
+      }
+
+      return this.filterAndSortLogs(logs, options);
+    } catch (error) {
+      console.error('Error reading application logs:', error);
+      return [];
+    }
+  }
+
+  static async getNginxLogs(options: LogOptions = {}): Promise<LogEntry[]> {
+    try {
+      // محاولة مسارات Nginx متعددة حسب البيئة
+      const possibleNginxLogPaths = [
+        this.NGINX_LOG_DIR,
+        '/var/log/nginx',
+        '/usr/local/var/log/nginx',
+        '/opt/nginx/logs',
+        path.join(getNginxPath(), 'logs'),
+        './nginx/logs'
+      ];
+
+      const logs: LogEntry[] = [];
+
+      for (const nginxLogDir of possibleNginxLogPaths) {
+        if (!fs.existsSync(nginxLogDir)) continue;
+
+        const accessLogPath = path.join(nginxLogDir, 'access.log');
+        const errorLogPath = path.join(nginxLogDir, 'error.log');
+
+        // Read access logs
+        if (fs.existsSync(accessLogPath)) {
+          const content = await fs.promises.readFile(accessLogPath, 'utf8');
+          const accessLines = this.parseLogContent(content, 'nginx');
+          logs.push(...accessLines);
+        }
+
+        // Read error logs
+        if (fs.existsSync(errorLogPath)) {
+          const content = await fs.promises.readFile(errorLogPath, 'utf8');
+          const errorLines = this.parseLogContent(content, 'nginx', undefined, 'error');
+          logs.push(...errorLines);
+        }
+
+        // إذا وجدت سجلات، توقف عن البحث
+        if (logs.length > 0) {
+          console.log(`📁 وُجدت سجلات Nginx في: ${nginxLogDir}`);
+          break;
+        }
+      }
+
+      return this.filterAndSortLogs(logs, options);
+    } catch (error) {
+      console.error('Error reading nginx logs:', error);
+      return [];
+    }
+  }
+
+  // Placeholder methods - need to be implemented
+  private parseLogContent(content: string, source: string, appId?: string, type?: string): LogEntry[] {
+    // This is a placeholder and needs to be implemented based on actual log formats.
+    // It should parse the content and return an array of LogEntry objects.
+    // For now, it returns generic logs.
+    return this.parseGenericLogs(content, undefined, source, appId, type);
+  }
+
+  private filterAndSortLogs(logs: LogEntry[], options: LogOptions): LogEntry[] {
+    // This is a placeholder and needs to be implemented.
+    // It should filter and sort logs based on options like lines, level, startDate, endDate.
+    return logs;
+  }
+
   private parsePM2Logs(content: string): LogEntry[] {
     const lines = content.split('\n').filter(line => line.trim());
-    
+
     return lines.map(line => {
       // PM2 log format: timestamp|level|app|message
       const match = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(.+)$/);
-      
+
       if (match) {
         return {
           timestamp: match[1],
@@ -301,7 +423,7 @@ export class LogService {
           source: 'pm2'
         };
       }
-      
+
       return {
         timestamp: new Date().toISOString(),
         level: 'info',
@@ -313,12 +435,12 @@ export class LogService {
 
   private parseNginxLogs(content: string, type: 'access' | 'error'): LogEntry[] {
     const lines = content.split('\n').filter(line => line.trim());
-    
+
     return lines.map(line => {
       if (type === 'error') {
         // Nginx error log format: timestamp [level] message
         const match = line.match(/^(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\] (.+)$/);
-        
+
         if (match) {
           return {
             timestamp: new Date(match[1]).toISOString(),
@@ -336,7 +458,7 @@ export class LogService {
           source: 'nginx'
         };
       }
-      
+
       return {
         timestamp: new Date().toISOString(),
         level: 'info',
@@ -348,15 +470,15 @@ export class LogService {
 
   private parseJournalLogs(content: string): LogEntry[] {
     const lines = content.split('\n').filter(line => line.trim());
-    
+
     return lines.map(line => {
       // Journal log format: timestamp hostname service[pid]: message
       const match = line.match(/^(\w{3} \d{2} \d{2}:\d{2}:\d{2}) (\w+) (.+?)\[(\d+)\]: (.+)$/);
-      
+
       if (match) {
         const currentYear = new Date().getFullYear();
         const timestamp = new Date(`${currentYear} ${match[1]}`).toISOString();
-        
+
         return {
           timestamp,
           level: 'info',
@@ -364,7 +486,7 @@ export class LogService {
           source: 'system'
         };
       }
-      
+
       return {
         timestamp: new Date().toISOString(),
         level: 'info',
@@ -374,24 +496,24 @@ export class LogService {
     });
   }
 
-  private parseGenericLogs(content: string, lines?: number): LogEntry[] {
+  private parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
     const logLines = content.split('\n').filter(line => line.trim());
-    
+
     if (lines) {
       logLines.splice(0, Math.max(0, logLines.length - lines));
     }
-    
+
     return logLines.map(line => ({
       timestamp: new Date().toISOString(),
       level: this.detectLogLevel(line),
       message: line,
-      source: 'generic'
+      source: source
     }));
   }
 
   private detectLogLevel(message: string): string {
     const lowerMessage = message.toLowerCase();
-    
+
     if (lowerMessage.includes('error') || lowerMessage.includes('err')) {
       return 'error';
     } else if (lowerMessage.includes('warn') || lowerMessage.includes('warning')) {

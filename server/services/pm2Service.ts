@@ -1,6 +1,8 @@
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
-import type { Application } from '@shared/schema';
+import fs from 'fs';
+import path from 'path';
+import { pathManager, getPM2Path } from '../utils/pathManager';
 
 const execAsync = promisify(exec);
 
@@ -43,25 +45,28 @@ export class PM2Service {
 
     try {
       // Try multiple paths for PM2
+      const pm2Path = getPM2Path();
       const possiblePaths = [
+        pm2Path,
         'pm2',
         '/usr/local/bin/pm2',
         '/usr/bin/pm2',
-        process.env.HOME + '/.npm/bin/pm2',
-        '/home/runner/.config/npm/node_global/bin/pm2',
+        path.join(process.env.HOME || '', '.npm/bin/pm2'),
+        path.join(process.env.HOME || '', '.config/npm/node_global/bin/pm2'),
         'npx pm2'
       ];
 
       let pm2Found = false;
       let workingPath = '';
-      
-      for (const path of possiblePaths) {
+
+      for (const p of possiblePaths) {
+        if (!p) continue;
         try {
-          const { stdout } = await execAsync(`${path} --version`);
+          const { stdout } = await execAsync(`${p} --version`);
           if (stdout && stdout.trim()) {
             pm2Found = true;
-            workingPath = path;
-            console.log(`✅ PM2 found at: ${path}, version: ${stdout.trim()}`);
+            workingPath = p;
+            console.log(`✅ PM2 found at: ${p}, version: ${stdout.trim()}`);
             break;
           }
         } catch (error) {
@@ -72,7 +77,7 @@ export class PM2Service {
       if (pm2Found) {
         this.pm2Available = true;
         console.log('✅ PM2 is available and working');
-        
+
         // Try to save and resurrect any existing processes
         try {
           await execAsync(`${workingPath} resurrect`);
@@ -80,7 +85,7 @@ export class PM2Service {
         } catch (error) {
           console.log('ℹ️ No PM2 processes to resurrect');
         }
-        
+
         return true;
       } else {
         throw new Error('PM2 not found in any expected location');
@@ -105,14 +110,14 @@ export class PM2Service {
       }
 
       let command = application.command;
-      
+
       // If command is empty, try to find main file
       if (!command || command.trim() === '') {
         const commonFiles = [
           'index.ts', 'server.ts', 'app.ts', 'main.ts',
           'index.js', 'server.js', 'app.js', 'main.js'
         ];
-        
+
         let mainFile = '';
         for (const file of commonFiles) {
           try {
@@ -123,11 +128,11 @@ export class PM2Service {
             continue;
           }
         }
-        
+
         if (!mainFile) {
           throw new Error(`No main file found in ${application.path}. Please add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`);
         }
-        
+
         // Set appropriate command based on file type
         if (mainFile.endsWith('.ts')) {
           command = `tsx ${mainFile}`;
@@ -202,27 +207,27 @@ export class PM2Service {
 
   async startApplication(application: Application): Promise<void> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
         console.log(`🚀 Starting application "${application.name}" at path: ${application.path}`);
-        
+
         // Extract the main file from command if it's a node command
         let startCommand = application.command;
         let mainFile = '';
         let useTypeScript = false;
-        
+
         // Check if command is empty or only contains flags
         if (!startCommand || startCommand.trim() === '') {
           console.log(`🔍 No command specified, auto-detecting main file for ${application.name}`);
-          
+
           // Try common entry points - check TypeScript files first, then JavaScript
           const commonFiles = [
             'index.ts', 'server.ts', 'app.ts', 'main.ts', 'bot.ts', 'src/index.ts', 'src/bot.ts', 'src/main.ts',
             'index.js', 'server.js', 'app.js', 'main.js', 'bot.js', 'src/index.js', 'src/bot.js', 'src/main.js'
           ];
           const fs = await import('fs').then(m => m.promises);
-          
+
           // First, verify the application path exists
           try {
             const pathStats = await fs.stat(application.path);
@@ -244,14 +249,14 @@ export class PM2Service {
           } catch (error) {
             console.warn(`⚠️ Warning: Could not read directory contents: ${error}`);
           }
-          
+
           // Check for package.json and its main/start scripts
           try {
             const packageJsonPath = `${application.path}/package.json`;
             await fs.access(packageJsonPath);
             const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
             console.log(`📦 Found package.json for ${application.name}`);
-            
+
             if (packageJson.scripts?.start) {
               startCommand = `npm start`;
               console.log(`✅ Using npm start command from package.json`);
@@ -263,7 +268,7 @@ export class PM2Service {
           } catch (error) {
             console.log(`📦 No package.json found or readable, continuing with file detection`);
           }
-          
+
           // If no command found yet, search for common files
           if (!startCommand && !mainFile) {
             for (const file of commonFiles) {
@@ -282,18 +287,18 @@ export class PM2Service {
               }
             }
           }
-          
+
           if (!startCommand && !mainFile) {
             // Create helpful error message with directory contents
-            const contentsInfo = directoryContents.length > 0 
+            const contentsInfo = directoryContents.length > 0
               ? `\n\nDirectory contents: ${directoryContents.join(', ')}`
               : '\n\nDirectory appears to be empty or unreadable.';
-            
+
             const errorMsg = `No main file found in ${application.path}.${contentsInfo}\n\nPlease add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`;
             console.error(`❌ ${errorMsg}`);
             throw new Error(errorMsg);
           }
-          
+
           // Set appropriate command based on file type
           if (!startCommand) {
             if (useTypeScript) {
@@ -303,14 +308,14 @@ export class PM2Service {
             }
           }
         }
-        
+
         console.log(`🔧 Final command for ${application.name}: ${startCommand}`);
-        
+
         // Check if the main file is TypeScript
         if (startCommand.includes('.ts') || startCommand.startsWith('tsx ')) {
           useTypeScript = true;
         }
-        
+
         // If command starts with npm/yarn, use it directly
         if (startCommand.startsWith('npm ') || startCommand.startsWith('yarn ')) {
           const command = `cd ${application.path} && pm2 start --name "${application.name}" -- ${startCommand}`;
@@ -329,7 +334,7 @@ export class PM2Service {
               mainFile = startCommand.split(' ')[0];
             }
           }
-          
+
           // Check if tsx is available, otherwise use ts-node
           try {
             await execAsync('tsx --version');
@@ -353,23 +358,23 @@ export class PM2Service {
             // If not a node command, assume it's the file directly
             mainFile = startCommand.split(' ')[0];
           }
-          
+
           // Validate mainFile is not empty before starting PM2
           if (!mainFile || mainFile.trim() === '') {
             throw new Error('Invalid command: main file cannot be empty. Please specify a valid file to run.');
           }
-          
+
           const command = `cd ${application.path} && pm2 start "${mainFile}" --name "${application.name}"`;
           await execAsync(command);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
+
         // Provide specific error handling for empty file names
         if (errorMessage.includes('pm2 start ""') || errorMessage.includes('Process  not found')) {
           throw new Error(`Failed to start application with PM2: No valid file specified. Please ensure a main file exists in ${application.path} or specify a command in application settings.\n\nOriginal error: ${errorMessage}`);
         }
-        
+
         // Enhanced error context
         throw new Error(`Failed to start application with PM2: ${errorMessage}\n\nApplication path: ${application.path}\nCommand: ${application.command || 'auto-detect'}`);
       }
@@ -380,7 +385,7 @@ export class PM2Service {
 
   async stopApplication(name: string): Promise<void> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
         await execAsync(`pm2 stop ${name}`);
@@ -394,7 +399,7 @@ export class PM2Service {
 
   async restartApplication(name: string, application?: Application): Promise<void> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
         // First try to restart existing process
@@ -425,7 +430,7 @@ export class PM2Service {
 
   async deleteApplication(name: string): Promise<void> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
         await execAsync(`pm2 delete ${name}`);
@@ -446,7 +451,7 @@ export class PM2Service {
   async getAllApplicationStatuses(): Promise<Map<string, string>> {
     const pm2Available = await this.checkPM2Availability();
     const statusMap = new Map<string, string>();
-    
+
     if (pm2Available) {
       try {
         const processes = await this.getCachedPM2Processes();
@@ -468,28 +473,31 @@ export class PM2Service {
         statusMap.set(name, processInfo.status);
       });
     }
-    
+
     return statusMap;
   }
 
   private async getCachedPM2Processes(): Promise<PM2Process[]> {
     const now = Date.now();
-    
+
     if (this.pm2ProcessCache && (now - this.pm2ProcessCache.timestamp) < this.CACHE_DURATION) {
       return this.pm2ProcessCache.data;
     }
-    
+
     try {
-      const { stdout } = await execAsync(`pm2 jlist`);
-      
+      const pm2Path = getPM2Path();
+      if (!pm2Path) throw new Error('PM2 path not found');
+
+      const { stdout } = await execAsync(`${pm2Path} jlist`);
+
       // Clean and validate JSON output - handle PM2 update messages
       let cleanOutput = stdout.trim();
-      
+
       // Remove PM2 update messages and ASCII art
       const lines = cleanOutput.split('\n');
       const jsonLines: string[] = [];
       let inJsonSection = false;
-      
+
       for (const line of lines) {
         // Skip PM2 update messages and status lines
         if (line.includes('In-memory PM2 is out-of-date') ||
@@ -497,42 +505,42 @@ export class PM2Service {
             line.includes('PM2 version:') ||
             line.includes('Local PM2 version:') ||
             line.includes('>>>>') ||
-            line.match(/^[\s\-_\/\\|]+$/)) {
+            line.match(/^[\s\-_\/|]+$/)) {
           continue;
         }
-        
+
         // Look for JSON start
         if (line.trim().startsWith('[')) {
           inJsonSection = true;
         }
-        
+
         if (inJsonSection) {
           jsonLines.push(line);
         }
       }
-      
+
       // If we found JSON lines, join them back
       if (jsonLines.length > 0) {
         cleanOutput = jsonLines.join('\n').trim();
       }
-      
+
       // Fallback: Extract JSON using brackets if the above didn't work
       if (!cleanOutput.startsWith('[')) {
         const jsonStart = cleanOutput.indexOf('[');
         const jsonEnd = cleanOutput.lastIndexOf(']');
-        
+
         if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
           cleanOutput = cleanOutput.substring(jsonStart, jsonEnd + 1);
         }
       }
-      
+
       // Try to parse JSON with better error handling
       let processes: PM2Process[] = [];
-      
+
       try {
         if (cleanOutput.trim()) {
           processes = JSON.parse(cleanOutput);
-          
+
           // Validate that it's an array
           if (!Array.isArray(processes)) {
             console.warn('PM2 jlist did not return an array, falling back to empty array');
@@ -543,7 +551,7 @@ export class PM2Service {
         console.error('Failed to parse PM2 JSON output:', parseError);
         console.error('Raw output:', stdout);
         console.error('Cleaned output:', cleanOutput);
-        
+
         // Try alternative command with force update
         try {
           // Try updating PM2 first if needed
@@ -556,30 +564,30 @@ export class PM2Service {
               console.warn('PM2 update failed, continuing with current version');
             }
           }
-          
-          const { stdout: altOutput } = await execAsync(`pm2 list --format json`);
+
+          const { stdout: altOutput } = await execAsync(`${pm2Path} list --format json`);
           let altCleanOutput = altOutput.trim();
-          
+
           // Clean alternative output too
           const altJsonStart = altCleanOutput.indexOf('[');
           const altJsonEnd = altCleanOutput.lastIndexOf(']');
-          
+
           if (altJsonStart !== -1 && altJsonEnd !== -1 && altJsonEnd > altJsonStart) {
             altCleanOutput = altCleanOutput.substring(altJsonStart, altJsonEnd + 1);
           }
-          
+
           processes = JSON.parse(altCleanOutput);
         } catch (altError) {
           console.error('Alternative PM2 command also failed:', altError);
           processes = [];
         }
       }
-      
+
       this.pm2ProcessCache = {
         data: processes,
         timestamp: now
       };
-      
+
       return processes;
     } catch (error) {
       console.error('Error getting PM2 processes:', error);
@@ -600,16 +608,16 @@ export class PM2Service {
 
   async getApplicationStatus(name: string): Promise<string> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
         const processes = await this.getCachedPM2Processes();
         const process = processes.find(p => p.name === name);
-        
+
         if (!process) {
           return 'stopped';
         }
-        
+
         switch (process.pm2_env.status) {
           case 'online':
             return 'running';
@@ -633,7 +641,7 @@ export class PM2Service {
       if (!processInfo) {
         return 'stopped';
       }
-      
+
       // Check if process is still running
       try {
         process.kill(processInfo.pid, 0); // Signal 0 checks if process exists
@@ -649,7 +657,7 @@ export class PM2Service {
 
   async listProcesses(): Promise<PM2Process[]> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
         return await this.getCachedPM2Processes();
@@ -665,10 +673,12 @@ export class PM2Service {
 
   async getApplicationLogs(name: string, lines = 100): Promise<string[]> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
-        const { stdout } = await execAsync(`pm2 logs ${name} --lines ${lines} --nostream`);
+        const pm2Path = getPM2Path();
+        if (!pm2Path) throw new Error('PM2 path not found');
+        const { stdout } = await execAsync(`${pm2Path} logs ${name} --lines ${lines} --nostream`);
         return stdout.split('\n').filter(line => line.trim() !== '');
       } catch (error) {
         throw new Error(`Failed to get PM2 logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -692,17 +702,19 @@ export class PM2Service {
 
   async getApplicationMetrics(name: string): Promise<{ cpu: number; memory: number; uptime: number; restarts: number }> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
-        const { stdout } = await execAsync('pm2 jlist');
+        const pm2Path = getPM2Path();
+        if (!pm2Path) throw new Error('PM2 path not found');
+        const { stdout } = await execAsync(`${pm2Path} jlist`);
         const processes: PM2Process[] = JSON.parse(stdout);
-        
+
         const process = processes.find(p => p.name === name);
         if (!process) {
           throw new Error('Application not found');
         }
-        
+
         return {
           cpu: process.monit.cpu,
           memory: process.monit.memory,
@@ -718,7 +730,7 @@ export class PM2Service {
       if (!processInfo) {
         throw new Error('Application not found in fallback mode');
       }
-      
+
       const uptime = Date.now() - processInfo.startTime.getTime();
       return {
         cpu: 0, // Not available in fallback mode
@@ -731,10 +743,12 @@ export class PM2Service {
 
   async saveConfiguration(): Promise<void> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
-        await execAsync('pm2 save');
+        const pm2Path = getPM2Path();
+        if (!pm2Path) throw new Error('PM2 path not found');
+        await execAsync(`${pm2Path} save`);
       } catch (error) {
         throw new Error(`Failed to save PM2 configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -746,10 +760,12 @@ export class PM2Service {
 
   async resurrectProcesses(): Promise<void> {
     const pm2Available = await this.checkPM2Availability();
-    
+
     if (pm2Available) {
       try {
-        await execAsync('pm2 resurrect');
+        const pm2Path = getPM2Path();
+        if (!pm2Path) throw new Error('PM2 path not found');
+        await execAsync(`${pm2Path} resurrect`);
       } catch (error) {
         throw new Error(`Failed to resurrect PM2 processes: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
