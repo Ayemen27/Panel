@@ -24,8 +24,21 @@ pathManager.logPathsDiagnostic();
 
 const app = express();
 
-// Trust proxy for proper IP detection behind reverse proxy (Nginx/Cloudflare)
-app.set('trust proxy', true);
+// Trust proxy configuration - secure and environment-specific
+// Fix for express-rate-limit security warning
+if (ENV_CONFIG.name === 'development' && !ENV_CONFIG.isReplit) {
+  // Local development - no proxy
+  app.set('trust proxy', false);
+  log('🔒 Trust proxy: disabled (local development)');
+} else if (ENV_CONFIG.isReplit || ENV_CONFIG.name === 'production') {
+  // Replit or external/custom domain - trust first proxy level
+  app.set('trust proxy', 1);
+  log('🔒 Trust proxy: 1 level (Replit/external server)');
+} else {
+  // Fallback for custom domains with multiple proxy levels
+  app.set('trust proxy', 2);
+  log('🔒 Trust proxy: 2 levels (custom domain)');
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
