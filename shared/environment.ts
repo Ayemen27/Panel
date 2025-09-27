@@ -565,11 +565,13 @@ export function getWebSocketUrl(token?: string): string {
     }
   } else {
     // في الخادم - استخدم إعدادات ENV_CONFIG
-    const protocol = ENV_CONFIG.websocket.protocol || 'ws:';
+    const protocol = ENV_CONFIG.websocket.protocol || 'ws';
     const host = ENV_CONFIG.websocket.host || 'localhost';
     const port = ENV_CONFIG.websocket.port || 5000;
 
-    let serverUrl = `${protocol}//${host}:${port}/ws`;
+    // تأكد من أن البروتوكول يحتوي على :// في النهاية
+    const fullProtocol = protocol.endsWith(':') ? `${protocol}//` : `${protocol}://`;
+    let serverUrl = `${fullProtocol}${host}:${port}/ws`;
 
     if (token) {
       serverUrl += `?token=${encodeURIComponent(token)}`;

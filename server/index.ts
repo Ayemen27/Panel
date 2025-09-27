@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { ENV_CONFIG, logEnvironmentInfo } from "../shared/environment";
 

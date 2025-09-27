@@ -2324,7 +2324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.error(`Terminal: Process error for command "${trimmedCommand}":`, error);
                 ws.send(JSON.stringify({
                   type: 'TERMINAL_ERROR',
-                  message: `Process error: ${error.message}`
+                  message: `Process error: ${error instanceof Error ? error.message : 'Unknown error'}`
                 }));
               });
 
@@ -2356,7 +2356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } catch (error) {
               console.error(`Terminal: Failed to execute command "${trimmedCommand}":`, error);
               const errorMessage = error instanceof Error 
-                ? error.message 
+                ? (error as Error).message 
                 : (typeof error === 'string' 
                     ? error 
                     : String(error) || 'Unknown error');
