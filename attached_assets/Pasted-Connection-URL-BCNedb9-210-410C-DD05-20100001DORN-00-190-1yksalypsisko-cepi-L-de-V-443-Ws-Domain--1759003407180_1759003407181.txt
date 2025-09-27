@@ -1,0 +1,263 @@
+Connection URL: /BCNedb9-210-410C-DD05-20100001DORN-00-190/1yksalypsisko cepi L.de V:443/Ws
+
+Domain: 8c55ed69-c57b-410c-bb85-2d3de00fbb85-00-15p7fyk5otyps.sisko.replit.dev
+
+Running automatic connection tests...
+
+Starting comprehensive connection tests...
+
+Environment: replit
+
+Network Status: Online
+
+usewebsocket is:120
+
+uscwcbSocket.ts:151
+
+main.tex:113
+
+connectiontest.is:47
+
+connectionTest.ts:48
+
+connectionTest.ts:49
+
+Testing APT connection to: https://bc59ed69-c51b-410c-hbR5-2d3de00 (bh89-00-19p7fyk9otypa.si
+
+connectionTest,ts: 57
+
+sko.reolit.dev/ani/health
+
+Fetching: /api/storage/stats
+
+[Error Logger] network: Network error (fetch): Failed to execute fetch' on "Window': Request
+
+with GET/HEAD method cannot have body. for /api/real-Tiles/browse Object
+
+queryClient.ts:90
+
+hook.js:6018
+
+hook.15:608
+
+wehsocketDiagnostics.ts:125
+
+[ErrorLogger] network: Network error (fetch) 0 Failed to execute "retch' on 'window: with GET/HEAD method cannot have body. for /api/real-files/browse Object
+
+Request
+
+WebSocket test connection opened
+
+Token validation successful
+
+Received test message: CONNECTED
+
+websocketDiagnostics.ts:142
+
+websocketDiagnostics.is:145
+
+[Error Logger network: Network error (fetch): Failed to execute fetch' on 'Window: Request
+
+with GET/HEAD method cannot have body. Tor /api/real-files/browse Object
+
+[ErrorLogger] network: Network error (fetch): 0 Failed to execute "retch' on 'Window: Request with GET/HEAD method cannot have body. for /api/real-files/browse Object
+
+hook.is:608
+
+book 15:608
+
+Response status for /api/storage/stats 200
+
+queryclient.ts:101
+
+Success response for /api/storage/stats Object
+
+queryClient.ts:123
+
+API connection successful (1753ms)
+
+connectionTest.ts:74
+
+Starting WebSocket connection tests..
+
+connectionTest.is:11
+
+Using Replit domain kebSocket URL: w5S://Bc55edb-c5th-410c-bb85-2d3de00fbb89-00-19p7fyk9otyr
+
+environment.ts:515
+
+B.sisko.rcolit.dev:443/
+
+Primary WebSocket URL: Ws://8c59ed69-c51b-410c-bb80-2d3de00fbb89-00-1907fvk9otyp8.sisko.r connectionTest.ts:123
+
+eolit dev:443/Ws
+
+WebSocket connection successful
+
+connectionTest.ts:141
+
+Connection tests completed in 2967mς
+
+connectionTest.ts: 195
+
+API:
+
+WebSocket:
+
+النتائج اختبار الاتصال )
+
+معلومات التشخيص الملا
+
+حالة الشبكة متصل .
+
+connectionTest.ts:285
+
+connectionTest.ts:200
+
+connectionTest.ts:287
+
+connectionfest.ts: 291
+
+replit
+
+connectionTest.ts:294
+
+connectionfest.is:290
+
+API URL: DESps://8c59ed69-c51b-410c-bb05-203de00fbb89-00-19p7fyk9otyp5.sisko.cepiit.de
+
+connectionTest.ts:302
+
+v/ogi/health
+
+AP1 Status: 200
+
+API Response Sine: 175385
+
+1.V:443/Ws
+
+somecLiontests: 306
+
+connectionlest.ts:310
+
+WebSocket URL: wss://8c59ed69-c51b-410c-bb05-2030000thb09-00-19077vk9otypa.sisko.repli
+
+connectionTest.ts:314
+
+التوصيات .
+
+الجميع الاتصالات العمل بشكل صحيح .
+
+اجميع الاتصالات العمل بشكل صحيح .
+
+connectionTest.is:344
+
+connectionTest.ts: 357
+
+main Usx: 121
+
+hook.15:608
+
+[ErrorLogger] network: Network error (fetch) 0 Failed to execute "retch" on "Window Request with GET/HEAD method cannot have body, for /api/real-files/browse Object
+
+[ErrorLogger] network: Network error (fetch): 0 Failed to execute "fetch' on 'Window': Request with GET/HEAD method cannot have body, for/api/real files/browse Object
+
+Received test message: frontend_errors_batch
+
+useAuth user Object isLoading: false error: null
+
+Router isAuthenticated: true isLoading false
+
+User authenticated, showing protected routes
+
+useAuth user: Object isLoading: false error: null
+
+Router isAuthenticated: true isLoading: false
+
+User authenticated, showing protected routes
+
+useAuth user Object isLoading: false error: null
+
+useAuthuser: Object isLoading: false error: null
+
+Authenticated user detected, current path: /dashboard
+
+Fetching: /api/dashboard/stats
+
+Fetching: /api/applications
+
+Fetching: /api/system/into
+
+book 15:608
+
+websocketDiagnostics.ts:345
+
+useAuth.ts.72
+
+App.tax 87
+
+App.tsx:124
+
+useAuth, ta:77
+
+App. Lax:87
+
+useAuth.ts:77
+
+uscAuth.ts.
+
+useAuth.ts: 105
+
+queryclient.ts:90
+
+queryClient.ts 20
+
+queryClient.ts/90
+
+useAuth.ts: 71
+
+useAuth.ts:77
+
+A soft navigation has been detected: <URL>
+
+useAuth user: Object isLoading: false error: null
+
+useAuth user: Object isLoading: false error: mul
+
+Response status for /api/system/into 200
+
+queryClient.ts: 101
+
+Success response for /api/system/infn Object
+
+queryClient.ts: 123.
+
+useAuth user: Object isLoading: false error: null
+
+useAuth. 55:77
+
+Response status for /api/dashboard/stats 200
+
+queryclient.ts:101
+
+Success response for /api/dashboard/stats Object
+
+queryClients:123
+
+useAuth user: Object isLoading: false error: null
+
+useAuth.ts.
+
+Response status for /api/applications 200
+
+queryClient.ts:101
+
+Success response for /api/applications Array (2)
+
+queryclient.ts:123
+
+useduth user hier istoading false eccor mill
+
+useAuth.rs/77
+
+وحدة التحكم :
