@@ -68,7 +68,7 @@ const PageLoader = () => (
 );
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const { isConnected: wsConnected, connectionDiagnostics } = useWebSocket(user?.id);
 
   console.log('Router - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
@@ -119,6 +119,34 @@ function Router() {
       });
     }
   }, [user?.id]);
+
+  // Define protected routes. These routes require authentication.
+  const protectedRoutes = [
+    "/",
+    "/dashboard",
+    "/applications",
+    "/applications/logs/:id",
+    "/domains",
+    "/nginx",
+    "/ssl",
+    "/processes",
+    "/logs",
+    "/audit",
+    "/terminal",
+    "/health-check",
+    "/file-manager",
+    "/path-manager",
+  ];
+
+  // Check current location
+  const location = window.location;
+
+  // If the current route is protected and the user is not authenticated, redirect to login.
+  if (protectedRoutes.includes(location.pathname) && !isAuthenticated) {
+    console.log('Protected route accessed without authentication, redirecting to AuthPage');
+    return <AuthPage />;
+  }
+
 
   return (
     <Switch>
