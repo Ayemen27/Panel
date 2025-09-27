@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { Eye, EyeOff, LogIn, Shield, Lock, User, Building2 } from "lucide-react"
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -31,6 +30,7 @@ export default function AuthPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient(); // Initialize useQueryClient
 
   // تأثير تحميل الصفحة
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function AuthPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include",
+          credentials: "include", // Ensure cookies are sent
           body: JSON.stringify(credentials),
         });
 
@@ -71,21 +71,20 @@ export default function AuthPage() {
         throw error;
       }
     },
-    onSuccess: (user) => {
-      console.log('Login successful:', user);
-      queryClient.setQueryData(["/api/user"], user);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      
+    onSuccess: (data) => {
+      console.log('✅ Login successful, user data:', data);
+
+      // تحديث React Query cache فوراً
+      queryClient.setQueryData(["/api/user"], data);
+
       toast({
         title: "تم تسجيل الدخول بنجاح",
-        description: `أهلاً بك ${user.firstName || user.username}`,
+        description: `أهلاً بك، ${data.firstName || data.username}!`,
+        variant: "default",
       });
-      
-      // انتظار أطول قليلاً للتأكد من تحديث الجلسة والتوكن
-      setTimeout(() => {
-        // إعادة تحميل الصفحة لضمان تحديث حالة التوثيق بالكامل
-        window.location.href = "/dashboard";
-      }, 500);
+
+      // إعادة توجيه إلى لوحة التحكم
+      navigate('/dashboard');
     },
     onError: (error: Error) => {
       console.error('Login mutation error:', error);
@@ -107,7 +106,7 @@ export default function AuthPage() {
       <div className="absolute inset-0 bg-grid-slate-100 dark:bg-grid-slate-800 bg-[size:32px_32px] opacity-20"></div>
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-400/20 dark:bg-blue-600/20 rounded-full blur-3xl"></div>
       <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-indigo-400/20 dark:bg-indigo-600/20 rounded-full blur-3xl"></div>
-      
+
       <div className={`w-full max-w-md relative z-10 transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <Card className="backdrop-blur-lg bg-white/80 dark:bg-slate-900/80 shadow-2xl border border-white/20 dark:border-slate-700/50 rounded-2xl">
           <CardHeader className="text-center pb-8 pt-8">
@@ -118,7 +117,7 @@ export default function AuthPage() {
               </div>
               <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
             </div>
-            
+
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-2">
               تسجيل الدخول
             </CardTitle>
@@ -126,7 +125,7 @@ export default function AuthPage() {
               أدخل بياناتك للوصول إلى لوحة التحكم الإدارية
             </p>
           </CardHeader>
-          
+
           <CardContent className="px-8 pb-8">
             <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
               {/* Username Field */}

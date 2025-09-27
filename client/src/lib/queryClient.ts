@@ -113,9 +113,10 @@ export const queryClient = new QueryClient({
         try {
           const res = await fetch(path, {
             signal,
-            credentials: 'include',
+            credentials: 'include', // ✅ ضروري لإرسال cookies/session
             headers: {
               'Content-Type': 'application/json',
+              'Accept': 'application/json',
             },
           });
 

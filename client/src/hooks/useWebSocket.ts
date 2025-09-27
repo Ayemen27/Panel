@@ -73,11 +73,11 @@ export function useWebSocket(token?: string) {
   };
 
   const connect = useCallback(() => {
-    // تحقق من وجود token صالح أولاً
+    // تحقق من وجود token صالح أولاً - السماح بالاتصال بدون token للصفحة العامة
     const currentToken = tokenRef.current;
     if (!currentToken || currentToken.length === 0) {
-      console.log('❌ No valid token available, aborting WebSocket connection');
-      return;
+      console.log('⚠️ No token available, connecting without authentication');
+      // لا نمنع الاتصال - قد يكون المستخدم في صفحة عامة
     }
 
     // منع الاتصالات المتعددة بشكل أكثر صرامة

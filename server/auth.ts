@@ -246,8 +246,12 @@ export function setupAuth(app: Express) {
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
 
-            // 🛡️ SECURITY FIX: استخدام sanitizeUser بدلاً من destructuring manual
-            res.status(200).json(sanitizeUser(user));
+            // 🛡️ SECURITY FIX: استخدام sanitizeUser مع إضافة token للاستجابة
+            const userWithToken = {
+              ...sanitizeUser(user),
+              token: req.sessionID // استخدام session ID كـ token
+            };
+            res.status(200).json(userWithToken);
           });
         });
       });

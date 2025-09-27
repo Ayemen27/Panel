@@ -60,15 +60,18 @@ export function useAuth() {
     queryKey: ["/api/user"],
     queryFn: async (): Promise<User | null> => {
       try {
-        // Replacing the original fetch call with a call to a dummy apiRequest
-        // In a real scenario, you would replace this with your actual API call or hook
         const data = await apiRequest("/api/user");
-        console.log('✅ User authenticated:', data?.firstName); // Changed from username to firstName for consistency
+        console.log('✅ User authenticated:', data?.firstName || data?.username);
+        
+        // تأكد من أن البيانات تحتوي على token أو session
+        if (data && !data.token && !data.sessionId) {
+          console.warn('⚠️ User data missing token/session information');
+        }
+        
         return data;
       } catch (error) {
         if (isUnauthorizedError(error as Error)) {
           console.log('🚫 User not authenticated - showing auth page');
-          // لا تعيد تحميل الصفحة، فقط ارجع null
           return null;
         }
         console.error('❌ Auth error:', error);
