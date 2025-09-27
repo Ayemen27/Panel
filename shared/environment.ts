@@ -499,8 +499,6 @@ export function getWebSocketUrl(token?: string): string {
 
     let primaryUrl: string;
     
-    let primaryUrl: string;
-    
     if (isReplitDomain) {
       // لنطاقات Replit، استخدم منفذ الخادم الحالي
       const wsPort = window.location.port || (protocol === 'wss:' ? '443' : '80');
