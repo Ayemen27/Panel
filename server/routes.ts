@@ -1131,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
-      const { parentId, type } = req.query;
+      const {parentId, type} = req.query;
 
       const files = await storage.getFiles(
         parentId as string || null,
