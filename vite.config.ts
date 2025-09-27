@@ -26,9 +26,6 @@ export default defineConfig({
     'process.env.VITE_PORT': JSON.stringify(process.env.PORT || '5000'),
     'import.meta.env.VITE_PORT': JSON.stringify(process.env.PORT || '5000')
   },
-  env: {
-    VITE_PORT: process.env.PORT || '5000'
-  },
   plugins: [
     react(),
     runtimeErrorOverlay(),

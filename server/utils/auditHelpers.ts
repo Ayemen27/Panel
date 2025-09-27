@@ -278,12 +278,13 @@ ${auditData.readyForDeployment ? '✅ **التطبيق جاهز للنشر**' : 
     report += `\n## المشاكل المكتشفة\n\n`;
 
     auditData.issues.forEach((issue: any, index: number) => {
-      const severityIcon = {
+      const severityIcons: Record<string, string> = {
         'Critical': '🔴',
         'High': '🟠',
         'Medium': '🟡',
         'Low': '🔵'
-      }[issue.severity as keyof typeof severityIcon] || '⚪';
+      };
+      const severityIcon = severityIcons[issue.severity] || '⚪';
 
       report += `### ${index + 1}. ${issue.title}
 
