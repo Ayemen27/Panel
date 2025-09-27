@@ -76,7 +76,7 @@ async function runAudit() {
 }
 
 // تشغيل الفحص إذا تم استدعاء الملف مباشرة
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   runAudit();
 }
 

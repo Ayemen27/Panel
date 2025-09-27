@@ -162,7 +162,7 @@ export async function removeDefaultPaths() {
 }
 
 // Run migration if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   addDefaultPaths()
     .then((result) => {
       console.log('✅ Migration completed successfully:', result);

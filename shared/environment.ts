@@ -41,8 +41,9 @@ export function detectEnvironment(): EnvironmentConfig {
   const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
 
   // Use import.meta.env in browser, process.env on server
+  // Use simple environment detection - avoid import.meta on server
   const nodeEnv = typeof window !== 'undefined'
-    ? (import.meta?.env?.MODE || 'development')
+    ? 'development' // Browser environment - will be set by Vite
     : (processEnv.NODE_ENV || 'development');
 
   // قراءة المنفذ من متغيرات البيئة بشكل تلقائي في المتصفح والخادم
@@ -50,7 +51,10 @@ export function detectEnvironment(): EnvironmentConfig {
     if (typeof window !== 'undefined') {
       // في المتصفح - محاولة قراءة من مصادر متعددة
       const windowProcess = (window as any).process?.env;
-      const importMetaEnv = import.meta?.env;
+      // In browser, environment variables are injected by Vite
+      // Check for common Vite environment variables in window object
+      const viteEnv = (window as any).__VITE_ENV__ || {};
+      const importMetaEnv = viteEnv;
       
       // أولاً: محاولة قراءة من window.process.env
       if (windowProcess?.PORT) {
@@ -74,7 +78,10 @@ export function detectEnvironment(): EnvironmentConfig {
   const getWSPortFromEnv = (): number => {
     if (typeof window !== 'undefined') {
       const windowProcess = (window as any).process?.env;
-      const importMetaEnv = import.meta?.env;
+      // In browser, environment variables are injected by Vite
+      // Check for common Vite environment variables in window object
+      const viteEnv = (window as any).__VITE_ENV__ || {};
+      const importMetaEnv = viteEnv;
       
       if (windowProcess?.WS_PORT) {
         return parseInt(windowProcess.WS_PORT, 10);
@@ -94,7 +101,10 @@ export function detectEnvironment(): EnvironmentConfig {
   const getHMRPortFromEnv = (): number => {
     if (typeof window !== 'undefined') {
       const windowProcess = (window as any).process?.env;
-      const importMetaEnv = import.meta?.env;
+      // In browser, environment variables are injected by Vite
+      // Check for common Vite environment variables in window object
+      const viteEnv = (window as any).__VITE_ENV__ || {};
+      const importMetaEnv = viteEnv;
       
       if (windowProcess?.HMR_PORT) {
         return parseInt(windowProcess.HMR_PORT, 10);
@@ -499,15 +509,16 @@ export function logEnvironmentInfo(): void {
     console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
     console.log(`🔧 PORT: ${process.env.PORT || 'undefined'}`);
     console.log(`🔧 REPL_ID: ${process.env.REPL_ID ? 'defined' : 'undefined'}`);
-  } else if (typeof window !== 'undefined' && import.meta?.env) {
-    const metaEnv = (import.meta as any).env;
-    console.log(`🔧 Browser MODE: ${metaEnv.MODE || 'undefined'}`);
-    console.log(`🔧 Vite DEV: ${metaEnv.DEV ? 'true' : 'false'}`);
+  } else if (typeof window !== 'undefined') {
+    // In browser, try to detect Vite environment
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname.includes('replit');
+    console.log(`🔧 Browser MODE: ${isDev ? 'development' : 'production'}`);
+    console.log(`🔧 Vite DEV: ${isDev ? 'true' : 'false'}`);
   }
 
   // معلومات إضافية للتشخيص
   console.log(`🔧 Environment: ${typeof window !== 'undefined' ? 'browser' : 'server'}`);
   console.log(`🔧 Process Available: ${typeof process !== 'undefined'}`);
-  console.log(`🔧 Import.meta Available: ${typeof import.meta !== 'undefined'}`);
+  console.log(`🔧 Import.meta Available: ${typeof window !== 'undefined'}`);
   console.log(`🔧 WebSocket Constructor Available: ${typeof WebSocket !== 'undefined' || (typeof window !== 'undefined' && typeof (window as any).WebSocket !== 'undefined')}`);
 }
