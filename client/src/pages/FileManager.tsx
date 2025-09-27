@@ -150,7 +150,7 @@ export default function FileManager() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   
   // Real Files State
-  const [currentPath, setCurrentPath] = useState<string>('/home/runner/workspace');
+  const [currentPath, setCurrentPath] = useState<string>('/home/administrator/Panel');
   
   // Common State
   const [selectedItems, setSelectedItems] = useState<string[]>([]);

@@ -75,7 +75,7 @@ export class RealFileSystemService {
     try {
       // First normalize and resolve the path
       const normalizedPath = path.resolve(path.normalize(inputPath));
-      
+
       // Check for directory traversal attempts
       if (inputPath.includes('..') || inputPath.includes('./') || inputPath.includes('.\\')) {
         logger.warn(`Directory traversal attempt detected: ${inputPath}`);
@@ -135,7 +135,7 @@ export class RealFileSystemService {
   ): Promise<boolean> {
     try {
       let mode: number;
-      
+
       switch (requiredPermission) {
         case 'read':
           mode = fsConstants.R_OK;
@@ -162,22 +162,22 @@ export class RealFileSystemService {
    */
   private formatPermissions(mode: number): string {
     const permissions = [];
-    
+
     // Owner permissions
     permissions.push(mode & 0o400 ? 'r' : '-');
     permissions.push(mode & 0o200 ? 'w' : '-');
     permissions.push(mode & 0o100 ? 'x' : '-');
-    
+
     // Group permissions
     permissions.push(mode & 0o040 ? 'r' : '-');
     permissions.push(mode & 0o020 ? 'w' : '-');
     permissions.push(mode & 0o010 ? 'x' : '-');
-    
+
     // Other permissions
     permissions.push(mode & 0o004 ? 'r' : '-');
     permissions.push(mode & 0o002 ? 'w' : '-');
     permissions.push(mode & 0o001 ? 'x' : '-');
-    
+
     return permissions.join('');
   }
 
@@ -206,7 +206,7 @@ export class RealFileSystemService {
       '.tar': 'application/x-tar',
       '.gz': 'application/gzip'
     };
-    
+
     return mimeTypes[ext] || 'application/octet-stream';
   }
 
@@ -298,7 +298,7 @@ export class RealFileSystemService {
 
       for (const entry of entries) {
         const itemPath = path.join(normalizedPath, entry);
-        
+
         try {
           const itemStats = await fs.stat(itemPath);
           const isDirectory = itemStats.isDirectory();
@@ -949,7 +949,7 @@ export class RealFileSystemService {
       if (isDirectory) {
         // Copy directory recursively
         await this.copyDirectoryRecursive(normalizedSourcePath, normalizedDestPath);
-        
+
         // Calculate total size of copied directory
         copiedSize = await this.calculateDirectorySize(normalizedDestPath);
       } else {
@@ -997,15 +997,15 @@ export class RealFileSystemService {
    */
   private async copyDirectoryRecursive(source: string, destination: string): Promise<void> {
     await fs.mkdir(destination, { recursive: true });
-    
+
     const entries = await fs.readdir(source);
-    
+
     for (const entry of entries) {
       const sourcePath = path.join(source, entry);
       const destPath = path.join(destination, entry);
-      
+
       const stats = await fs.stat(sourcePath);
-      
+
       if (stats.isDirectory()) {
         await this.copyDirectoryRecursive(sourcePath, destPath);
       } else {
@@ -1019,14 +1019,14 @@ export class RealFileSystemService {
    */
   private async calculateDirectorySize(dirPath: string): Promise<number> {
     let totalSize = 0;
-    
+
     try {
       const entries = await fs.readdir(dirPath);
-      
+
       for (const entry of entries) {
         const entryPath = path.join(dirPath, entry);
         const stats = await fs.stat(entryPath);
-        
+
         if (stats.isDirectory()) {
           totalSize += await this.calculateDirectorySize(entryPath);
         } else {
@@ -1036,7 +1036,7 @@ export class RealFileSystemService {
     } catch (error) {
       logger.warn(`Error calculating directory size for ${dirPath}: ${error}`);
     }
-    
+
     return totalSize;
   }
 }

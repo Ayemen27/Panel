@@ -22,8 +22,15 @@ export class PathManager {
     // محاولة إنشاء المسار إذا لم يكن موجوداً
     try {
       if (!fs.existsSync(primaryPath)) {
-        fs.mkdirSync(primaryPath, { recursive: true });
+        fs.mkdirSync(primaryPath, { recursive: true, mode: 0o755 });
         console.log(`📁 تم إنشاء المسار: ${primaryPath}`);
+        
+        // التأكد من الصلاحيات الصحيحة
+        try {
+          fs.chmodSync(primaryPath, 0o755);
+        } catch (chmodError) {
+          console.warn(`⚠️ تعذر تعديل صلاحيات المسار: ${primaryPath}`);
+        }
       }
       return primaryPath;
     } catch (error) {
@@ -33,7 +40,7 @@ export class PathManager {
       if (fallbackPath) {
         try {
           if (!fs.existsSync(fallbackPath)) {
-            fs.mkdirSync(fallbackPath, { recursive: true });
+            fs.mkdirSync(fallbackPath, { recursive: true, mode: 0o755 });
           }
           console.log(`🔄 استخدام المسار الاحتياطي: ${fallbackPath}`);
           return fallbackPath;
@@ -46,7 +53,7 @@ export class PathManager {
       const relativePath = `./${pathType}`;
       try {
         if (!fs.existsSync(relativePath)) {
-          fs.mkdirSync(relativePath, { recursive: true });
+          fs.mkdirSync(relativePath, { recursive: true, mode: 0o755 });
         }
         console.log(`🏠 استخدام المسار النسبي: ${relativePath}`);
         return relativePath;

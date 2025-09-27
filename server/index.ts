@@ -15,6 +15,11 @@ logEnvironmentInfo();
 
 // تشخيص المسارات
 import { pathManager } from './utils/pathManager';
+import { setupDirectories } from './scripts/setup-directories';
+
+// إنشاء المجلدات المطلوبة
+await setupDirectories();
+
 pathManager.logPathsDiagnostic();
 
 const app = express();

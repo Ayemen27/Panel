@@ -62,7 +62,7 @@ function detectServerEnvironment(): {
     'REPL_SLUG',
     'REPLIT_CLUSTER',
     'REPLIT_ENVIRONMENT',
-    'REPLIT_URL'
+    'REPL_URL'
   ];
 
   const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]);
