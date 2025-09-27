@@ -47,7 +47,7 @@ function setupCORS(app: Express) {
   app.use(
     cors({
       origin: (origin, callback) => {
-        // السماح بالطلبات بدون origin (مثل تطبيقات الموبايل)
+        // السماح بالطلبات بدون origin (مثل تطبيقات الموبايل والـ WebSocket)
         if (!origin) return callback(null, true);
 
         const allowedOrigins = ENV_CONFIG.cors.origin;
@@ -55,7 +55,11 @@ function setupCORS(app: Express) {
         // التحقق من النطاقات المسموحة مع دعم Regex محسن
         const isAllowed = allowedOrigins.some(allowedOrigin => {
           if (typeof allowedOrigin === 'string') {
-            // مطابقة مباشرة
+            // مطابقة مباشرة أو wildcard
+            if (allowedOrigin.includes('*')) {
+              const pattern = allowedOrigin.replace(/\*/g, '.*');
+              return new RegExp(`^${pattern}$`).test(origin);
+            }
             return allowedOrigin === origin;
           } else if (allowedOrigin instanceof RegExp) {
             // اختبار Regex
@@ -81,7 +85,9 @@ function setupCORS(app: Express) {
         'Accept',
         'Origin',
         'Cache-Control',
-        'Cookie'
+        'Cookie',
+        'X-Forwarded-For',
+        'X-Real-IP'
       ],
       exposedHeaders: ['Set-Cookie'],
       optionsSuccessStatus: 200, // لدعم المتصفحات القديمة
@@ -135,6 +141,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Setup custom authentication
   setupAuth(app);
+
+  // Debug middleware for authentication issues (development only)
+  if (process.env.NODE_ENV !== 'production') {
+    app.use('/api', (req: any, res, next) => {
+      const sessionExists = !!req.session;
+      const isAuthenticated = req.isAuthenticated && req.isAuthenticated();
+      const hasUser = !!req.user;
+      
+      if (!isAuthenticated && req.path !== '/health' && req.method === 'GET') {
+        console.log(`🔍 Auth Debug - ${req.method} ${req.path}:`);
+        console.log(`   Session exists: ${sessionExists}`);
+        console.log(`   Session ID: ${req.sessionID || 'none'}`);
+        console.log(`   Is authenticated: ${isAuthenticated}`);
+        console.log(`   Has user: ${hasUser}`);
+        console.log(`   User agent: ${req.headers['user-agent']?.substring(0, 50)}...`);
+        console.log(`   Origin: ${req.headers.origin || 'none'}`);
+        console.log(`   Cookies: ${Object.keys(req.cookies || {}).join(', ') || 'none'}`);
+      }
+      
+      next();
+    });
+  }
 
   // Auth routes are now handled in auth.ts
 

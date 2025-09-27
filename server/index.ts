@@ -23,6 +23,10 @@ await setupDirectories();
 pathManager.logPathsDiagnostic();
 
 const app = express();
+
+// Trust proxy for proper IP detection behind reverse proxy (Nginx/Cloudflare)
+app.set('trust proxy', true);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
