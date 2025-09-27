@@ -28,29 +28,30 @@ function isUnauthorizedError(error: Error): boolean {
          error.message.toLowerCase().includes('unauthorized');
 }
 
-// Dummy apiRequest function for demonstration purposes
-// In a real application, this would be your actual API fetching logic
+// Real API request function
 async function apiRequest(url: string): Promise<any> {
-  // Simulate API call
-  if (url === "/api/user") {
-    // Simulate an unauthorized response if no token is present (for testing)
-    const token = localStorage.getItem("authToken"); // Or wherever you store your token
-    if (!token) {
-      const error = new Error("401 Unauthorized");
-      (error as any).status = 401; // Attach status for the isUnauthorizedError function
-      throw error;
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        const error = new Error("401 Unauthorized");
+        (error as any).status = 401;
+        throw error;
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    // Simulate a successful response
-    return {
-      id: "user123",
-      email: "user@example.com",
-      firstName: "John",
-      lastName: "Doe",
-      role: "user",
-      profileImageUrl: "http://example.com/profile.jpg"
-    };
+
+    return await response.json();
+  } catch (error) {
+    console.error('API Request failed:', error);
+    throw error;
   }
-  return {}; // Default return for other URLs
 }
 
 
@@ -123,11 +124,11 @@ export function useAuth() {
         console.log('Redirecting to dashboard...');
         navigate('/dashboard');
       }
-    } else if (!isAuthenticated) {
+    } else if (isAuthenticated === false) {
       const currentPath = window.location.pathname;
-      // إعادة التوجيه لصفحة تسجيل الدخول إذا كان المستخدم غير مصادق عليه وفي صفحة محمية
+      // إعادة التوجيه لصفحة تسجيل الدخول فقط إذا كان في صفحة محمية
       if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/auth') {
-        console.log('Unauthenticated user detected, redirecting to login...');
+        console.log('Unauthenticated user detected, redirecting to auth...');
         navigate('/');
       }
     }

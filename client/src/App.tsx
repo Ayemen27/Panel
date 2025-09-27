@@ -74,7 +74,12 @@ function Router() {
 
   // ✅ useEffect hooks يجب أن تكون دائماً في نفس الترتيب
   useEffect(() => {
-    if (user?.token) {
+    // تأكد من أن isAuthenticated ليس undefined قبل التعامل مع WebSocket
+    if (isAuthenticated === undefined) {
+      return; // انتظر حتى يتم تحديد حالة المصادقة
+    }
+
+    if (isAuthenticated && user?.token) {
       // تحديث token في WebSocket
       updateToken(user.token);
       
@@ -85,11 +90,11 @@ function Router() {
           console.warn('⚠️ WebSocket connection issues detected');
         }
       });
-    } else if (user === null) {
+    } else if (isAuthenticated === false) {
       // المستخدم غير مسجل دخول - امسح التوكن
       updateToken('');
     }
-  }, [user?.token, updateToken]);
+  }, [isAuthenticated, user?.token, updateToken]);
 
   console.log('Router - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
 

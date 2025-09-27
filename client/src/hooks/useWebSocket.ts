@@ -73,6 +73,13 @@ export function useWebSocket(token?: string) {
   };
 
   const connect = useCallback(() => {
+    // تحقق من وجود token صالح أولاً
+    const currentToken = tokenRef.current;
+    if (!currentToken || currentToken.length === 0) {
+      console.log('❌ No valid token available, aborting WebSocket connection');
+      return;
+    }
+
     // منع الاتصالات المتعددة بشكل أكثر صرامة
     if (wsRef.current?.readyState === WebSocket.CONNECTING ||
         wsRef.current?.readyState === WebSocket.OPEN) {
@@ -87,9 +94,7 @@ export function useWebSocket(token?: string) {
     }
 
     try {
-      // استخدام التوكن المحدث
-      const currentToken = tokenRef.current;
-      console.log('🔑 Using token for WebSocket connection:', currentToken ? 'Yes' : 'No');
+      console.log('🔑 Using token for WebSocket connection: Yes');
       
       // Use the current domain for WebSocket connection with proper error handling
       const wsUrl = getWebSocketUrl(currentToken);
@@ -179,12 +184,7 @@ export function useWebSocket(token?: string) {
           // Handle authentication success from WebSocket
           if (message.type === 'CONNECTION_SUCCESS' || message.type === 'CONNECTED') {
             console.log('✅ WebSocket authentication successful');
-            // Force refresh of user data from React Query
-            if (typeof window !== 'undefined') {
-              setTimeout(() => {
-                window.location.reload();
-              }, 100);
-            }
+            // لا تعيد تحميل الصفحة تلقائياً - دع React Query يتعامل مع البيانات
           }
           
           setLastMessage(message);
@@ -319,12 +319,18 @@ export function useWebSocket(token?: string) {
   useEffect(() => {
     isMountedRef.current = true;
     
-    // فقط اتصل إذا كان هناك token صالح
-    if (tokenRef.current) {
+    // تأكد من عدم الاتصال إذا لم يكن هناك token صالح
+    if (tokenRef.current && tokenRef.current.length > 0) {
       console.log('🔑 Token available, connecting WebSocket...');
       connect();
     } else {
-      console.log('⚠️ No token available, skipping WebSocket connection');
+      console.log('⚠️ No valid token available, skipping WebSocket connection');
+      // تأكد من قطع أي اتصال موجود
+      if (wsRef.current) {
+        wsRef.current.close(1000, 'No token available');
+        wsRef.current = null;
+      }
+      setIsConnected(false);
     }
 
     return () => {
