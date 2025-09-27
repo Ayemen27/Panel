@@ -32,18 +32,26 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // تسجيل خطأ React في خدمة تسجيل الأخطاء
-    logReactError(error, errorInfo, 'ErrorBoundary');
+    console.error('🚨 React Error Boundary caught error:', error);
+    console.error('📍 Component Stack:', errorInfo.componentStack);
     
-    // تحديث حالة التطبيق
-    updateAppState({
-      errorBoundary: true,
-      lastError: {
-        message: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack
-      }
-    });
+    // تسجيل خطأ React في خدمة تسجيل الأخطاء
+    try {
+      logReactError(error, errorInfo, 'ErrorBoundary');
+      
+      // تحديث حالة التطبيق
+      updateAppState({
+        errorBoundary: true,
+        lastError: {
+          message: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
   }
 
   render() {

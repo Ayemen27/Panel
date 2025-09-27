@@ -16,6 +16,7 @@ export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const isMountedRef = useRef(true);
   const maxReconnectAttempts = 5;
   const baseReconnectInterval = 1000; // Start with 1 second
   const maxReconnectInterval = 30000; // Max 30 seconds
@@ -126,17 +127,21 @@ export function useWebSocket() {
 
       wsRef.current.onopen = () => {
         console.log('WebSocket connected');
-        setIsConnected(true);
-        reconnectAttemptsRef.current = 0;
+        if (isMountedRef.current) {
+          setIsConnected(true);
+          reconnectAttemptsRef.current = 0;
 
-        // مسح أي timeout لإعادة الاتصال
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
+          // مسح أي timeout لإعادة الاتصال
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+          }
         }
       };
 
       wsRef.current.onmessage = (event) => {
+        if (!isMountedRef.current) return;
+        
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
           setLastMessage(message);
@@ -269,9 +274,11 @@ export function useWebSocket() {
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     connect();
 
     return () => {
+      isMountedRef.current = false;
       disconnect();
     };
   }, [connect, disconnect]);

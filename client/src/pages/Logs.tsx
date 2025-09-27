@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,32 +72,54 @@ export default function Logs() {
   const [selectedApp, setSelectedApp] = useState("");
   const [isLiveTail, setIsLiveTail] = useState(false);
   const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
+  const [componentMounted, setComponentMounted] = useState(false);
   
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { lastMessage } = useWebSocket();
 
+  // تأكد من mount المكون قبل أي عمليات
   useEffect(() => {
+    setComponentMounted(true);
+    return () => {
+      setComponentMounted(false);
+    };
+  }, []);
+
+  // التحقق من المصادقة مع حماية ضد التشغيل قبل Mount
+  useEffect(() => {
+    if (!componentMounted) return;
+    
     if (!authLoading && !isAuthenticated) {
       toast({
         title: "غير مخول",
         description: "أنت غير مسجل دخول. جاري تسجيل الدخول مرة أخرى...",
         variant: "destructive",
       });
-      setTimeout(() => {
-        window.location.href = "/api/login";
+      
+      const timeoutId = setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = "/api/login";
+        }
       }, 500);
-      return;
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [isAuthenticated, authLoading, toast]);
+  }, [isAuthenticated, authLoading, toast, componentMounted]);
 
-  // Handle real-time log updates via WebSocket
+  // Handle real-time log updates via WebSocket مع حماية ضد null
   useEffect(() => {
-    if (lastMessage?.type === 'LOG_ENTRY' && isLiveTail) {
-      const logEntry = lastMessage.data as LogEntry;
-      setLiveLogs(prev => [logEntry, ...prev.slice(0, 99)]); // Keep last 100 entries
+    if (!componentMounted || !lastMessage) return;
+    
+    try {
+      if (lastMessage.type === 'LOG_ENTRY' && isLiveTail && lastMessage.data) {
+        const logEntry = lastMessage.data as LogEntry;
+        setLiveLogs(prev => [logEntry, ...prev.slice(0, 99)]); // Keep last 100 entries
+      }
+    } catch (error) {
+      console.warn('Error processing WebSocket message:', error);
     }
-  }, [lastMessage, isLiveTail]);
+  }, [lastMessage, isLiveTail, componentMounted]);
 
   const { data: applications } = useQuery({
     queryKey: ["/api/applications"],
