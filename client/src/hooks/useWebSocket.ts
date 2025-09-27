@@ -17,7 +17,57 @@ export function useWebSocket() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
-  const reconnectInterval = 3000;
+  const baseReconnectInterval = 1000; // Start with 1 second
+  const maxReconnectInterval = 30000; // Max 30 seconds
+
+  // Helper function to determine if we should attempt reconnection based on close code
+  const shouldAttemptReconnect = (code: number, attempts: number): boolean => {
+    // Don't reconnect if we've reached max attempts
+    if (attempts >= maxReconnectAttempts) return false;
+    
+    // Normal closure codes - don't reconnect
+    if (code === 1000 || code === 1001) return false;
+    
+    // Server errors that might be temporary - attempt reconnect
+    if (code === 1006 || code === 1005 || code === 1011) return true;
+    
+    // Protocol errors - might be worth a few tries
+    if (code === 1002 || code === 1003 || code === 1007) return attempts < 2;
+    
+    // Policy violations - don't reconnect
+    if (code === 1008) return false;
+    
+    // TLS failure - might be temporary
+    if (code === 1015) return attempts < 2;
+    
+    // For unknown codes, try a few times
+    return attempts < 3;
+  };
+
+  // Helper function to calculate progressive reconnection delay
+  const calculateReconnectDelay = (attempt: number): number => {
+    // Exponential backoff with jitter
+    const exponentialDelay = baseReconnectInterval * Math.pow(2, attempt - 1);
+    const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+    return Math.min(exponentialDelay + jitter, maxReconnectInterval);
+  };
+
+  // Helper function to handle WebSocket handshake errors (like status 200)
+  const handleHandshakeError = (wsUrl: string): void => {
+    console.error('🤝 WebSocket handshake failed for URL:', wsUrl);
+    console.error('💡 This might indicate:');
+    console.error('   - Server returned HTTP 200 instead of 101 (Switching Protocols)');
+    console.error('   - CORS issues');
+    console.error('   - Server doesn\'t support WebSocket protocol');
+    console.error('   - Firewall or proxy blocking WebSocket connections');
+    
+    setLastMessage({
+      type: 'HANDSHAKE_ERROR',
+      message: 'فشل في مصافحة WebSocket - قد يكون السيرفر لا يدعم WebSocket أو مشكلة في CORS',
+      url: wsUrl,
+      timestamp: Date.now()
+    });
+  };
 
   const connect = useCallback(() => {
     // منع الاتصالات المتعددة بشكل أكثر صرامة
@@ -96,37 +146,97 @@ export function useWebSocket() {
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('WebSocket disconnected', event.code, event.reason);
+        const closeReasonMap: { [key: number]: string } = {
+          1000: 'إغلاق طبيعي',
+          1001: 'انتهى الاتصال - الصفحة يتم تحديثها أو إغلاقها',
+          1002: 'خطأ في البروتوكول',
+          1003: 'نوع بيانات غير مدعوم',
+          1005: 'لم يتم استلام رمز الحالة',
+          1006: 'إغلاق غير طبيعي - انقطاع الاتصال المفاجئ',
+          1007: 'بيانات غير صالحة',
+          1008: 'انتهاك السياسة',
+          1009: 'رسالة كبيرة جداً',
+          1010: 'امتداد مطلوب',
+          1011: 'خطأ خادم داخلي',
+          1015: 'فشل تشفير TLS'
+        };
+
+        const closeReason = closeReasonMap[event.code] || `كود غير معروف: ${event.code}`;
+        console.log(`🔌 WebSocket disconnected - Code: ${event.code}, Reason: ${closeReason}`);
+        
+        if (event.reason) {
+          console.log(`📝 Additional info: ${event.reason}`);
+        }
+
+        // Special handling for specific error codes
+        if (event.code === 1006) {
+          console.warn('⚠️ Abnormal closure detected - this might indicate network issues or server problems');
+        } else if (event.code === 1005) {
+          console.warn('⚠️ No status code received - connection may have been dropped unexpectedly');
+        }
+
         setIsConnected(false);
         wsRef.current = null;
 
         // Clear last message to reset any authentication state
         setLastMessage({
           type: 'CONNECTION_CLOSED',
-          message: 'Connection closed'
+          message: `Connection closed: ${closeReason}`,
+          code: event.code,
+          reason: event.reason,
+          timestamp: Date.now()
         });
 
-        // تقليل عدد محاولات إعادة الاتصال وزيادة الفترات الزمنية
-        if (reconnectAttemptsRef.current < 3 &&
-            event.code !== 1000 &&
-            event.code !== 1001) { // تجنب إعادة الاتصال للإغلاق الطبيعي
-
+        // تحسين منطق إعادة الاتصال بناءً على كود الخطأ
+        const shouldReconnect = shouldAttemptReconnect(event.code, reconnectAttemptsRef.current);
+        
+        if (shouldReconnect) {
           reconnectAttemptsRef.current++;
-          const delay = Math.min(reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
+          const delay = calculateReconnectDelay(reconnectAttemptsRef.current);
 
-          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current}/3)`);
+          console.log(`🔄 Attempting to reconnect in ${Math.round(delay)}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+          console.log(`📊 Connection failure type: ${closeReason}`);
 
           reconnectTimeoutRef.current = setTimeout(() => {
             if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
               connect();
             }
           }, delay);
+        } else if (!shouldReconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
+          console.log(`❌ Not attempting reconnect for code ${event.code}: ${closeReason}`);
+        } else {
+          console.log(`❌ Max reconnection attempts (${maxReconnectAttempts}) reached`);
         }
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('🚨 WebSocket error occurred:');
+        console.error('📍 Error details:', error);
+        console.error('📊 WebSocket state:', wsRef.current?.readyState);
+        console.error('🔗 Current URL:', wsRef.current?.url);
+        
+        // تسجيل معلومات إضافية للتشخيص
+        if (typeof window !== 'undefined') {
+          console.error('🌐 Current location:', window.location.href);
+          console.error('🔌 Network status:', navigator.onLine ? 'Online' : 'Offline');
+          console.error('🕒 Timestamp:', new Date().toISOString());
+        }
+        
+        // Check if this might be a handshake error (status 200)
+        if (wsRef.current?.url) {
+          handleHandshakeError(wsRef.current.url);
+        }
+        
         setIsConnected(false);
+        
+        // إرسال رسالة خطأ مفصلة
+        setLastMessage({
+          type: 'CONNECTION_ERROR',
+          message: 'خطأ في اتصال WebSocket - يتم المحاولة مرة أخرى',
+          error: true,
+          timestamp: Date.now(),
+          networkOnline: typeof window !== 'undefined' ? navigator.onLine : undefined
+        });
       };
 
     } catch (error) {

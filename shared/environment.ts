@@ -73,9 +73,9 @@ export function detectEnvironment(): EnvironmentConfig {
         return parseInt(importMetaEnv.WS_PORT, 10);
       }
       
-      return 5001; // منفذ منفصل لـ WebSocket
+      return 5000; // استخدام نفس منفذ HTTP server
     } else {
-      return parseInt(processEnv.WS_PORT || '5001', 10);
+      return parseInt(processEnv.WS_PORT || processEnv.PORT || '5000', 10);
     }
   };
 
@@ -205,7 +205,7 @@ export function detectEnvironment(): EnvironmentConfig {
         protocol: 'wss'
       },
       websocket: {
-        port: wsPort, // استخدام منفذ منفصل لـ WebSocket
+        port: serverPort, // استخدام نفس منفذ HTTP server
         host: currentHost,
         protocol: 'wss',
       },
@@ -291,52 +291,128 @@ export function getApiBaseUrl(): string {
   return `${protocol}://${ENV_CONFIG.host}:${ENV_CONFIG.port}`;
 }
 
+// Helper function to validate WebSocket URL
+function validateWebSocketUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const validProtocols = ['ws:', 'wss:'];
+    return validProtocols.includes(urlObj.protocol) && 
+           urlObj.hostname !== '' && 
+           urlObj.hostname !== 'undefined' && 
+           urlObj.hostname !== 'null';
+  } catch {
+    return false;
+  }
+}
+
+// Helper function to get fallback URLs in order of preference
+function getFallbackUrls(originalHost: string, originalProtocol: string): string[] {
+  const fallbacks: string[] = [];
+  
+  // Try different port configurations
+  const ports = originalProtocol === 'wss:' ? ['', ':443', ':5001', ':5000'] : [':5001', ':5000', ':6000', ''];
+  
+  ports.forEach(port => {
+    fallbacks.push(`${originalProtocol}//${originalHost}${port}/ws`);
+  });
+  
+  // If original host fails, try localhost as last resort (for development)
+  if (originalHost !== 'localhost' && originalHost !== '127.0.0.1') {
+    const localhostProtocol = originalProtocol === 'wss:' ? 'ws:' : originalProtocol;
+    fallbacks.push(`${localhostProtocol}//localhost:5001/ws`);
+    fallbacks.push(`${localhostProtocol}//127.0.0.1:5001/ws`);
+  }
+  
+  return fallbacks;
+}
+
 export function getWebSocketUrl(): string {
   if (typeof window !== 'undefined') {
     // في المتصفح - استخدم الهوست الحالي مع البروتوكول المناسب
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
+    const port = window.location.port;
 
-    // التحقق من صحة القيم مع fallback محسن
+    // التحقق من صحة القيم الأساسية
     if (!host || host === 'undefined' || host === 'null' || host.length === 0) {
       console.error('❌ Invalid hostname detected:', host);
-      return protocol === 'wss:' ? 'wss://0.0.0.0:5000/ws' : 'ws://0.0.0.0:5000/ws';
+      console.error('❌ Window location:', window.location);
+      
+      // محاولة استخدام fallback ذكي
+      const fallbackUrl = protocol === 'wss:' ? 'wss://localhost:5001/ws' : 'ws://localhost:5001/ws';
+      console.warn('🔄 Using emergency fallback URL:', fallbackUrl);
+      return fallbackUrl;
     }
 
-    // تحديد ما إذا كان هذا نطاق Replit أو مخصص
-    const isReplitDomain = host.includes('replit.dev') || host.includes('repl.co');
+    // تحديد نوع النطاق مع تحسينات
+    const isReplitDomain = host.includes('replit.dev') || 
+                          host.includes('repl.co') ||
+                          host.includes('sisko.replit.dev') ||
+                          host.includes('pike.replit.dev') ||
+                          host.includes('worf.replit.dev');
+                          
     const isCustomDomain = host === 'panel.binarjoinanelytic.info';
+    const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.');
 
+    let primaryUrl: string;
+    
     if (isReplitDomain) {
-      // لنطاقات Replit، استخدم بدون منفذ (يستخدم المنفذ الافتراضي)
-      // Replit يربط المنفذ المحلي بالمنفذ الخارجي تلقائياً
-      const wsUrl = `${protocol}//${host}/ws`;
-      console.log('🔗 Using Replit domain WebSocket URL:', wsUrl);
-      return wsUrl;
+      // لنطاقات Replit، استخدم بدون منفذ صريح
+      primaryUrl = `${protocol}//${host}/ws`;
+      console.log('🔗 Using Replit domain WebSocket URL:', primaryUrl);
+    } else if (isCustomDomain) {
+      // للنطاق المخصص، استخدم بدون منفذ (يستخدم 443/80 افتراضياً)
+      primaryUrl = `${protocol}//${host}/ws`;
+      console.log('🔗 Using Custom domain WebSocket URL:', primaryUrl);
+    } else if (isLocalhost) {
+      // للتطوير المحلي، استخدم منفذ مخصص
+      const wsPort = ENV_CONFIG.websocket.port || 5001;
+      primaryUrl = `${protocol}//${host}:${wsPort}/ws`;
+      console.log('🏠 Using localhost WebSocket URL:', primaryUrl);
+    } else {
+      // للحالات الأخرى، حاول استخدام المنفذ الحالي أو الافتراضي
+      const wsPort = port || ENV_CONFIG.websocket.port || (protocol === 'wss:' ? 443 : 5001);
+      primaryUrl = `${protocol}//${host}:${wsPort}/ws`;
+      console.log('🌐 Using generic WebSocket URL:', primaryUrl);
     }
 
-    if (isCustomDomain) {
-      // للنطاق المخصص، استخدم بدون منفذ (يستخدم 443 افتراضياً)
-      const wsUrl = `${protocol}//${host}/ws`;
-      console.log('🔗 Using Custom domain WebSocket URL:', wsUrl);
-      return wsUrl;
+    // التحقق من صحة URL الأساسي
+    if (validateWebSocketUrl(primaryUrl)) {
+      return primaryUrl;
+    } else {
+      console.error('❌ Primary WebSocket URL validation failed:', primaryUrl);
+      
+      // جرب URLs احتياطية
+      const fallbackUrls = getFallbackUrls(host, protocol);
+      
+      for (const fallbackUrl of fallbackUrls) {
+        if (validateWebSocketUrl(fallbackUrl)) {
+          console.warn('🔄 Using fallback WebSocket URL:', fallbackUrl);
+          return fallbackUrl;
+        }
+      }
+      
+      // إذا فشل كل شيء، استخدم URL طوارئ
+      const emergencyUrl = protocol === 'wss:' ? 'wss://localhost:5001/ws' : 'ws://localhost:5001/ws';
+      console.error('❌ All WebSocket URLs failed validation, using emergency URL:', emergencyUrl);
+      return emergencyUrl;
     }
-
-    // للتطوير المحلي، استخدم المنفذ الافتراضي أو المحدد
-    const currentPort = window.location.port;
-    // استخدام منفذ ENV_CONFIG.websocket.port بدلاً من منفذ النافذة المحلي
-    const wsPort = ENV_CONFIG.websocket.port || (protocol === 'wss:' ? '443' : '5000');
-    const wsUrl = `${protocol}//${host}:${wsPort}/ws`;
-    console.log('🏠 Using local WebSocket URL:', wsUrl);
-    return wsUrl;
   }
 
   // في الخادم
   const protocol = ENV_CONFIG.websocket.protocol || 'ws';
   const host = ENV_CONFIG.websocket.host || '0.0.0.0';
-  const port = ENV_CONFIG.websocket.port || 5000;
+  const port = ENV_CONFIG.websocket.port || 5001;
 
-  return `${protocol}://${host}:${port}/ws`;
+  const serverUrl = `${protocol}://${host}:${port}/ws`;
+  
+  // التحقق من صحة URL الخادم
+  if (!validateWebSocketUrl(serverUrl)) {
+    console.error('❌ Server WebSocket URL validation failed:', serverUrl);
+    console.error('❌ ENV_CONFIG.websocket:', ENV_CONFIG.websocket);
+  }
+  
+  return serverUrl;
 }
 
 export function logEnvironmentInfo(): void {
@@ -361,11 +437,26 @@ export function logEnvironmentInfo(): void {
   console.log(`🔌 WS URL: ${getWebSocketUrl()}`);
   console.log(`🔐 CORS Origins:`, ENV_CONFIG.cors.origin);
 
-  // تشخيص أفضل للمشاكل
+  // تشخيص محسن للمشاكل مع اختبار URL
   const wsUrl = getWebSocketUrl();
+  const isValidUrl = validateWebSocketUrl(wsUrl);
+  
   if (wsUrl.includes('undefined') || wsUrl.includes('NaN') || wsUrl.includes('null')) {
     console.error('❌ خطأ: WebSocket URL يحتوي على قيم غير صالحة!', wsUrl);
     console.error('❌ Environment Config Debug:', ENV_CONFIG);
+  } else if (!isValidUrl) {
+    console.error('❌ خطأ: WebSocket URL غير صالح!', wsUrl);
+    console.error('❌ URL Validation Failed - checking fallbacks...');
+    
+    // اختبار URLs احتياطية
+    if (typeof window !== 'undefined') {
+      const fallbacks = getFallbackUrls(window.location.hostname, window.location.protocol === 'https:' ? 'wss:' : 'ws:');
+      console.log('🔄 Available fallback URLs:');
+      fallbacks.forEach((url, index) => {
+        const isValid = validateWebSocketUrl(url);
+        console.log(`   ${index + 1}. ${url} ${isValid ? '✅' : '❌'}`);
+      });
+    }
   } else {
     console.log('✅ WebSocket URL صالح:', wsUrl);
   }
@@ -376,10 +467,20 @@ export function logEnvironmentInfo(): void {
     console.log(`🏠 Hostname: ${window.location.hostname}`);
     console.log(`🚪 Port: ${window.location.port || 'default'}`);
 
-    // تشخيص اكتشاف Replit
+    // تشخيص اكتشاف النطاقات المختلفة
     const isReplitDetected = window.location.hostname.includes('replit.dev') ||
                             window.location.hostname.includes('repl.co');
-    console.log(`🔍 Replit Domain Detected: ${isReplitDetected}`);
+    const isLocalhostDetected = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.hostname.startsWith('192.168.') ||
+                               window.location.hostname.startsWith('10.');
+    const isCustomDetected = window.location.hostname === 'panel.binarjoinanelytic.info';
+    
+    console.log(`🔍 Domain Type Analysis:`);
+    console.log(`   - Replit Domain: ${isReplitDetected}`);
+    console.log(`   - Custom Domain: ${isCustomDetected}`);
+    console.log(`   - Localhost/Private: ${isLocalhostDetected}`);
+    console.log(`   - Network Online: ${navigator.onLine}`);
   }
 
   // التحقق من توفر process.env (server-side only)
@@ -396,4 +497,5 @@ export function logEnvironmentInfo(): void {
   console.log(`🔧 Environment: ${typeof window !== 'undefined' ? 'browser' : 'server'}`);
   console.log(`🔧 Process Available: ${typeof process !== 'undefined'}`);
   console.log(`🔧 Import.meta Available: ${typeof import.meta !== 'undefined'}`);
+  console.log(`🔧 WebSocket Constructor Available: ${typeof WebSocket !== 'undefined'}`);
 }
