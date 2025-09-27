@@ -2394,4 +2394,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return server;
 }
-</replit_final_file>
