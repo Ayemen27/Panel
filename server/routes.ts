@@ -281,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (processedData.timestamp && typeof processedData.timestamp === 'string') {
         processedData.timestamp = new Date(processedData.timestamp);
       }
-      
+
       // Convert other timestamp fields if they exist
       if (processedData.lastOccurrence && typeof processedData.lastOccurrence === 'string') {
         processedData.lastOccurrence = new Date(processedData.lastOccurrence);
@@ -325,12 +325,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (processedData.timestamp && typeof processedData.timestamp === 'string') {
           processedData.timestamp = new Date(processedData.timestamp);
         }
-        
+
         // Convert other timestamp fields if they exist
         if (processedData.lastOccurrence && typeof processedData.lastOccurrence === 'string') {
           processedData.lastOccurrence = new Date(processedData.lastOccurrence);
         }
-        
+
         return insertFrontendErrorSchema.parse(processedData);
       });
 
@@ -748,7 +748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/applications/:id/start', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     const { id } = req.params;
     let application;
-    
+
     try {
       application = await storage.getApplication(id);
 
@@ -2036,7 +2036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const origin = info.origin;
       const url = new URL(info.req.url, `http://${info.req.headers.host}`);
       const token = url.searchParams.get('token');
-      
+
       console.log('🔍 WebSocket connection attempt:');
       console.log('   Origin:', origin);
       console.log('   Host:', info.req.headers.host);
@@ -2084,20 +2084,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   wss.on('connection', async (ws, req) => {
     // 🛡️ SECURITY: Origin validation already done in verifyClient
     wsClients.add(ws);
-    
+
     // استخراج معلومات الاتصال
     const url = new URL(req.url || '', `http://${req.headers.host}`);
     const token = url.searchParams.get('token');
     const origin = req.headers.origin;
     const userAgent = req.headers['user-agent'];
     const host = req.headers.host;
-    
+
+    // هنا نقرأ IP العميل
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    console.log('Client connected from:', clientIP);
+
     console.log('✅ WebSocket client connected:');
     console.log('   Host:', host);
     console.log('   Origin:', origin);
     console.log('   Has Token:', !!token);
     console.log('   Custom Domain:', host?.includes('binarjoinanelytic.info'));
-    
+
     let isTerminalAuthenticated = false;
     let activeProcess: any = null;
     let clientToken = token;
@@ -2115,9 +2119,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return cookies;
     };
 
-    ws.on('message', async (data) => {
+    ws.on('message', async (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
+        console.log('📨 Received WebSocket message:', { 
+          type: message.type, 
+          from: clientIP 
+        });
 
         switch (message.type) {
           case 'TERMINAL_AUTH_REQUEST':
@@ -2367,39 +2375,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    ws.on('close', (code: number, reason: Buffer) => {
+    ws.on('close', (code, reason) => {
       wsClients.delete(ws);
+      console.log(`🔌 WebSocket disconnected - IP: ${clientIP}, Code: ${code}, Reason: ${reason?.toString()}`);
 
-      // CRITICAL: Kill any active process on connection close
+      // تنظيف العمليات النشطة
       if (activeProcess) {
-        console.log('Terminal: Killing active process on connection close');
-        activeProcess.kill('SIGTERM');
-        setTimeout(() => {
-          if (activeProcess) {
-            activeProcess.kill('SIGKILL');
-          }
-        }, 5000);
-        activeProcess = null;
+        try {
+          activeProcess.kill('SIGTERM');
+        } catch (error) {
+          console.error('Error killing process:', error);
+        }
       }
-
       // Reset authentication state
       isTerminalAuthenticated = false;
-
-      console.log(`WebSocket client disconnected. Code: ${code}, Reason: ${reason.toString()}`);
     });
 
     ws.on('error', (error: Error) => {
-      console.error('WebSocket error:', error);
+      console.error('🚨 WebSocket error from IP:', clientIP, error);
       wsClients.delete(ws);
 
       // Reset authentication state on error
       isTerminalAuthenticated = false;
     });
 
-    // Send initial connection message
+    // إرسال رسالة ترحيب مع معلومات الاتصال
     ws.send(JSON.stringify({
       type: 'CONNECTED',
-      message: 'Connected to server - Terminal ready'
+      message: 'Connected to server - Terminal ready',
+      clientInfo: {
+        ip: clientIP,
+        userAgent: userAgent,
+        timestamp: new Date().toISOString()
+      }
     }));
   });
 
