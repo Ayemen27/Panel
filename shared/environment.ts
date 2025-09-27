@@ -67,9 +67,9 @@ function detectServerEnvironment(): {
 
   const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]);
 
-  // اكتشاف إضافي من hostname
+  // اكتشاف إضافي من hostname - تحسين الدقة
   const hostname = processEnv.HOSTNAME || '';
-  const isReplitByHostname = hostname.includes('replit') || hostname.includes('nix');
+  const isReplitByHostname = hostname.includes('replit') && !hostname.includes('93.127.142.144');
 
   // اكتشاف السيرفر الخارجي من IP أو hostname
   const isExternalServer = hostname.includes('93.127.142.144') ||
@@ -114,13 +114,22 @@ function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): Envir
       pm2: '/home/runner/.pm2'
     },
     external: {
-      root: '/home/administrator',
-      logs: '/var/log',
-      uploads: '/home/administrator/uploads',
-      config: '/home/administrator/.config',
-      ssl: '/etc/ssl',
-      nginx: '/etc/nginx',
-      pm2: '/home/administrator/.pm2'
+      root: (() => {
+        try {
+          return typeof process !== 'undefined' &&
+                 process.cwd &&
+                 typeof process.cwd === 'function' &&
+                 typeof window === 'undefined' ? process.cwd() : '/home/administrator/Panel';
+        } catch {
+          return '/home/administrator/Panel';
+        }
+      })(),
+      logs: './logs',
+      uploads: './uploads',
+      config: './config',
+      ssl: './ssl',
+      nginx: './nginx',
+      pm2: './.pm2'
     },
     local: {
       root: (() => {
