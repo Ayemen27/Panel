@@ -3,6 +3,7 @@ import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 import { pathManager, getPM2Path } from '../utils/pathManager';
+import type { Application } from '@shared/schema';
 
 const execAsync = promisify(exec);
 

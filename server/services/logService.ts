@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 import { pathManager, getLogsPath, getNginxPath, getPM2Path } from '../utils/pathManager';
@@ -321,14 +321,14 @@ export class LogService {
         // Read PM2 output logs
         if (fs.existsSync(pm2LogPath)) {
           const content = await fs.promises.readFile(pm2LogPath, 'utf8');
-          const logLines = this.parseLogContent(content, 'pm2', applicationId);
+          const logLines = LogService.parseLogContent(content, 'pm2', applicationId);
           logs.push(...logLines);
         }
 
         // Read PM2 error logs
         if (fs.existsSync(pm2ErrorLogPath)) {
           const content = await fs.promises.readFile(pm2ErrorLogPath, 'utf8');
-          const errorLines = this.parseLogContent(content, 'pm2', applicationId, 'error');
+          const errorLines = LogService.parseLogContent(content, 'pm2', applicationId, 'error');
           logs.push(...errorLines);
         }
 
@@ -339,7 +339,7 @@ export class LogService {
         }
       }
 
-      return this.filterAndSortLogs(logs, options);
+      return LogService.filterAndSortLogs(logs, options);
     } catch (error) {
       console.error('Error reading application logs:', error);
       return [];
@@ -369,14 +369,14 @@ export class LogService {
         // Read access logs
         if (fs.existsSync(accessLogPath)) {
           const content = await fs.promises.readFile(accessLogPath, 'utf8');
-          const accessLines = this.parseLogContent(content, 'nginx');
+          const accessLines = LogService.parseLogContent(content, 'nginx');
           logs.push(...accessLines);
         }
 
         // Read error logs
         if (fs.existsSync(errorLogPath)) {
           const content = await fs.promises.readFile(errorLogPath, 'utf8');
-          const errorLines = this.parseLogContent(content, 'nginx', undefined, 'error');
+          const errorLines = LogService.parseLogContent(content, 'nginx', undefined, 'error');
           logs.push(...errorLines);
         }
 
@@ -387,7 +387,7 @@ export class LogService {
         }
       }
 
-      return this.filterAndSortLogs(logs, options);
+      return LogService.filterAndSortLogs(logs, options);
     } catch (error) {
       console.error('Error reading nginx logs:', error);
       return [];
@@ -395,17 +395,46 @@ export class LogService {
   }
 
   // Placeholder methods - need to be implemented
-  private parseLogContent(content: string, source: string, appId?: string, type?: string): LogEntry[] {
+  private static parseLogContent(content: string, source: string, appId?: string, type?: string): LogEntry[] {
     // This is a placeholder and needs to be implemented based on actual log formats.
     // It should parse the content and return an array of LogEntry objects.
     // For now, it returns generic logs.
-    return this.parseGenericLogs(content, undefined, source, appId, type);
+    return LogService.parseGenericLogs(content, undefined, source, appId, type);
   }
 
-  private filterAndSortLogs(logs: LogEntry[], options: LogOptions): LogEntry[] {
+  private static filterAndSortLogs(logs: LogEntry[], options: LogOptions): LogEntry[] {
     // This is a placeholder and needs to be implemented.
     // It should filter and sort logs based on options like lines, level, startDate, endDate.
-    return logs;
+    return logs.slice(0, options.lines || 100);
+  }
+
+  private static parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
+    const logLines = content.split('\n').filter(line => line.trim());
+
+    if (lines) {
+      logLines.splice(0, Math.max(0, logLines.length - lines));
+    }
+
+    return logLines.map(line => ({
+      timestamp: new Date().toISOString(),
+      level: LogService.detectLogLevel(line),
+      message: line,
+      source: source
+    }));
+  }
+
+  private static detectLogLevel(message: string): string {
+    const lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.includes('error') || lowerMessage.includes('err')) {
+      return 'error';
+    } else if (lowerMessage.includes('warn') || lowerMessage.includes('warning')) {
+      return 'warn';
+    } else if (lowerMessage.includes('debug')) {
+      return 'debug';
+    } else {
+      return 'info';
+    }
   }
 
   private parsePM2Logs(content: string): LogEntry[] {
