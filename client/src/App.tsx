@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorProvider } from "@/contexts/ErrorContext";
+import { ActivityProvider } from "@/contexts/ActivityContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, lazy, Suspense } from "react";
 import { errorLogger, updateAppState } from "@/lib/errorLogger";
@@ -209,8 +210,10 @@ function App() {
         <ThemeProvider defaultTheme="light">
           <TooltipProvider>
             <NotificationProvider>
-              <Toaster />
-              <Router />
+              <ActivityProvider enableByDefault={true}>
+                <Toaster />
+                <Router />
+              </ActivityProvider>
             </NotificationProvider>
           </TooltipProvider>
         </ThemeProvider>

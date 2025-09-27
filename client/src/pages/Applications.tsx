@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { TrackedButton } from "@/components/ActivityTracking";
+import { usePageView, useUserAction } from "@/hooks/useActivityTracker";
 import { ApplicationTable } from "@/components/Applications/ApplicationTable";
 import { AddAppModal } from "@/components/Applications/AddAppModal";
 import { EditAppModal } from "@/components/Applications/EditAppModal"; // Assuming EditAppModal is in the same directory
@@ -19,6 +21,16 @@ export default function Applications() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // تتبع الصفحة
+  const { trackPageEvent } = usePageView('/applications', {
+    pageName: 'Applications Management',
+    pageType: 'management',
+    requiresAuth: true
+  });
+
+  // تتبع الأفعال المخصصة
+  const { trackUserAction } = useUserAction('applications');
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -44,16 +56,41 @@ export default function Applications() {
 
   const startAppMutation = useMutation({
     mutationFn: async (id: string) => {
+      // تتبع بداية عملية تشغيل التطبيق
+      trackUserAction('application_start_attempt', {
+        applicationId: id,
+        action: 'start',
+        timestamp: new Date().toISOString()
+      });
+      
       await apiRequest("POST", `/api/applications/${id}/start`);
     },
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      
+      // تتبع نجاح تشغيل التطبيق
+      trackUserAction('application_start_success', {
+        applicationId: id,
+        action: 'start',
+        result: 'success',
+        timestamp: new Date().toISOString()
+      });
+      
       toast({
         title: "تم التشغيل",
         description: "تم تشغيل التطبيق بنجاح",
       });
     },
-    onError: (error) => {
+    onError: (error, id) => {
+      // تتبع فشل تشغيل التطبيق
+      trackUserAction('application_start_error', {
+        applicationId: id,
+        action: 'start',
+        result: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+
       if (isUnauthorizedError(error)) {
         toast({
           title: "غير مخول",
@@ -77,16 +114,34 @@ export default function Applications() {
 
   const stopAppMutation = useMutation({
     mutationFn: async (id: string) => {
+      trackUserAction('application_stop_attempt', {
+        applicationId: id,
+        action: 'stop',
+        timestamp: new Date().toISOString()
+      });
       await apiRequest("POST", `/api/applications/${id}/stop`);
     },
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      trackUserAction('application_stop_success', {
+        applicationId: id,
+        action: 'stop',
+        result: 'success',
+        timestamp: new Date().toISOString()
+      });
       toast({
         title: "تم الإيقاف",
         description: "تم إيقاف التطبيق بنجاح",
       });
     },
-    onError: (error) => {
+    onError: (error, id) => {
+      trackUserAction('application_stop_error', {
+        applicationId: id,
+        action: 'stop',
+        result: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
       if (isUnauthorizedError(error)) {
         toast({
           title: "غير مخول",
@@ -108,16 +163,34 @@ export default function Applications() {
 
   const restartAppMutation = useMutation({
     mutationFn: async (id: string) => {
+      trackUserAction('application_restart_attempt', {
+        applicationId: id,
+        action: 'restart',
+        timestamp: new Date().toISOString()
+      });
       await apiRequest("POST", `/api/applications/${id}/restart`);
     },
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      trackUserAction('application_restart_success', {
+        applicationId: id,
+        action: 'restart',
+        result: 'success',
+        timestamp: new Date().toISOString()
+      });
       toast({
         title: "تم إعادة التشغيل",
         description: "تم إعادة تشغيل التطبيق بنجاح",
       });
     },
-    onError: (error) => {
+    onError: (error, id) => {
+      trackUserAction('application_restart_error', {
+        applicationId: id,
+        action: 'restart',
+        result: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
       if (isUnauthorizedError(error)) {
         toast({
           title: "غير مخول",

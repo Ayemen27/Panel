@@ -63,6 +63,10 @@ export const pathTypeEnum = pgEnum('path_type', ['allowed', 'blocked']);
 export const errorTypeEnum = pgEnum('error_type', ['javascript', 'react', 'network', 'navigation', 'user_action', 'component']);
 export const errorSeverityEnum = pgEnum('error_severity', ['low', 'medium', 'high', 'critical']);
 
+// User activity tracking enums
+export const activityTypeEnum = pgEnum('activity_type', ['click', 'navigation', 'form_input', 'form_submit', 'search', 'filter', 'scroll', 'hover', 'focus', 'blur', 'key_press', 'page_view', 'session_start', 'session_end', 'file_upload', 'file_download', 'copy', 'paste', 'drag', 'drop']);
+export const interactionModeEnum = pgEnum('interaction_mode', ['mouse', 'keyboard', 'touch', 'voice', 'other']);
+
 // Applications table
 export const applications = pgTable("applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -174,6 +178,43 @@ export const frontendErrors = pgTable("frontend_errors", {
   index("IDX_frontend_errors_created_at").on(table.createdAt),
   index("IDX_frontend_errors_last_occurrence").on(table.lastOccurrence),
   index("IDX_frontend_errors_resolved").on(table.resolved),
+]);
+
+// User activities table for comprehensive user behavior tracking
+export const userActivities = pgTable("user_activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id), // Can be null for anonymous users
+  sessionId: varchar("session_id").notNull(), // Browser session identifier
+  activityType: activityTypeEnum("activity_type").notNull(),
+  page: text("page").notNull(), // Current page URL
+  targetElement: varchar("target_element"), // Button ID, form field name, etc.
+  targetText: text("target_text"), // Text content of clicked element
+  targetType: varchar("target_type"), // button, input, link, etc.
+  sourceElement: varchar("source_element"), // Previous element in interaction chain
+  interactionMode: interactionModeEnum("interaction_mode").default('mouse'),
+  value: text("value"), // Form input value, search term, etc.
+  metadata: jsonb("metadata").default({}), // Additional context data
+  browserInfo: jsonb("browser_info").notNull(), // Browser details
+  viewport: jsonb("viewport"), // Screen size, window dimensions
+  coordinates: jsonb("coordinates"), // Mouse/touch coordinates
+  duration: integer("duration"), // Time spent on action (milliseconds)
+  pageDuration: integer("page_duration"), // Time spent on current page
+  scrollPosition: integer("scroll_position"), // Y scroll position
+  userAgent: text("user_agent").notNull(),
+  ipAddress: varchar("ip_address"),
+  referrer: text("referrer"), // Previous page
+  timestamp: timestamp("timestamp").defaultNow(),
+  batchId: varchar("batch_id"), // For grouping related activities
+}, (table) => [
+  index("IDX_user_activities_user").on(table.userId),
+  index("IDX_user_activities_session").on(table.sessionId),
+  index("IDX_user_activities_type").on(table.activityType),
+  index("IDX_user_activities_page").on(table.page),
+  index("IDX_user_activities_timestamp").on(table.timestamp),
+  index("IDX_user_activities_user_session").on(table.userId, table.sessionId), // Composite for user tracking
+  index("IDX_user_activities_page_timestamp").on(table.page, table.timestamp), // Composite for page analytics
+  index("IDX_user_activities_session_timestamp").on(table.sessionId, table.timestamp), // Composite for session analysis
+  index("IDX_user_activities_batch").on(table.batchId), // For batch processing
 ]);
 
 // Files table for tracking files and folders
@@ -338,6 +379,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   applications: many(applications),
   notifications: many(notifications),
   frontendErrors: many(frontendErrors),
+  userActivities: many(userActivities),
   files: many(files),
   deletedFiles: many(fileTrash),
   fileBackups: many(fileBackups),
@@ -402,6 +444,13 @@ export const systemLogsRelations = relations(systemLogs, ({ one }) => ({
 export const frontendErrorsRelations = relations(frontendErrors, ({ one }) => ({
   user: one(users, {
     fields: [frontendErrors.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userActivitiesRelations = relations(userActivities, ({ one }) => ({
+  user: one(users, {
+    fields: [userActivities.userId],
     references: [users.id],
   }),
 }));
@@ -520,6 +569,9 @@ export type InsertSystemLog = typeof systemLogs.$inferInsert;
 export type FrontendError = typeof frontendErrors.$inferSelect;
 export type InsertFrontendError = typeof frontendErrors.$inferInsert;
 
+export type UserActivity = typeof userActivities.$inferSelect;
+export type InsertUserActivity = typeof userActivities.$inferInsert;
+
 // File management types
 export type File = typeof files.$inferSelect;
 export type InsertFile = typeof files.$inferInsert;
@@ -636,4 +688,9 @@ export const insertAllowedPathSchema = createInsertSchema(allowedPaths).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertUserActivitySchema = createInsertSchema(userActivities).omit({
+  id: true,
+  timestamp: true,
 });

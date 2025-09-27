@@ -7,6 +7,7 @@ import {
   notifications,
   systemLogs,
   frontendErrors,
+  userActivities,
   files,
   fileTrash,
   fileBackups,
@@ -30,6 +31,8 @@ import {
   type InsertSystemLog,
   type FrontendError,
   type InsertFrontendError,
+  type UserActivity,
+  type InsertUserActivity,
   type File,
   type InsertFile,
   type FileTrash,
@@ -126,6 +129,41 @@ export interface IStorage {
     unresolved: number;
     last24Hours: number;
   }>;
+
+  // User Activity operations
+  createUserActivity(activity: InsertUserActivity): Promise<UserActivity>;
+  createUserActivitiesBatch(activities: InsertUserActivity[]): Promise<UserActivity[]>;
+  getUserActivities(options?: {
+    userId?: string;
+    sessionId?: string;
+    page?: number;
+    limit?: number;
+    filters?: {
+      activityType?: string;
+      pageUrl?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+  }): Promise<{
+    activities: UserActivity[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }>;
+  getUserActivityStats(options?: {
+    userId?: string;
+    sessionId?: string;
+    timeframe?: '24h' | '7d' | '30d';
+  }): Promise<{
+    total: number;
+    byType: { type: string; count: number }[];
+    byPage: { page: string; count: number; avgDuration: number }[];
+    sessions: number;
+    avgSessionDuration: number;
+    topInteractions: { element: string; count: number }[];
+  }>;
+  getSessionActivities(sessionId: string): Promise<UserActivity[]>;
+  getUserPageDurations(userId: string, timeframe?: string): Promise<{ page: string; totalDuration: number; visits: number }[]>;
 
   // Database connection test
   testConnection(): Promise<void>;
@@ -757,6 +795,219 @@ export class DatabaseStorage implements IStorage {
       unresolved: unresolvedResult[0]?.count || 0,
       last24Hours: last24HoursResult[0]?.count || 0
     };
+  }
+
+  // User Activity operations
+  async createUserActivity(activity: InsertUserActivity): Promise<UserActivity> {
+    const [created] = await db.insert(userActivities).values(activity).returning();
+    return created;
+  }
+
+  async createUserActivitiesBatch(activities: InsertUserActivity[]): Promise<UserActivity[]> {
+    if (activities.length === 0) {
+      return [];
+    }
+    
+    const created = await db.insert(userActivities).values(activities).returning();
+    return created;
+  }
+
+  async getUserActivities(options?: {
+    userId?: string;
+    sessionId?: string;
+    page?: number;
+    limit?: number;
+    filters?: {
+      activityType?: string;
+      pageUrl?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+  }): Promise<{
+    activities: UserActivity[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const page = options?.page || 1;
+    const limit = options?.limit || 50;
+    const offset = (page - 1) * limit;
+    const filters = options?.filters || {};
+
+    let query = db.select().from(userActivities);
+    let countQuery = db.select({ count: count() }).from(userActivities);
+
+    const conditions = [];
+
+    if (options?.userId) {
+      conditions.push(eq(userActivities.userId, options.userId));
+    }
+    if (options?.sessionId) {
+      conditions.push(eq(userActivities.sessionId, options.sessionId));
+    }
+    if (filters.activityType) {
+      conditions.push(eq(userActivities.activityType, filters.activityType as any));
+    }
+    if (filters.pageUrl) {
+      conditions.push(like(userActivities.page, `%${filters.pageUrl}%`));
+    }
+    if (filters.startDate) {
+      conditions.push(gte(userActivities.timestamp, new Date(filters.startDate)));
+    }
+    if (filters.endDate) {
+      conditions.push(lt(userActivities.timestamp, new Date(filters.endDate)));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+      countQuery = countQuery.where(and(...conditions));
+    }
+
+    const [activities, totalResult] = await Promise.all([
+      query.orderBy(desc(userActivities.timestamp)).limit(limit).offset(offset),
+      countQuery
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      activities,
+      total,
+      page,
+      totalPages
+    };
+  }
+
+  async getUserActivityStats(options?: {
+    userId?: string;
+    sessionId?: string;
+    timeframe?: '24h' | '7d' | '30d';
+  }): Promise<{
+    total: number;
+    byType: { type: string; count: number }[];
+    byPage: { page: string; count: number; avgDuration: number }[];
+    sessions: number;
+    avgSessionDuration: number;
+    topInteractions: { element: string; count: number }[];
+  }> {
+    let timeCondition;
+    const now = new Date();
+    
+    switch (options?.timeframe) {
+      case '24h':
+        timeCondition = gte(userActivities.timestamp, new Date(now.getTime() - 24 * 60 * 60 * 1000));
+        break;
+      case '7d':
+        timeCondition = gte(userActivities.timestamp, new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
+        break;
+      case '30d':
+        timeCondition = gte(userActivities.timestamp, new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+        break;
+      default:
+        timeCondition = gte(userActivities.timestamp, new Date(now.getTime() - 24 * 60 * 60 * 1000));
+    }
+
+    const baseConditions = [];
+    if (options?.userId) {
+      baseConditions.push(eq(userActivities.userId, options.userId));
+    }
+    if (options?.sessionId) {
+      baseConditions.push(eq(userActivities.sessionId, options.sessionId));
+    }
+    baseConditions.push(timeCondition);
+
+    const whereCondition = and(...baseConditions);
+
+    const [
+      totalResult,
+      typeStats,
+      pageStats,
+      sessionStats,
+      interactionStats
+    ] = await Promise.all([
+      db.select({ count: count() }).from(userActivities).where(whereCondition),
+      db.select({
+        type: userActivities.activityType,
+        count: count()
+      }).from(userActivities).where(whereCondition).groupBy(userActivities.activityType),
+      db.select({
+        page: userActivities.page,
+        count: count(),
+        avgDuration: sql<number>`AVG(${userActivities.pageDuration})`
+      }).from(userActivities).where(whereCondition).groupBy(userActivities.page),
+      db.select({
+        sessions: sql<number>`COUNT(DISTINCT ${userActivities.sessionId})`,
+        avgSessionDuration: sql<number>`AVG(${userActivities.duration})`
+      }).from(userActivities).where(whereCondition),
+      db.select({
+        element: userActivities.targetElement,
+        count: count()
+      }).from(userActivities)
+        .where(and(whereCondition, isNotNull(userActivities.targetElement)))
+        .groupBy(userActivities.targetElement)
+        .orderBy(desc(count()))
+        .limit(10)
+    ]);
+
+    return {
+      total: totalResult[0]?.count || 0,
+      byType: typeStats.map(stat => ({ type: stat.type, count: stat.count })),
+      byPage: pageStats.map(stat => ({ 
+        page: stat.page, 
+        count: stat.count, 
+        avgDuration: stat.avgDuration || 0 
+      })),
+      sessions: sessionStats[0]?.sessions || 0,
+      avgSessionDuration: sessionStats[0]?.avgSessionDuration || 0,
+      topInteractions: interactionStats
+        .filter(stat => stat.element)
+        .map(stat => ({ element: stat.element!, count: stat.count }))
+    };
+  }
+
+  async getSessionActivities(sessionId: string): Promise<UserActivity[]> {
+    return await db
+      .select()
+      .from(userActivities)
+      .where(eq(userActivities.sessionId, sessionId))
+      .orderBy(userActivities.timestamp);
+  }
+
+  async getUserPageDurations(userId: string, timeframe?: string): Promise<{ page: string; totalDuration: number; visits: number }[]> {
+    let timeCondition;
+    if (timeframe) {
+      const now = new Date();
+      const timeMap = {
+        '24h': 24 * 60 * 60 * 1000,
+        '7d': 7 * 24 * 60 * 60 * 1000,
+        '30d': 30 * 24 * 60 * 60 * 1000
+      };
+      const timeOffset = timeMap[timeframe as keyof typeof timeMap] || timeMap['24h'];
+      timeCondition = gte(userActivities.timestamp, new Date(now.getTime() - timeOffset));
+    }
+
+    const conditions = [eq(userActivities.userId, userId)];
+    if (timeCondition) {
+      conditions.push(timeCondition);
+    }
+
+    const result = await db
+      .select({
+        page: userActivities.page,
+        totalDuration: sql<number>`SUM(${userActivities.pageDuration})`,
+        visits: count()
+      })
+      .from(userActivities)
+      .where(and(...conditions))
+      .groupBy(userActivities.page)
+      .orderBy(desc(sql<number>`SUM(${userActivities.pageDuration})`));
+
+    return result.map(row => ({
+      page: row.page,
+      totalDuration: row.totalDuration || 0,
+      visits: row.visits
+    }));
   }
 
   // Statistics

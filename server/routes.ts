@@ -15,7 +15,8 @@ import {
   insertFileLockSchema,
   insertFileBackupSchema,
   insertAllowedPathSchema,
-  insertFrontendErrorSchema
+  insertFrontendErrorSchema,
+  insertUserActivitySchema
 } from "@shared/schema";
 import { z } from "zod";
 import { pm2Service } from "./services/pm2Service";
@@ -387,6 +388,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching frontend error stats:", error);
       res.status(500).json({ message: "Failed to fetch frontend error stats" });
+    }
+  });
+
+  // User Activity routes
+  app.post('/api/user-activities', async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req); // قد يكون null للمستخدمين غير المسجلين
+      const activityData = insertUserActivitySchema.parse({
+        ...req.body,
+        userId,
+        userAgent: req.body.userAgent || req.headers['user-agent'],
+        ipAddress: req.ip || req.connection.remoteAddress,
+      });
+
+      const savedActivity = await storage.createUserActivity(activityData);
+
+      // إرسال تحديث فوري للمديرين عبر WebSocket (اختياري للإحصائيات الفورية)
+      broadcast({
+        type: 'user_activity',
+        data: {
+          type: savedActivity.activityType,
+          page: savedActivity.page,
+          timestamp: savedActivity.timestamp
+        }
+      });
+
+      res.status(201).json({ success: true, id: savedActivity.id });
+    } catch (error) {
+      console.error("Error saving user activity:", error);
+      res.status(500).json({ message: "Failed to save user activity" });
+    }
+  });
+
+  app.post('/api/user-activities/batch', async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req); // قد يكون null للمستخدمين غير المسجلين
+      const activitiesData = req.body;
+
+      if (!Array.isArray(activitiesData)) {
+        return res.status(400).json({ message: "Expected array of activities" });
+      }
+
+      const processedActivities = activitiesData.map(activityData => 
+        insertUserActivitySchema.parse({
+          ...activityData,
+          userId,
+          userAgent: activityData.userAgent || req.headers['user-agent'],
+          ipAddress: req.ip || req.connection.remoteAddress,
+        })
+      );
+
+      const savedActivities = await storage.createUserActivitiesBatch(processedActivities);
+
+      // إرسال تحديث فوري للمديرين عبر WebSocket
+      broadcast({
+        type: 'user_activities_batch',
+        data: {
+          count: savedActivities.length,
+          userId: userId,
+          timestamp: new Date()
+        }
+      });
+
+      res.status(201).json({ 
+        success: true, 
+        count: savedActivities.length,
+        ids: savedActivities.map(activity => activity.id)
+      });
+    } catch (error) {
+      console.error("Error saving user activities batch:", error);
+      res.status(500).json({ message: "Failed to save user activities batch" });
+    }
+  });
+
+  app.get('/api/user-activities', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { 
+        page = 1, 
+        limit = 50, 
+        userId: filterUserId, 
+        sessionId,
+        activityType,
+        pageUrl,
+        startDate,
+        endDate 
+      } = req.query;
+
+      const options = {
+        userId: filterUserId as string,
+        sessionId: sessionId as string,
+        page: parseInt(page as string, 10),
+        limit: parseInt(limit as string, 10),
+        filters: {
+          activityType: activityType as string,
+          pageUrl: pageUrl as string,
+          startDate: startDate as string,
+          endDate: endDate as string,
+        }
+      };
+
+      const result = await storage.getUserActivities(options);
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching user activities:", error);
+      res.status(500).json({ message: "Failed to fetch user activities" });
+    }
+  });
+
+  app.get('/api/user-activities/stats', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { 
+        userId, 
+        sessionId, 
+        timeframe = '24h' 
+      } = req.query;
+
+      const options = {
+        userId: userId as string,
+        sessionId: sessionId as string,
+        timeframe: timeframe as '24h' | '7d' | '30d'
+      };
+
+      const stats = await storage.getUserActivityStats(options);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching user activity stats:", error);
+      res.status(500).json({ message: "Failed to fetch user activity stats" });
+    }
+  });
+
+  app.get('/api/user-activities/session/:sessionId', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { sessionId } = req.params;
+      const activities = await storage.getSessionActivities(sessionId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching session activities:", error);
+      res.status(500).json({ message: "Failed to fetch session activities" });
+    }
+  });
+
+  app.get('/api/user-activities/my-stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { timeframe = '24h' } = req.query;
+
+      const options = {
+        userId,
+        timeframe: timeframe as '24h' | '7d' | '30d'
+      };
+
+      const stats = await storage.getUserActivityStats(options);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching user's own activity stats:", error);
+      res.status(500).json({ message: "Failed to fetch activity stats" });
+    }
+  });
+
+  app.get('/api/user-activities/page-durations', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { timeframe } = req.query;
+
+      const durations = await storage.getUserPageDurations(userId, timeframe as string);
+      res.json(durations);
+    } catch (error) {
+      console.error("Error fetching page durations:", error);
+      res.status(500).json({ message: "Failed to fetch page durations" });
     }
   });
 
