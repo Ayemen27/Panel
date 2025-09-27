@@ -173,8 +173,49 @@ export class PM2Service {
     
     if (pm2Available) {
       try {
-        const command = `cd ${application.path} && pm2 start "${application.command}" --name "${application.name}"`;
-        await execAsync(command);
+        // Extract the main file from command if it's a node command
+        let startCommand = application.command;
+        let mainFile = '';
+        
+        // Check if command is empty or only contains flags
+        if (!startCommand || startCommand.trim() === '') {
+          // Try common entry points
+          const commonFiles = ['index.js', 'server.js', 'app.js', 'main.js'];
+          const fs = await import('fs').then(m => m.promises);
+          
+          for (const file of commonFiles) {
+            try {
+              await fs.access(`${application.path}/${file}`);
+              mainFile = file;
+              break;
+            } catch {
+              continue;
+            }
+          }
+          
+          if (!mainFile) {
+            throw new Error('No main file found. Please specify a valid command.');
+          }
+          startCommand = `node ${mainFile}`;
+        }
+        
+        // If command starts with npm/yarn, use it directly with ecosystem file
+        if (startCommand.startsWith('npm ') || startCommand.startsWith('yarn ')) {
+          const command = `cd ${application.path} && pm2 start --name "${application.name}" -- ${startCommand}`;
+          await execAsync(command);
+        } else {
+          // For node commands, extract the file name
+          const nodeMatch = startCommand.match(/^node\s+(.+)$/);
+          if (nodeMatch) {
+            mainFile = nodeMatch[1].trim();
+          } else {
+            // If not a node command, assume it's the file directly
+            mainFile = startCommand.split(' ')[0];
+          }
+          
+          const command = `cd ${application.path} && pm2 start "${mainFile}" --name "${application.name}"`;
+          await execAsync(command);
+        }
       } catch (error) {
         throw new Error(`Failed to start application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -197,20 +238,34 @@ export class PM2Service {
     }
   }
 
-  async restartApplication(name: string): Promise<void> {
+  async restartApplication(name: string, application?: Application): Promise<void> {
     const pm2Available = await this.checkPM2Availability();
     
     if (pm2Available) {
       try {
+        // First try to restart existing process
         await execAsync(`pm2 restart ${name}`);
       } catch (error) {
-        throw new Error(`Failed to restart application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // If restart fails, try to delete and start fresh if application data is provided
+        if (application) {
+          try {
+            await execAsync(`pm2 delete ${name}`).catch(() => {}); // Ignore delete errors
+            await this.startApplication(application);
+          } catch (startError) {
+            throw new Error(`Failed to restart application with PM2: ${startError instanceof Error ? startError.message : 'Unknown error'}`);
+          }
+        } else {
+          throw new Error(`Failed to restart application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
       }
     } else {
       // For fallback, stop and start the application
-      await this.stopApplicationFallback(name);
-      // We need the application object to restart, so we'll throw an error for now
-      throw new Error('Restart not available in fallback mode. Please stop and start the application manually.');
+      if (application) {
+        await this.stopApplicationFallback(name);
+        await this.startApplicationFallback(application);
+      } else {
+        throw new Error('Restart not available in fallback mode without application data. Please stop and start the application manually.');
+      }
     }
   }
 

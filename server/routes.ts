@@ -1,3 +1,4 @@
+replit_final_file>
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -501,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
-      await pm2Service.restartApplication(application.name);
+      await pm2Service.restartApplication(application.name, application);
       await storage.updateApplication(id, { status: 'running' });
 
       // Broadcast update
@@ -513,8 +514,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Application restarted successfully" });
     } catch (error) {
       console.error("Error restarting application:", error);
-
-      // Provide specific error messages based on error type
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
@@ -2395,3 +2394,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return server;
 }
+</replit_final_file>
