@@ -35,7 +35,7 @@ export class SslService {
         expiresAt
       };
     } catch (error) {
-      throw new Error(`Failed to issue SSL certificate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to issue SSL certificate: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 
@@ -43,7 +43,7 @@ export class SslService {
     try {
       await execAsync(`sudo certbot renew --cert-name ${domain}`);
     } catch (error) {
-      throw new Error(`Failed to renew SSL certificate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to renew SSL certificate: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 
@@ -103,7 +103,7 @@ export class SslService {
       
       return certificates;
     } catch (error) {
-      throw new Error(`Failed to list certificates: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to list certificates: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 
@@ -111,7 +111,7 @@ export class SslService {
     try {
       await execAsync(`sudo certbot revoke --cert-path /etc/letsencrypt/live/${domain}/fullchain.pem`);
     } catch (error) {
-      throw new Error(`Failed to revoke SSL certificate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to revoke SSL certificate: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 

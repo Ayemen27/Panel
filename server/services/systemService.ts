@@ -74,7 +74,7 @@ export class SystemService {
         uptime
       };
     } catch (error) {
-      throw new Error(`Failed to get system stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to get system stats: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 
@@ -150,7 +150,7 @@ export class SystemService {
         loadAverage
       };
     } catch (error) {
-      throw new Error(`Failed to get system info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to get system info: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 
@@ -504,7 +504,7 @@ export class SystemService {
         };
       });
     } catch (error) {
-      throw new Error(`Failed to get processes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to get processes: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 
@@ -572,7 +572,7 @@ export class SystemService {
         };
       });
     } catch (error) {
-      throw new Error(`Failed to get network connections: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to get network connections: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
     }
   }
 

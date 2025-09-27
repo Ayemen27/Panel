@@ -391,7 +391,7 @@ export class PM2Service {
       try {
         await execAsync(`pm2 stop ${name}`);
       } catch (error) {
-        throw new Error(`Failed to stop application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(`Failed to stop application with PM2: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
     } else {
       await this.stopApplicationFallback(name);
@@ -412,10 +412,10 @@ export class PM2Service {
             await execAsync(`pm2 delete ${name}`).catch(() => {}); // Ignore delete errors
             await this.startApplication(application);
           } catch (startError) {
-            throw new Error(`Failed to restart application with PM2: ${startError instanceof Error ? startError.message : 'Unknown error'}`);
+            throw new Error(`Failed to restart application with PM2: ${startError instanceof Error ? startError.message : String(startError) || 'Unknown error'}`);
           }
         } else {
-          throw new Error(`Failed to restart application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          throw new Error(`Failed to restart application with PM2: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
         }
       }
     } else {
@@ -436,7 +436,7 @@ export class PM2Service {
       try {
         await execAsync(`pm2 delete ${name}`);
       } catch (error) {
-        throw new Error(`Failed to delete application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(`Failed to delete application with PM2: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
     } else {
       // For fallback, just stop the application and remove from tracking
@@ -682,7 +682,7 @@ export class PM2Service {
         const { stdout } = await execAsync(`${pm2Path} logs ${name} --lines ${lines} --nostream`);
         return stdout.split('\n').filter(line => line.trim() !== '');
       } catch (error) {
-        throw new Error(`Failed to get PM2 logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(`Failed to get PM2 logs: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
     } else {
       // For fallback mode, return basic info
@@ -723,7 +723,7 @@ export class PM2Service {
           restarts: process.pm2_env.restart_time
         };
       } catch (error) {
-        throw new Error(`Failed to get PM2 metrics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(`Failed to get PM2 metrics: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
     } else {
       // For fallback mode, return basic metrics
@@ -751,7 +751,7 @@ export class PM2Service {
         if (!pm2Path) throw new Error('PM2 path not found');
         await execAsync(`${pm2Path} save`);
       } catch (error) {
-        throw new Error(`Failed to save PM2 configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(`Failed to save PM2 configuration: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
     } else {
       // In fallback mode, configuration is automatically persisted in memory
@@ -768,7 +768,7 @@ export class PM2Service {
         if (!pm2Path) throw new Error('PM2 path not found');
         await execAsync(`${pm2Path} resurrect`);
       } catch (error) {
-        throw new Error(`Failed to resurrect PM2 processes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(`Failed to resurrect PM2 processes: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
     } else {
       // In fallback mode, no resurrection is needed as processes are managed in memory

@@ -1,4 +1,3 @@
-
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
@@ -191,7 +190,7 @@ export class LogService {
 
       return this.parseNginxLogs(stdout, type);
     } catch (error) {
-      console.warn(`Failed to get nginx logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.warn(`Failed to get nginx logs: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       // Return empty array instead of throwing error
       return [];
     }
@@ -212,7 +211,7 @@ export class LogService {
       const { stdout } = await execAsync(command);
       return this.parseJournalLogs(stdout);
     } catch (error) {
-      console.warn(`Failed to get system logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.warn(`Failed to get system logs: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       // Return empty array instead of throwing error
       return [];
     }

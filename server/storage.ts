@@ -812,7 +812,7 @@ export class DatabaseStorage implements IStorage {
     if (activities.length === 0) {
       return [];
     }
-    
+
     const created = await db.insert(userActivities).values(activities).returning();
     return created;
   }
@@ -903,7 +903,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     let timeCondition;
     const now = new Date();
-    
+
     switch (options?.timeframe) {
       case '24h':
         timeCondition = gte(userActivities.timestamp, new Date(now.getTime() - 24 * 60 * 60 * 1000));
