@@ -68,11 +68,26 @@ const PageLoader = () => (
 );
 
 function Router() {
+  // ✅ جميع الـ hooks يجب أن تكون في أعلى المكون قبل أي شرطيات أو early returns
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isConnected: wsConnected, connectionDiagnostics } = useWebSocket(user?.id);
 
+  // ✅ useEffect hooks يجب أن تكون دائماً في نفس الترتيب
+  useEffect(() => {
+    if (user?.id) {
+      runWebSocketDiagnostics(user.id).then(diagnostics => {
+        console.log('🔍 WebSocket diagnostics completed:', diagnostics);
+        if (!diagnostics.success) {
+          console.warn('⚠️ WebSocket connection issues detected');
+        }
+      });
+    }
+  }, [user?.id]);
+
   console.log('Router - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
 
+  // الآن يمكن إجراء الشرطيات بعد استدعاء جميع الـ hooks
+  
   // إذا كان التحميل جارياً، عرض loading
   if (isLoading) {
     return (
@@ -107,45 +122,6 @@ function Router() {
 
   // If user is authenticated, show protected routes
   console.log('User authenticated, showing protected routes');
-
-  // تشغيل تشخيص WebSocket عند التحميل
-  useEffect(() => {
-    if (user?.id) {
-      runWebSocketDiagnostics(user.id).then(diagnostics => {
-        console.log('🔍 WebSocket diagnostics completed:', diagnostics);
-        if (!diagnostics.success) {
-          console.warn('⚠️ WebSocket connection issues detected');
-        }
-      });
-    }
-  }, [user?.id]);
-
-  // Define protected routes. These routes require authentication.
-  const protectedRoutes = [
-    "/",
-    "/dashboard",
-    "/applications",
-    "/applications/logs/:id",
-    "/domains",
-    "/nginx",
-    "/ssl",
-    "/processes",
-    "/logs",
-    "/audit",
-    "/terminal",
-    "/health-check",
-    "/file-manager",
-    "/path-manager",
-  ];
-
-  // Check current location
-  const location = window.location;
-
-  // If the current route is protected and the user is not authenticated, redirect to login.
-  if (protectedRoutes.includes(location.pathname) && !isAuthenticated) {
-    console.log('Protected route accessed without authentication, redirecting to AuthPage');
-    return <AuthPage />;
-  }
 
 
   return (
