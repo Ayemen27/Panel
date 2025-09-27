@@ -20,8 +20,13 @@ import { logger } from '../utils/logger';
  * Security Configuration and Constants
  */
 const ALLOWED_PATHS = [
-  '/home/runner',
-  '/home/runner/workspace',
+  '/home/administrator',
+  '/home/administrator/Panel',
+  '/home/administrator/storage',
+  '/home/administrator/real-files',
+  '/home/administrator/uploads',
+  '/home/administrator/logs',
+  '/home/administrator/.config',
   process.cwd(),
   '/tmp/uploads',
   '/var/tmp'

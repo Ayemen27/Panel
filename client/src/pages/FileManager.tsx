@@ -184,14 +184,14 @@ export default function FileManager() {
   const dragCounter = useRef(0);
   
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
-    { id: null, name: 'الرئيسية', path: '/home/runner/workspace' }
+    { id: null, name: 'الرئيسية', path: '/home/administrator' }
   ]);
   
   // Initialize real files with default allowed path
   useEffect(() => {
     if (fileSystemMode === 'real') {
-      // Use current working directory for Replit environment
-      const initialPath = '/home/runner/workspace';
+      // Use administrator home directory
+      const initialPath = '/home/administrator';
       setCurrentPath(initialPath);
       setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: initialPath }]);
     } else {
@@ -1723,12 +1723,12 @@ export default function FileManager() {
                 // Navigate to main screen/home
                 setShowMainLibraries(true);
                 setStorageSection('main');
-                setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
+                setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/home/administrator' }]);
                 setActiveTab('files');
                 if (fileSystemMode === 'database') {
                   setCurrentFolderId(null);
                 } else {
-                  const initialPath = '/home/runner/workspace';
+                  const initialPath = '/home/administrator';
                   setCurrentPath(initialPath);
                 }
               }}
