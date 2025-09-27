@@ -1,7 +1,6 @@
-replit_final_file>
 import { Express, Request } from "express";
 import { createServer } from "http";
-import type { Server } from "http";
+import { Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage.js";
 import { setupAuth, isAuthenticated, requireRole } from "./auth";
