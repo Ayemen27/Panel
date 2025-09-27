@@ -1,0 +1,228 @@
+{
+  "timestamp": "2025-09-27T16:21:07.649Z",
+  "summary": {
+    "critical": 8,
+    "high": 0,
+    "medium": 0,
+    "low": 5,
+    "total": 13
+  },
+  "readyForDeployment": false,
+  "issues": [
+    {
+      "id": "audit-1758989472709-feaaeqbyf",
+      "status": "Open",
+      "title": "فشل في عملية البناء",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل التطبيق في البناء بنجاح",
+      "reproductionSteps": [
+        "تشغيل npm run build"
+      ],
+      "affectedFiles": [],
+      "suggestedFix": "مراجعة أخطاء البناء وإصلاحها",
+      "evidence": {
+        "outputs": [
+          "Command failed: npx tsc --noEmit\n"
+        ]
+      }
+    },
+    {
+      "id": "audit-1758989472772-zsvt859a2",
+      "status": "Open",
+      "title": "خطأ في الوصول لـ API: /api/health",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل في الوصول للـ API",
+      "reproductionSteps": [
+        "curl -i http://localhost:6000/api/health"
+      ],
+      "affectedFiles": [
+        "server/routes.ts"
+      ],
+      "suggestedFix": "التأكد من أن الخادم يعمل ومراجعة الأخطاء"
+    },
+    {
+      "id": "audit-1758989472848-7gdp12gkq",
+      "status": "Open",
+      "title": "خطأ في الوصول لـ API: /api/user",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل في الوصول للـ API",
+      "reproductionSteps": [
+        "curl -i http://localhost:6000/api/user"
+      ],
+      "affectedFiles": [
+        "server/routes.ts"
+      ],
+      "suggestedFix": "التأكد من أن الخادم يعمل ومراجعة الأخطاء"
+    },
+    {
+      "id": "audit-1758989472897-zmp2727u2",
+      "status": "Open",
+      "title": "خطأ في الوصول لـ API: /api/dashboard/stats",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل في الوصول للـ API",
+      "reproductionSteps": [
+        "curl -i http://localhost:6000/api/dashboard/stats"
+      ],
+      "affectedFiles": [
+        "server/routes.ts"
+      ],
+      "suggestedFix": "التأكد من أن الخادم يعمل ومراجعة الأخطاء"
+    },
+    {
+      "id": "audit-1758989472942-pzu50zy7g",
+      "status": "Open",
+      "title": "خطأ في الوصول لـ API: /api/applications",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل في الوصول للـ API",
+      "reproductionSteps": [
+        "curl -i http://localhost:6000/api/applications"
+      ],
+      "affectedFiles": [
+        "server/routes.ts"
+      ],
+      "suggestedFix": "التأكد من أن الخادم يعمل ومراجعة الأخطاء"
+    },
+    {
+      "id": "audit-1758989472985-y5w1ib2cw",
+      "status": "Open",
+      "title": "خطأ في الوصول لـ API: /api/files",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل في الوصول للـ API",
+      "reproductionSteps": [
+        "curl -i http://localhost:6000/api/files"
+      ],
+      "affectedFiles": [
+        "server/routes.ts"
+      ],
+      "suggestedFix": "التأكد من أن الخادم يعمل ومراجعة الأخطاء"
+    },
+    {
+      "id": "audit-1758989473055-yawatv19m",
+      "status": "Open",
+      "title": "خطأ في الوصول لـ API: /api/system/info",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل في الوصول للـ API",
+      "reproductionSteps": [
+        "curl -i http://localhost:6000/api/system/info"
+      ],
+      "affectedFiles": [
+        "server/routes.ts"
+      ],
+      "suggestedFix": "التأكد من أن الخادم يعمل ومراجعة الأخطاء"
+    },
+    {
+      "id": "audit-1758989473116-g1k2bl4ap",
+      "status": "Open",
+      "title": "خطأ في الوصول لـ API: /api/notifications",
+      "severity": "Critical",
+      "category": "Functionality",
+      "description": "فشل في الوصول للـ API",
+      "reproductionSteps": [
+        "curl -i http://localhost:6000/api/notifications"
+      ],
+      "affectedFiles": [
+        "server/routes.ts"
+      ],
+      "suggestedFix": "التأكد من أن الخادم يعمل ومراجعة الأخطاء"
+    },
+    {
+      "id": "audit-1758989473118-mys7rdgtn",
+      "status": "Open",
+      "title": "نقص في الوصولية: Dashboard.tsx",
+      "severity": "Low",
+      "category": "UI/UX",
+      "description": "الصفحة قد تفتقر لتسميات الوصولية",
+      "reproductionSteps": [
+        "فحص Dashboard.tsx"
+      ],
+      "affectedFiles": [
+        "client/src/pages/Dashboard.tsx"
+      ],
+      "suggestedFix": "إضافة aria-label أو aria-labelledby للعناصر التفاعلية"
+    },
+    {
+      "id": "audit-1758989473119-veziem6zi",
+      "status": "Open",
+      "title": "نقص في الوصولية: Applications.tsx",
+      "severity": "Low",
+      "category": "UI/UX",
+      "description": "الصفحة قد تفتقر لتسميات الوصولية",
+      "reproductionSteps": [
+        "فحص Applications.tsx"
+      ],
+      "affectedFiles": [
+        "client/src/pages/Applications.tsx"
+      ],
+      "suggestedFix": "إضافة aria-label أو aria-labelledby للعناصر التفاعلية"
+    },
+    {
+      "id": "audit-1758989473120-ofvnwq1hm",
+      "status": "Open",
+      "title": "نقص في الوصولية: FileManager.tsx",
+      "severity": "Low",
+      "category": "UI/UX",
+      "description": "الصفحة قد تفتقر لتسميات الوصولية",
+      "reproductionSteps": [
+        "فحص FileManager.tsx"
+      ],
+      "affectedFiles": [
+        "client/src/pages/FileManager.tsx"
+      ],
+      "suggestedFix": "إضافة aria-label أو aria-labelledby للعناصر التفاعلية"
+    },
+    {
+      "id": "audit-1758989473121-95y1qbutw",
+      "status": "Open",
+      "title": "نقص في الوصولية: HealthCheck.tsx",
+      "severity": "Low",
+      "category": "UI/UX",
+      "description": "الصفحة قد تفتقر لتسميات الوصولية",
+      "reproductionSteps": [
+        "فحص HealthCheck.tsx"
+      ],
+      "affectedFiles": [
+        "client/src/pages/HealthCheck.tsx"
+      ],
+      "suggestedFix": "إضافة aria-label أو aria-labelledby للعناصر التفاعلية"
+    },
+    {
+      "id": "audit-1758989473122-mpyg3aals",
+      "status": "Open",
+      "title": "نقص في الوصولية: Terminal.tsx",
+      "severity": "Low",
+      "category": "UI/UX",
+      "description": "الصفحة قد تفتقر لتسميات الوصولية",
+      "reproductionSteps": [
+        "فحص Terminal.tsx"
+      ],
+      "affectedFiles": [
+        "client/src/pages/Terminal.tsx"
+      ],
+      "suggestedFix": "إضافة aria-label أو aria-labelledby للعناصر التفاعلية"
+    }
+  ],
+  "performance": {
+    "buildTime": 0,
+    "bundleSize": 0,
+    "apiResponseTimes": {}
+  },
+  "security": {
+    "vulnerabilities": [],
+    "unsafeConfigurations": []
+  },
+  "checklist": {
+    "Build Success": "FAIL",
+    "TypeScript Check": "FAIL",
+    "Database Connection": "PASS",
+    "Health Endpoint": "FAIL",
+    "Environment Variables": "PASS",
+    "Security Vulnerabilities": "FAIL"
+  }
+}
