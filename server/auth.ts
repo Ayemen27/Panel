@@ -9,6 +9,7 @@ import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import connectPg from "connect-pg-simple";
 import MemoryStore from "memorystore";
+import rateLimit from "express-rate-limit";
 
 declare global {
   namespace Express {
@@ -42,58 +43,91 @@ const ENV_CONFIG = {
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // أسبوع واحد
 
+  // 🚨 SECURITY: إجبار SESSION_SECRET قوي في الإنتاج
+  if (ENV_CONFIG.isProduction && !process.env.SESSION_SECRET) {
+    throw new Error('🚨 SECURITY CRITICAL: SESSION_SECRET environment variable is required in production');
+  }
+
+  if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'default-secret-change-in-production') {
+    console.error('🚨 SECURITY WARNING: Using weak or default SESSION_SECRET');
+  }
+
   let sessionStore;
 
-  // Try to use PostgreSQL store with fallback to MemoryStore
+  // 🚨 SECURITY: منع MemoryStore في الإنتاج
+  if (ENV_CONFIG.isProduction && !process.env.DATABASE_URL) {
+    throw new Error('🚨 SECURITY CRITICAL: Database connection required for session persistence in production');
+  }
+
+  // Try to use PostgreSQL store with fallback to MemoryStore (development only)
   try {
     if (process.env.DATABASE_URL) {
       const pgStore = connectPg(session);
       sessionStore = new pgStore({
         conString: process.env.DATABASE_URL,
-        createTableIfMissing: false,
+        createTableIfMissing: true, // ✅ SECURITY FIX: تمكين إنشاء الجدول إذا لم يكن موجوداً
         ttl: sessionTtl,
         tableName: "sessions",
       });
-      console.log('Using PostgreSQL session store');
+      console.log('✅ Using secure PostgreSQL session store');
     } else {
       throw new Error('No DATABASE_URL provided');
     }
   } catch (error) {
-    console.warn('Failed to initialize PostgreSQL session store, falling back to MemoryStore:', error instanceof Error ? error.message : 'Unknown error');
-    // Fallback to MemoryStore
+    if (ENV_CONFIG.isProduction) {
+      throw new Error(`🚨 CRITICAL: Failed to initialize session store in production: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    console.warn('⚠️ DEVELOPMENT: Falling back to MemoryStore:', error instanceof Error ? error.message : 'Unknown error');
     const MemoryStoreSession = MemoryStore(session);
     sessionStore = new MemoryStoreSession({
-      checkPeriod: sessionTtl, // prune expired entries every 24h
+      checkPeriod: sessionTtl,
     });
-    console.log('Using MemoryStore for sessions');
+    console.log('⚠️ Using MemoryStore for sessions (DEVELOPMENT ONLY)');
   }
 
-  // إعدادات متقدمة للكوكيز لحل مشاكل المتصفحات المختلفة
+  // 🛡️ SECURITY: إعدادات كوكيز محسنة أمنياً
   const cookieSettings = {
-    httpOnly: true,
-    secure: ENV_CONFIG.isProduction, // آمن في production (يتطلب HTTPS)
+    httpOnly: true, // منع الوصول من JavaScript
+    secure: ENV_CONFIG.isProduction, // HTTPS only في الإنتاج
     maxAge: sessionTtl,
-    sameSite: ENV_CONFIG.isProduction ? "none" as const : "lax" as const, // none للمتصفحات المختلفة في production
-    domain: ENV_CONFIG.isReplit ? undefined : ENV_CONFIG.host, // دع المتصفح يحدد أو استخدم المضيف المحدد
+    sameSite: ENV_CONFIG.isProduction ? "strict" as const : "lax" as const, // ✅ SECURITY FIX: strict بدلاً من none
+    domain: ENV_CONFIG.isReplit ? undefined : ENV_CONFIG.host,
   };
 
-  // في حالة الإنتاج، استخدم إعدادات مرنة أكثر
-  if (ENV_CONFIG.isProduction) {
-    // للتوافق مع المتصفحات المختلفة
-    cookieSettings.sameSite = "none";
-    cookieSettings.secure = true; // يجب استخدام HTTPS في الإنتاج
-  }
-
   return session({
-    secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
+    secret: process.env.SESSION_SECRET || 'dev-only-secret-change-immediately',
     store: sessionStore,
-    resave: true, // تغيير إلى true لحل مشاكل الجلسة
-    saveUninitialized: true, // تغيير إلى true لضمان حفظ الجلسة
+    resave: false, // ✅ SECURITY FIX: منع إعادة الحفظ غير الضرورية
+    saveUninitialized: false, // ✅ SECURITY FIX: منع حفظ الجلسات الفارغة (مقاومة CSRF)
     name: 'connect.sid',
     cookie: cookieSettings,
-    rolling: true, // تجديد الجلسة مع كل طلب
+    rolling: false, // ✅ SECURITY FIX: منع التجديد المستمر
   });
 }
+
+// 🛡️ SECURITY: Helper function to remove password from user object
+function sanitizeUser(user: any) {
+  if (!user) return null;
+  const { password, ...sanitizedUser } = user;
+  return sanitizedUser;
+}
+
+// 🛡️ SECURITY: Rate limiting for login attempts
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 دقيقة
+  max: 5, // 5 محاولات كحد أقصى لكل IP
+  message: {
+    error: 'تم تجاوز عدد محاولات تسجيل الدخول المسموحة. يرجى المحاولة بعد 15 دقيقة.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // لا تحسب المحاولات الناجحة
+  keyGenerator: (req) => {
+    // استخدم IP + username للحد من محاولات كل مستخدم
+    return `${req.ip}-${req.body?.username || 'unknown'}`;
+  }
+});
 
 export function setupAuth(app: Express) {
   // يجب أن يكون express-session قبل passport.session
@@ -152,7 +186,8 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        // 🛡️ SECURITY FIX: إزالة كلمة المرور من الاستجابة
+        res.status(201).json(sanitizeUser(user));
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -163,13 +198,11 @@ export function setupAuth(app: Express) {
   });
 
   // تسجيل الدخول
-  app.post("/api/login", (req, res, next) => {
-    console.log('Login attempt for user:', req.body.username);
-    console.log('Request headers:', {
-      'user-agent': req.headers['user-agent'],
-      'origin': req.headers.origin,
-      'referer': req.headers.referer
-    });
+  app.post("/api/login", loginLimiter, (req, res, next) => {
+    // 🛡️ SECURITY FIX: تقليل logging للبيانات الحساسة في الإنتاج
+    if (!ENV_CONFIG.isProduction) {
+      console.log('Login attempt for user:', req.body.username?.substring(0, 3) + '***');
+    }
 
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
@@ -178,35 +211,46 @@ export function setupAuth(app: Express) {
       }
 
       if (!user) {
-        console.log('Login failed for user:', req.body.username, 'Info:', info);
+        // 🛡️ SECURITY FIX: تقليل logging لأسماء المستخدمين الفاشلة
+        if (!ENV_CONFIG.isProduction) {
+          console.log('Login failed for user:', req.body.username?.substring(0, 3) + '***');
+        }
         return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
 
-      req.logIn(user, { session: true }, (err: any) => {
-        if (err) {
-          console.error('Session creation error:', err);
-          return res.status(500).json({ error: "فشل في إنشاء الجلسة" });
+      // 🛡️ SECURITY FIX: تجديد معرف الجلسة لمنع session fixation
+      req.session.regenerate((regenerateErr: any) => {
+        if (regenerateErr) {
+          console.error('Session regeneration error:', regenerateErr);
+          return res.status(500).json({ error: "فشل في تجديد الجلسة" });
         }
 
-        // التأكد من حفظ الجلسة قبل الاستجابة
-        req.session.save((saveErr: any) => {
-          if (saveErr) {
-            console.error('Session save error:', saveErr);
-            return res.status(500).json({ error: "فشل في حفظ الجلسة" });
+        req.logIn(user, { session: true }, (err: any) => {
+          if (err) {
+            console.error('Session creation error:', err);
+            return res.status(500).json({ error: "فشل في إنشاء الجلسة" });
           }
 
-          console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
-          console.log('Session saved successfully');
+          // التأكد من حفظ الجلسة قبل الاستجابة
+          req.session.save((saveErr: any) => {
+            if (saveErr) {
+              console.error('Session save error:', saveErr);
+              return res.status(500).json({ error: "فشل في حفظ الجلسة" });
+            }
 
-          // إرجاع بيانات المستخدم بدون كلمة المرور
-          const { password, ...userWithoutPassword } = user;
+            // 🛡️ SECURITY FIX: إزالة session ID من logs
+            if (!ENV_CONFIG.isProduction) {
+              console.log('Login successful for user:', user.username?.substring(0, 3) + '***');
+            }
 
-          // إضافة headers إضافية للتوافق
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
+            // إضافة headers إضافية للتوافق
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
 
-          res.status(200).json(userWithoutPassword);
+            // 🛡️ SECURITY FIX: استخدام sanitizeUser بدلاً من destructuring manual
+            res.status(200).json(sanitizeUser(user));
+          });
         });
       });
     })(req, res, next);
