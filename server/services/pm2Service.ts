@@ -219,19 +219,48 @@ export class PM2Service {
           ];
           const fs = await import('fs').then(m => m.promises);
           
+          // First, verify the application path exists
+          try {
+            const pathStats = await fs.stat(application.path);
+            if (!pathStats.isDirectory()) {
+              throw new Error(`Application path is not a directory: ${application.path}`);
+            }
+          } catch (error) {
+            throw new Error(`Application path does not exist or is not accessible: ${application.path}. Please check the path and permissions.`);
+          }
+
+          // Try to list directory contents for debugging
+          let directoryContents: string[] = [];
+          try {
+            directoryContents = await fs.readdir(application.path);
+            console.log(`📁 Contents of ${application.path}:`, directoryContents);
+          } catch (error) {
+            console.warn(`Warning: Could not read directory contents: ${error}`);
+          }
+          
           for (const file of commonFiles) {
             try {
-              await fs.access(`${application.path}/${file}`);
-              mainFile = file;
-              useTypeScript = file.endsWith('.ts');
-              break;
+              const fullPath = `${application.path}/${file}`;
+              await fs.access(fullPath);
+              const stats = await fs.stat(fullPath);
+              if (stats.isFile()) {
+                mainFile = file;
+                useTypeScript = file.endsWith('.ts');
+                console.log(`✅ Found main file: ${fullPath}`);
+                break;
+              }
             } catch {
               continue;
             }
           }
           
           if (!mainFile) {
-            throw new Error(`No main file found in ${application.path}. Please add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`);
+            // Create helpful error message with directory contents
+            const contentsInfo = directoryContents.length > 0 
+              ? `\n\nDirectory contents: ${directoryContents.join(', ')}`
+              : '\n\nDirectory appears to be empty or unreadable.';
+            
+            throw new Error(`No main file found in ${application.path}.${contentsInfo}\n\nPlease add one of the following files: ${commonFiles.join(', ')} or specify a valid command in the application settings.`);
           }
           
           // Set appropriate command based on file type
@@ -299,7 +328,15 @@ export class PM2Service {
           await execAsync(command);
         }
       } catch (error) {
-        throw new Error(`Failed to start application with PM2: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Provide specific error handling for empty file names
+        if (errorMessage.includes('pm2 start ""') || errorMessage.includes('Process  not found')) {
+          throw new Error(`Failed to start application with PM2: No valid file specified. Please ensure a main file exists in ${application.path} or specify a command in application settings.\n\nOriginal error: ${errorMessage}`);
+        }
+        
+        // Enhanced error context
+        throw new Error(`Failed to start application with PM2: ${errorMessage}\n\nApplication path: ${application.path}\nCommand: ${startCommand || 'auto-detect'}`);
       }
     } else {
       await this.startApplicationFallback(application);
