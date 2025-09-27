@@ -635,6 +635,130 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  // Frontend Error operations
+  async createFrontendError(error: InsertFrontendError): Promise<FrontendError> {
+    const [created] = await db.insert(frontendErrors).values(error).returning();
+    return created;
+  }
+
+  async getFrontendErrors(options?: {
+    page?: number;
+    limit?: number;
+    filters?: {
+      type?: string;
+      severity?: string;
+      resolved?: boolean;
+      userId?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+  }): Promise<{
+    errors: FrontendError[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const page = options?.page || 1;
+    const limit = options?.limit || 50;
+    const offset = (page - 1) * limit;
+    const filters = options?.filters || {};
+
+    let query = db.select().from(frontendErrors);
+    let countQuery = db.select({ count: count() }).from(frontendErrors);
+
+    const conditions = [];
+
+    if (filters.type) {
+      conditions.push(eq(frontendErrors.type, filters.type as any));
+    }
+    if (filters.severity) {
+      conditions.push(eq(frontendErrors.severity, filters.severity as any));
+    }
+    if (filters.resolved !== undefined) {
+      conditions.push(eq(frontendErrors.resolved, filters.resolved));
+    }
+    if (filters.userId) {
+      conditions.push(eq(frontendErrors.userId, filters.userId));
+    }
+    if (filters.startDate) {
+      conditions.push(gte(frontendErrors.timestamp, new Date(filters.startDate)));
+    }
+    if (filters.endDate) {
+      conditions.push(lt(frontendErrors.timestamp, new Date(filters.endDate)));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+      countQuery = countQuery.where(and(...conditions));
+    }
+
+    const [errors, totalResult] = await Promise.all([
+      query.orderBy(desc(frontendErrors.timestamp)).limit(limit).offset(offset),
+      countQuery
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      errors,
+      total,
+      page,
+      totalPages
+    };
+  }
+
+  async updateFrontendError(id: string, updates: Partial<FrontendError>): Promise<FrontendError> {
+    const [updated] = await db
+      .update(frontendErrors)
+      .set(updates)
+      .where(eq(frontendErrors.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getFrontendErrorStats(): Promise<{
+    total: number;
+    byType: { type: string; count: number }[];
+    bySeverity: { severity: string; count: number }[];
+    resolved: number;
+    unresolved: number;
+    last24Hours: number;
+  }> {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [
+      totalResult,
+      typeStats,
+      severityStats,
+      resolvedResult,
+      unresolvedResult,
+      last24HoursResult
+    ] = await Promise.all([
+      db.select({ count: count() }).from(frontendErrors),
+      db.select({
+        type: frontendErrors.type,
+        count: count()
+      }).from(frontendErrors).groupBy(frontendErrors.type),
+      db.select({
+        severity: frontendErrors.severity,
+        count: count()
+      }).from(frontendErrors).groupBy(frontendErrors.severity),
+      db.select({ count: count() }).from(frontendErrors).where(eq(frontendErrors.resolved, true)),
+      db.select({ count: count() }).from(frontendErrors).where(eq(frontendErrors.resolved, false)),
+      db.select({ count: count() }).from(frontendErrors).where(gte(frontendErrors.timestamp, oneDayAgo))
+    ]);
+
+    return {
+      total: totalResult[0]?.count || 0,
+      byType: typeStats.map(stat => ({ type: stat.type, count: stat.count })),
+      bySeverity: severityStats.map(stat => ({ severity: stat.severity, count: stat.count })),
+      resolved: resolvedResult[0]?.count || 0,
+      unresolved: unresolvedResult[0]?.count || 0,
+      last24Hours: last24HoursResult[0]?.count || 0
+    };
+  }
+
   // Statistics
   async getApplicationStats(userId: string): Promise<{
     total: number;
