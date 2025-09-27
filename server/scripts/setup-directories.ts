@@ -1,6 +1,4 @@
 
-#!/usr/bin/env tsx
-
 import fs from 'fs';
 import path from 'path';
 import { ENV_CONFIG } from '../../shared/environment';
@@ -18,7 +16,7 @@ const REQUIRED_DIRECTORIES = [
 async function setupDirectories() {
   console.log('🏗️ Setting up required directories...');
   
-  const baseDir = ENV_CONFIG.isReplit ? '/home/runner' : '/home/administrator/Panel';
+  const baseDir = ENV_CONFIG.isReplit ? '/home/runner' : '/home/administrator';
   
   for (const dir of REQUIRED_DIRECTORIES) {
     const dirPath = path.join(baseDir, dir);
