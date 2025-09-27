@@ -2355,9 +2355,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             } catch (error) {
               console.error(`Terminal: Failed to execute command "${trimmedCommand}":`, error);
+              const errorMessage = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown error');
               ws.send(JSON.stringify({
                 type: 'TERMINAL_ERROR',
-                message: `Failed to execute command: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`
+                message: `Failed to execute command: ${errorMessage}`
               }));
             }
             break;

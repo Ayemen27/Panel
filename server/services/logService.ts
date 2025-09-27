@@ -1,3 +1,4 @@
+
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
@@ -140,7 +141,6 @@ export interface LogEntry {
   source: string;
 }
 
-// Placeholder for LogOptions and parseLogContent, parseGenericLogs, filterAndSortLogs, parsePM2Logs, parseNginxLogs, parseJournalLogs if they are defined elsewhere or need to be implemented.
 interface LogOptions {
   lines?: number;
   level?: string;
@@ -339,7 +339,7 @@ export class LogService {
         }
       }
 
-      return this.filterAndSortLogs(logs, options);
+      return LogService.filterAndSortLogs(logs, options);
     } catch (error) {
       console.error('Error reading application logs:', error);
       return [];
@@ -387,28 +387,48 @@ export class LogService {
         }
       }
 
-      return this.filterAndSortLogs(logs, options);
+      return LogService.filterAndSortLogs(logs, options);
     } catch (error) {
       console.error('Error reading nginx logs:', error);
       return [];
     }
   }
 
-  // Placeholder methods - need to be implemented
+  // Static methods for parsing and filtering
   private static parseLogContent(content: string, source: string, appId?: string, type?: string): LogEntry[] {
-    // This is a placeholder and needs to be implemented based on actual log formats.
-    // It should parse the content and return an array of LogEntry objects.
-    // For now, it returns generic logs.
-    return this.parseGenericLogs(content, undefined, source, appId, type);
+    return LogService.parseGenericLogs(content, undefined, source, appId, type);
   }
 
-  private filterAndSortLogs(logs: LogEntry[], options: LogOptions): LogEntry[] {
-    // This is a placeholder and needs to be implemented.
-    // It should filter and sort logs based on options like lines, level, startDate, endDate.
-    return logs.slice(0, options.lines || 100);
+  private static filterAndSortLogs(logs: LogEntry[], options: LogOptions): LogEntry[] {
+    let filteredLogs = [...logs];
+
+    // Filter by level if specified
+    if (options.level) {
+      filteredLogs = filteredLogs.filter(log => log.level === options.level);
+    }
+
+    // Filter by date range if specified
+    if (options.startDate || options.endDate) {
+      filteredLogs = filteredLogs.filter(log => {
+        const logDate = new Date(log.timestamp);
+        if (options.startDate && logDate < options.startDate) return false;
+        if (options.endDate && logDate > options.endDate) return false;
+        return true;
+      });
+    }
+
+    // Sort by timestamp (newest first)
+    filteredLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // Limit number of logs if specified
+    if (options.lines) {
+      filteredLogs = filteredLogs.slice(0, options.lines);
+    }
+
+    return filteredLogs;
   }
 
-  private parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
+  private static parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
     const logLines = content.split('\n').filter(line => line.trim());
 
     if (lines) {
@@ -417,13 +437,13 @@ export class LogService {
 
     return logLines.map(line => ({
       timestamp: new Date().toISOString(),
-      level: this.detectLogLevel(line),
+      level: LogService.detectLogLevel(line),
       message: line,
       source: source
     }));
   }
 
-  private detectLogLevel(message: string): string {
+  private static detectLogLevel(message: string): string {
     const lowerMessage = message.toLowerCase();
 
     if (lowerMessage.includes('error') || lowerMessage.includes('err')) {
@@ -435,6 +455,15 @@ export class LogService {
     } else {
       return 'info';
     }
+  }
+
+  // Instance methods
+  private parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
+    return LogService.parseGenericLogs(content, lines, source, appId, type);
+  }
+
+  private detectLogLevel(message: string): string {
+    return LogService.detectLogLevel(message);
   }
 
   private parsePM2Logs(content: string): LogEntry[] {
@@ -523,35 +552,6 @@ export class LogService {
         source: 'system'
       };
     });
-  }
-
-  private parseGenericLogs(content: string, lines?: number, source: string = 'generic', appId?: string, type?: string): LogEntry[] {
-    const logLines = content.split('\n').filter(line => line.trim());
-
-    if (lines) {
-      logLines.splice(0, Math.max(0, logLines.length - lines));
-    }
-
-    return logLines.map(line => ({
-      timestamp: new Date().toISOString(),
-      level: this.detectLogLevel(line),
-      message: line,
-      source: source
-    }));
-  }
-
-  private detectLogLevel(message: string): string {
-    const lowerMessage = message.toLowerCase();
-
-    if (lowerMessage.includes('error') || lowerMessage.includes('err')) {
-      return 'error';
-    } else if (lowerMessage.includes('warn') || lowerMessage.includes('warning')) {
-      return 'warn';
-    } else if (lowerMessage.includes('debug')) {
-      return 'debug';
-    } else {
-      return 'info';
-    }
   }
 }
 
