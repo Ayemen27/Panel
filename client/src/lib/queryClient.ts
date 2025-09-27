@@ -1,6 +1,5 @@
 import { QueryClient, type QueryFunction } from "@tanstack/react-query";
 import { getApiBaseUrl } from "../../../shared/environment";
-import axios from 'axios';
 
 // Use relative URLs to avoid SSL issues with IP addresses
 const API_BASE = `${getApiBaseUrl()}/api`;
@@ -80,14 +79,7 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
-// Configure axios defaults for session-based authentication
-axios.defaults.withCredentials = true;
-axios.defaults.timeout = 10000;
-
-// إعدادات إضافية لدعم المتصفحات المختلفة
-axios.defaults.headers.common['Accept'] = 'application/json';
-axios.defaults.headers.common['Cache-Control'] = 'no-cache';
-axios.defaults.headers.post['Content-Type'] = 'application/json';
+// Using native fetch API with proper session configuration
 
 export const queryClient = new QueryClient({
   defaultOptions: {
