@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
-import viteConfig from "../vite.config.ts"; // صحيح إذا كان vite.config.js في مجلد رئيسي واحد أعلى
+import viteConfig from "../vite.config"; // صحيح إذا كان vite.config.js في مجلد رئيسي واحد أعلى
 import { nanoid } from "nanoid";
 import { Server } from "http";
 

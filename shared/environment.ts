@@ -1,5 +1,27 @@
 // ملاحظة: تحميل متغيرات البيئة يجب أن يتم في ملفات الخادم، ليس هنا
 
+// Type declarations for server-side compatibility
+declare global {
+  interface Window {
+    location: {
+      hostname: string;
+      protocol: string;
+      port: string;
+      href: string;
+      origin: string;
+    };
+    process?: {
+      env?: Record<string, string>;
+    };
+  }
+  interface Navigator {
+    onLine: boolean;
+  }
+  var window: Window | undefined;
+  var navigator: Navigator | undefined;
+  var WebSocket: any;
+}
+
 export interface EnvironmentConfig {
   name: 'replit' | 'production' | 'development';
   isReplit: boolean;
@@ -31,7 +53,7 @@ export function detectEnvironment(): EnvironmentConfig {
 
   // Use import.meta.env in browser, process.env on server
   const nodeEnv = typeof window !== 'undefined'
-    ? (import.meta?.env?.MODE || 'development')
+    ? ((typeof import !== 'undefined' && import.meta && (import.meta as any).env?.MODE) || 'development')
     : (processEnv.NODE_ENV || 'development');
 
   // قراءة المنفذ من متغيرات البيئة بشكل تلقائي في المتصفح والخادم
@@ -47,8 +69,8 @@ export function detectEnvironment(): EnvironmentConfig {
       }
       
       // ثانياً: محاولة قراءة من import.meta.env
-      if (importMetaEnv?.VITE_PORT) {
-        return parseInt(importMetaEnv.VITE_PORT, 10);
+      if (importMetaEnv && (importMetaEnv as any).VITE_PORT) {
+        return parseInt((importMetaEnv as any).VITE_PORT, 10);
       }
       
       // ثالثاً: استخدام القيمة الافتراضية
@@ -69,8 +91,8 @@ export function detectEnvironment(): EnvironmentConfig {
         return parseInt(windowProcess.WS_PORT, 10);
       }
       
-      if (importMetaEnv?.WS_PORT) {
-        return parseInt(importMetaEnv.WS_PORT, 10);
+      if (importMetaEnv && (importMetaEnv as any).WS_PORT) {
+        return parseInt((importMetaEnv as any).WS_PORT, 10);
       }
       
       return 5000; // استخدام نفس منفذ HTTP server
@@ -89,8 +111,8 @@ export function detectEnvironment(): EnvironmentConfig {
         return parseInt(windowProcess.HMR_PORT, 10);
       }
       
-      if (importMetaEnv?.HMR_PORT) {
-        return parseInt(importMetaEnv.HMR_PORT, 10);
+      if (importMetaEnv && (importMetaEnv as any).HMR_PORT) {
+        return parseInt((importMetaEnv as any).HMR_PORT, 10);
       }
       
       return 24678;
@@ -480,7 +502,7 @@ export function logEnvironmentInfo(): void {
     console.log(`   - Replit Domain: ${isReplitDetected}`);
     console.log(`   - Custom Domain: ${isCustomDetected}`);
     console.log(`   - Localhost/Private: ${isLocalhostDetected}`);
-    console.log(`   - Network Online: ${navigator.onLine}`);
+    console.log(`   - Network Online: ${typeof navigator !== 'undefined' ? navigator.onLine : 'unknown'}`);
   }
 
   // التحقق من توفر process.env (server-side only)
@@ -488,14 +510,15 @@ export function logEnvironmentInfo(): void {
     console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
     console.log(`🔧 PORT: ${process.env.PORT || 'undefined'}`);
     console.log(`🔧 REPL_ID: ${process.env.REPL_ID ? 'defined' : 'undefined'}`);
-  } else if (typeof window !== 'undefined' && import.meta?.env) {
-    console.log(`🔧 Browser MODE: ${import.meta.env.MODE || 'undefined'}`);
-    console.log(`🔧 Vite DEV: ${import.meta.env.DEV ? 'true' : 'false'}`);
+  } else if (typeof window !== 'undefined' && typeof import !== 'undefined' && import.meta && (import.meta as any).env) {
+    const metaEnv = (import.meta as any).env;
+    console.log(`🔧 Browser MODE: ${metaEnv.MODE || 'undefined'}`);
+    console.log(`🔧 Vite DEV: ${metaEnv.DEV ? 'true' : 'false'}`);
   }
 
   // معلومات إضافية للتشخيص
   console.log(`🔧 Environment: ${typeof window !== 'undefined' ? 'browser' : 'server'}`);
   console.log(`🔧 Process Available: ${typeof process !== 'undefined'}`);
   console.log(`🔧 Import.meta Available: ${typeof import.meta !== 'undefined'}`);
-  console.log(`🔧 WebSocket Constructor Available: ${typeof WebSocket !== 'undefined'}`);
+  console.log(`🔧 WebSocket Constructor Available: ${typeof WebSocket !== 'undefined' || (typeof window !== 'undefined' && typeof (window as any).WebSocket !== 'undefined')}`);
 }

@@ -4,7 +4,7 @@ dotenv.config({ path: '.env' });
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite.ts";
+import { setupVite, serveStatic, log } from "./vite";
 import { ENV_CONFIG, logEnvironmentInfo } from "../shared/environment";
 
 // SSL certificate verification is enabled for security

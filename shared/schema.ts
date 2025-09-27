@@ -148,25 +148,28 @@ export const systemLogs = pgTable("system_logs", {
   metadata: jsonb("metadata"),
 });
 
-// Frontend errors table for tracking client-side errors
+// Frontend error tracking table
 export const frontendErrors = pgTable("frontend_errors", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   type: errorTypeEnum("type").notNull(),
-  severity: errorSeverityEnum("severity").notNull(),
   message: text("message").notNull(),
-  stack: text("stack"),
   url: text("url").notNull(), // Page URL where error occurred
   component: varchar("component"), // React component name if applicable
   action: varchar("action"), // User action that triggered the error
+  severity: errorSeverityEnum("severity").notNull(),
   userId: varchar("user_id").references(() => users.id),
   sessionId: varchar("session_id"),
   userAgent: text("user_agent"),
+  stack: text("stack"),
   browserInfo: jsonb("browser_info"),
   appState: jsonb("app_state"), // Application state context
   errorBoundary: boolean("error_boundary").default(false), // If caught by error boundary
   resolved: boolean("resolved").default(false),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
   occurrenceCount: integer("occurrence_count").default(1), // Count for duplicate errors
   lastOccurrence: timestamp("last_occurrence").defaultNow(),
+  timestamp: timestamp("timestamp").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -178,6 +181,7 @@ export const frontendErrors = pgTable("frontend_errors", {
   index("IDX_frontend_errors_created_at").on(table.createdAt),
   index("IDX_frontend_errors_last_occurrence").on(table.lastOccurrence),
   index("IDX_frontend_errors_resolved").on(table.resolved),
+  index("IDX_frontend_errors_timestamp").on(table.timestamp),
 ]);
 
 // User activities table for comprehensive user behavior tracking
@@ -577,7 +581,7 @@ export type File = typeof files.$inferSelect;
 export type InsertFile = typeof files.$inferInsert;
 
 export type FileTrash = typeof fileTrash.$inferSelect;
-export type InsertFileTrash = typeof fileTrash.$inferInsert;
+export type InsertFileTrash = typeof fileTrash.$insert;
 
 export type FileBackup = typeof fileBackups.$inferSelect;
 export type InsertFileBackup = typeof fileBackups.$inferInsert;
