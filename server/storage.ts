@@ -701,9 +701,6 @@ export class DatabaseStorage implements IStorage {
     const offset = (page - 1) * limit;
     const filters = options?.filters || {};
 
-    let query = db.select().from(frontendErrors);
-    let countQuery = db.select({ count: count() }).from(frontendErrors);
-
     const conditions = [];
 
     if (filters.type) {
@@ -725,14 +722,22 @@ export class DatabaseStorage implements IStorage {
       conditions.push(lt(frontendErrors.timestamp, new Date(filters.endDate)));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-      countQuery = countQuery.where(and(...conditions));
-    }
+    const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [errors, totalResult] = await Promise.all([
-      query.orderBy(desc(frontendErrors.timestamp)).limit(limit).offset(offset),
-      countQuery
+      whereCondition 
+        ? db.select().from(frontendErrors)
+            .where(whereCondition)
+            .orderBy(desc(frontendErrors.timestamp))
+            .limit(limit)
+            .offset(offset)
+        : db.select().from(frontendErrors)
+            .orderBy(desc(frontendErrors.timestamp))
+            .limit(limit)
+            .offset(offset),
+      whereCondition
+        ? db.select({ count: count() }).from(frontendErrors).where(whereCondition)
+        : db.select({ count: count() }).from(frontendErrors)
     ]);
 
     const total = totalResult[0]?.count || 0;
@@ -834,9 +839,6 @@ export class DatabaseStorage implements IStorage {
     const offset = (page - 1) * limit;
     const filters = options?.filters || {};
 
-    let query = db.select().from(userActivities);
-    let countQuery = db.select({ count: count() }).from(userActivities);
-
     const conditions = [];
 
     if (options?.userId) {
@@ -858,14 +860,22 @@ export class DatabaseStorage implements IStorage {
       conditions.push(lt(userActivities.timestamp, new Date(filters.endDate)));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-      countQuery = countQuery.where(and(...conditions));
-    }
+    const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [activities, totalResult] = await Promise.all([
-      query.orderBy(desc(userActivities.timestamp)).limit(limit).offset(offset),
-      countQuery
+      whereCondition 
+        ? db.select().from(userActivities)
+            .where(whereCondition)
+            .orderBy(desc(userActivities.timestamp))
+            .limit(limit)
+            .offset(offset)
+        : db.select().from(userActivities)
+            .orderBy(desc(userActivities.timestamp))
+            .limit(limit)
+            .offset(offset),
+      whereCondition
+        ? db.select({ count: count() }).from(userActivities).where(whereCondition)
+        : db.select({ count: count() }).from(userActivities)
     ]);
 
     const total = totalResult[0]?.count || 0;

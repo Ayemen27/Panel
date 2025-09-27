@@ -263,12 +263,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/frontend-errors', async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req); // قد يكون null للمستخدمين غير المسجلين
-      const errorData = insertFrontendErrorSchema.parse({
+      const processedData = {
         ...req.body,
         userId,
         userAgent: req.headers['user-agent'],
         url: req.body.url || req.headers.referer || 'unknown'
-      });
+      };
+
+      // Convert timestamp string to Date object if it exists and is a string
+      if (processedData.timestamp && typeof processedData.timestamp === 'string') {
+        processedData.timestamp = new Date(processedData.timestamp);
+      }
+      
+      // Convert other timestamp fields if they exist
+      if (processedData.lastOccurrence && typeof processedData.lastOccurrence === 'string') {
+        processedData.lastOccurrence = new Date(processedData.lastOccurrence);
+      }
+
+      const errorData = insertFrontendErrorSchema.parse(processedData);
 
       const frontendError = await storage.createFrontendError(errorData);
 
@@ -294,14 +306,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Expected array of errors" });
       }
 
-      const processedErrors = errorsData.map(errorData => 
-        insertFrontendErrorSchema.parse({
+      const processedErrors = errorsData.map(errorData => {
+        const processedData = {
           ...errorData,
           userId,
           userAgent: errorData.userAgent || req.headers['user-agent'],
           url: errorData.url || req.headers.referer || 'unknown'
-        })
-      );
+        };
+
+        // Convert timestamp string to Date object if it exists and is a string
+        if (processedData.timestamp && typeof processedData.timestamp === 'string') {
+          processedData.timestamp = new Date(processedData.timestamp);
+        }
+        
+        // Convert other timestamp fields if they exist
+        if (processedData.lastOccurrence && typeof processedData.lastOccurrence === 'string') {
+          processedData.lastOccurrence = new Date(processedData.lastOccurrence);
+        }
+        
+        return insertFrontendErrorSchema.parse(processedData);
+      });
 
       const savedErrors = await Promise.all(
         processedErrors.map(errorData => storage.createFrontendError(errorData))
@@ -715,9 +739,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Application control routes
   app.post('/api/applications/:id/start', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    let application;
+    
     try {
-      const { id } = req.params;
-      const application = await storage.getApplication(id);
+      application = await storage.getApplication(id);
 
       if (!application) {
         return res.status(404).json({ message: "Application not found" });

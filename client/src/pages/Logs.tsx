@@ -168,7 +168,7 @@ export default function Logs() {
     );
   };
 
-  const filteredLogs = (isLiveTail ? liveLogs : logs || []).filter((log: LogEntry) => {
+  const filteredLogs = (isLiveTail ? liveLogs : Array.isArray(logs) ? logs : []).filter((log: LogEntry) => {
     if (searchQuery && !log.message.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
@@ -332,11 +332,11 @@ export default function Logs() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع التطبيقات</SelectItem>
-                  {applications?.map((app: any) => (
+                  {Array.isArray(applications) ? applications.map((app: any) => (
                     <SelectItem key={app.id} value={app.id}>
                       {app.name}
                     </SelectItem>
-                  ))}
+                  )) : null}
                 </SelectContent>
               </Select>
             </div>
@@ -387,7 +387,7 @@ export default function Logs() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {renderLogsList(nginxLogs || [], nginxLoading)}
+              {renderLogsList(Array.isArray(nginxLogs) ? nginxLogs : [], nginxLoading)}
             </CardContent>
           </Card>
         </TabsContent>
@@ -401,7 +401,7 @@ export default function Logs() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {renderLogsList(systemLogs || [], systemLoading)}
+              {renderLogsList(Array.isArray(systemLogs) ? systemLogs : [], systemLoading)}
             </CardContent>
           </Card>
         </TabsContent>

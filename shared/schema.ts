@@ -581,7 +581,7 @@ export type File = typeof files.$inferSelect;
 export type InsertFile = typeof files.$inferInsert;
 
 export type FileTrash = typeof fileTrash.$inferSelect;
-export type InsertFileTrash = typeof fileTrash.$insert;
+export type InsertFileTrash = typeof fileTrash.$inferInsert;
 
 export type FileBackup = typeof fileBackups.$inferSelect;
 export type InsertFileBackup = typeof fileBackups.$inferInsert;

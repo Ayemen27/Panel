@@ -2,24 +2,13 @@
 
 // Type declarations for server-side compatibility
 declare global {
-  interface Window {
-    location: {
-      hostname: string;
-      protocol: string;
-      port: string;
-      href: string;
-      origin: string;
-    };
-    process?: {
-      env?: Record<string, string>;
-    };
+  namespace NodeJS {
+    interface Global {
+      window?: any;
+      navigator?: any;
+      WebSocket?: any;
+    }
   }
-  interface Navigator {
-    onLine: boolean;
-  }
-  var window: Window | undefined;
-  var navigator: Navigator | undefined;
-  var WebSocket: any;
 }
 
 export interface EnvironmentConfig {
