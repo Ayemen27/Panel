@@ -49,7 +49,7 @@ class SmartConnectionManager {
   }
 
   private async checkConnectionsHealth() {
-    for (const [key, connection] of this.connections) {
+    for (const [key, connection] of Array.from(this.connections.entries())) {
       if (connection.pool) {
         try {
           const client = await connection.pool.connect();
@@ -105,7 +105,7 @@ class SmartConnectionManager {
       unhealthy: 0
     };
 
-    for (const connection of this.connections.values()) {
+    for (const connection of Array.from(this.connections.values())) {
       if (connection.isHealthy) {
         stats.healthy++;
       } else {
@@ -135,7 +135,7 @@ class SmartConnectionManager {
     // console.log(`Metric: ${type}, Duration: ${duration}ms, Success: ${success}`);
   }
 
-  async query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
+  async query<T extends any = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
     // تجميع استعلامات SELECT البسيطة
     if (this.shouldBatchQuery(text)) {
       return new Promise((resolve, reject) => {

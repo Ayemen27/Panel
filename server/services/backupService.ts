@@ -250,7 +250,7 @@ export class BackupService {
     deleted: number;
     errors: string[];
   }> {
-    const result = { deleted: 0, errors: [] };
+    const result = { deleted: 0, errors: [] as string[] };
     
     try {
       const backups = await this.listBackups();

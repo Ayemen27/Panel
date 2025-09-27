@@ -490,7 +490,7 @@ export class FileManagerService {
           size: contentBuffer.length,
           content: contentBuffer.length < 1024 ? content.toString() : null, // Store small files in DB
           checksum,
-          metadata: { ...dbFile.metadata, ...options?.metadata },
+          metadata: { ...(dbFile.metadata || {}), ...options?.metadata },
           updatedAt: new Date()
         }, userId);
         
@@ -1265,19 +1265,19 @@ export class FileManagerService {
       }
 
       if (options?.sizeMin !== undefined) {
-        filteredFiles = filteredFiles.filter(file => file.size >= options.sizeMin!);
+        filteredFiles = filteredFiles.filter(file => (file.size || 0) >= options.sizeMin!);
       }
 
       if (options?.sizeMax !== undefined) {
-        filteredFiles = filteredFiles.filter(file => file.size <= options.sizeMax!);
+        filteredFiles = filteredFiles.filter(file => (file.size || 0) <= options.sizeMax!);
       }
 
       if (options?.dateFrom) {
-        filteredFiles = filteredFiles.filter(file => file.createdAt >= options.dateFrom!);
+        filteredFiles = filteredFiles.filter(file => file.createdAt && file.createdAt >= options.dateFrom!);
       }
 
       if (options?.dateTo) {
-        filteredFiles = filteredFiles.filter(file => file.createdAt <= options.dateTo!);
+        filteredFiles = filteredFiles.filter(file => file.createdAt && file.createdAt <= options.dateTo!);
       }
 
       // Content search for small files (if enabled and files have content stored)

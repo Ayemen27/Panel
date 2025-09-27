@@ -2,14 +2,14 @@
 import express from 'express';
 import { RealFileSystemService } from '../services/realFileSystemService';
 import { storage } from '../storage';
-import { auth } from '../auth';
+import { isAuthenticated } from '../auth';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
 const realFileService = new RealFileSystemService(storage);
 
 // Browse directory
-router.get('/browse', auth, async (req, res) => {
+router.get('/browse', isAuthenticated, async (req, res) => {
   try {
     const { path } = req.query;
     const userId = req.user!.id;
@@ -32,7 +32,7 @@ router.get('/browse', auth, async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    logger.error('Error browsing directory:', error);
+    logger.error('Error browsing directory:', error as any);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -41,7 +41,7 @@ router.get('/browse', auth, async (req, res) => {
 });
 
 // Get file content
-router.get('/content', auth, async (req, res) => {
+router.get('/content', isAuthenticated, async (req, res) => {
   try {
     const { path } = req.query;
     const userId = req.user!.id;
@@ -64,7 +64,7 @@ router.get('/content', auth, async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    logger.error('Error reading file content:', error);
+    logger.error('Error reading file content:', error as any);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -73,7 +73,7 @@ router.get('/content', auth, async (req, res) => {
 });
 
 // Create file or directory
-router.post('/create', auth, async (req, res) => {
+router.post('/create', isAuthenticated, async (req, res) => {
   try {
     const { path, type, content, mode } = req.body;
     const userId = req.user!.id;
@@ -107,7 +107,7 @@ router.post('/create', auth, async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    logger.error('Error creating item:', error);
+    logger.error('Error creating item:', error as any);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -116,7 +116,7 @@ router.post('/create', auth, async (req, res) => {
 });
 
 // Delete file or directory
-router.delete('/delete', auth, async (req, res) => {
+router.delete('/delete', isAuthenticated, async (req, res) => {
   try {
     const { path } = req.body;
     const userId = req.user!.id;
@@ -139,7 +139,7 @@ router.delete('/delete', auth, async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    logger.error('Error deleting item:', error);
+    logger.error('Error deleting item:', error as any);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -148,7 +148,7 @@ router.delete('/delete', auth, async (req, res) => {
 });
 
 // Rename file or directory
-router.put('/rename', auth, async (req, res) => {
+router.put('/rename', isAuthenticated, async (req, res) => {
   try {
     const { oldPath, newPath } = req.body;
     const userId = req.user!.id;
@@ -171,7 +171,7 @@ router.put('/rename', auth, async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    logger.error('Error renaming item:', error);
+    logger.error('Error renaming item:', error as any);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -180,7 +180,7 @@ router.put('/rename', auth, async (req, res) => {
 });
 
 // Copy file or directory
-router.post('/copy', auth, async (req, res) => {
+router.post('/copy', isAuthenticated, async (req, res) => {
   try {
     const { sourcePath, destinationPath } = req.body;
     const userId = req.user!.id;
@@ -203,7 +203,7 @@ router.post('/copy', auth, async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    logger.error('Error copying item:', error);
+    logger.error('Error copying item:', error as any);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -212,7 +212,7 @@ router.post('/copy', auth, async (req, res) => {
 });
 
 // Get file info
-router.get('/info', auth, async (req, res) => {
+router.get('/info', isAuthenticated, async (req, res) => {
   try {
     const { path } = req.query;
     const userId = req.user!.id;
@@ -235,7 +235,7 @@ router.get('/info', auth, async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    logger.error('Error getting file info:', error);
+    logger.error('Error getting file info:', error as any);
     res.status(500).json({
       success: false,
       error: 'Internal server error'

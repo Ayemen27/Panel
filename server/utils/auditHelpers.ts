@@ -283,7 +283,7 @@ ${auditData.readyForDeployment ? '✅ **التطبيق جاهز للنشر**' : 
         'High': '🟠',
         'Medium': '🟡',
         'Low': '🔵'
-      }[issue.severity] || '⚪';
+      }[issue.severity as keyof typeof severityIcon] || '⚪';
 
       report += `### ${index + 1}. ${issue.title}
 

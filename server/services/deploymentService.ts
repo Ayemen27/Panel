@@ -1,4 +1,3 @@
-
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
@@ -24,10 +23,10 @@ export class DeploymentService {
       const { stdout } = await execAsync('node --version');
       const version = stdout.trim();
       const majorVersion = parseInt(version.substring(1).split('.')[0]);
-      
+
       if (majorVersion < 18) {
         issues.push({
-          severity: 'critical',
+          severity: 'critical' as const,
           category: 'Runtime',
           message: `Node.js version ${version} is too old`,
           fix: 'Update to Node.js 18 or later'
@@ -36,7 +35,7 @@ export class DeploymentService {
       }
     } catch (error) {
       issues.push({
-        severity: 'critical',
+        severity: 'critical' as const,
         category: 'Runtime',
         message: 'Node.js not found',
         fix: 'Install Node.js'
@@ -49,7 +48,7 @@ export class DeploymentService {
       await execAsync('pm2 --version');
     } catch (error) {
       issues.push({
-        severity: 'warning',
+        severity: 'warning' as const,
         category: 'Process Manager',
         message: 'PM2 not installed',
         fix: 'npm install -g pm2'
@@ -63,7 +62,7 @@ export class DeploymentService {
       await storage.testConnection();
     } catch (error) {
       issues.push({
-        severity: 'critical',
+        severity: 'critical' as const,
         category: 'Database',
         message: 'Database connection failed',
         fix: 'Check DATABASE_URL and network connectivity'
@@ -76,7 +75,7 @@ export class DeploymentService {
       await fs.access('/etc/letsencrypt');
     } catch (error) {
       issues.push({
-        severity: 'warning',
+        severity: 'warning' as const,
         category: 'SSL',
         message: 'Let\'s Encrypt directory not found',
         fix: 'Install certbot: sudo apt install certbot'
@@ -89,7 +88,7 @@ export class DeploymentService {
       await fs.access('/home/administrator/backups');
     } catch (error) {
       issues.push({
-        severity: 'warning',
+        severity: 'warning' as const,
         category: 'Backup',
         message: 'Backup directory not found',
         fix: 'mkdir -p /home/administrator/backups'

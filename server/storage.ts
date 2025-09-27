@@ -1468,7 +1468,7 @@ export class DatabaseStorage implements IStorage {
       });
 
     } catch (error) {
-      logger.error('Error checking path allowance:', error);
+      logger.error('Error checking path allowance:', error as any);
       return false; // Default to false in case of error
     }
   }

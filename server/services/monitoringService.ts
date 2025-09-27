@@ -248,7 +248,7 @@ export class MonitoringService extends EventEmitter {
       // CPU alerts
       if (metrics.cpu.usage > 90) {
         alerts.push({
-          type: 'critical',
+          type: 'critical' as const,
           category: 'CPU',
           message: 'استخدام المعالج مرتفع جداً',
           value: metrics.cpu.usage,
@@ -256,7 +256,7 @@ export class MonitoringService extends EventEmitter {
         });
       } else if (metrics.cpu.usage > 75) {
         alerts.push({
-          type: 'warning',
+          type: 'warning' as const,
           category: 'CPU',
           message: 'استخدام المعالج مرتفع',
           value: metrics.cpu.usage,
@@ -267,7 +267,7 @@ export class MonitoringService extends EventEmitter {
       // Memory alerts
       if (metrics.memory.usage > 95) {
         alerts.push({
-          type: 'critical',
+          type: 'critical' as const,
           category: 'Memory',
           message: 'الذاكرة ممتلئة تقريباً',
           value: metrics.memory.usage,
@@ -275,7 +275,7 @@ export class MonitoringService extends EventEmitter {
         });
       } else if (metrics.memory.usage > 85) {
         alerts.push({
-          type: 'warning',
+          type: 'warning' as const,
           category: 'Memory',
           message: 'استخدام الذاكرة مرتفع',
           value: metrics.memory.usage,
@@ -286,7 +286,7 @@ export class MonitoringService extends EventEmitter {
       // Disk alerts
       if (metrics.disk.usage > 95) {
         alerts.push({
-          type: 'critical',
+          type: 'critical' as const,
           category: 'Disk',
           message: 'مساحة القرص ممتلئة تقريباً',
           value: metrics.disk.usage,
@@ -294,7 +294,7 @@ export class MonitoringService extends EventEmitter {
         });
       } else if (metrics.disk.usage > 85) {
         alerts.push({
-          type: 'warning',
+          type: 'warning' as const,
           category: 'Disk',
           message: 'مساحة القرص منخفضة',
           value: metrics.disk.usage,
@@ -305,7 +305,7 @@ export class MonitoringService extends EventEmitter {
       // Process alerts
       if (metrics.processes.zombie > 10) {
         alerts.push({
-          type: 'warning',
+          type: 'warning' as const,
           category: 'Processes',
           message: 'عدد كبير من العمليات الزومبي',
           value: metrics.processes.zombie,
