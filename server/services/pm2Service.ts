@@ -104,7 +104,39 @@ export class PM2Service {
         throw new Error(`Application path does not exist: ${application.path}`);
       }
 
-      const child = spawn('sh', ['-c', application.command], {
+      let command = application.command;
+      
+      // If command is empty, try to find main file
+      if (!command || command.trim() === '') {
+        const commonFiles = [
+          'index.ts', 'server.ts', 'app.ts', 'main.ts',
+          'index.js', 'server.js', 'app.js', 'main.js'
+        ];
+        
+        let mainFile = '';
+        for (const file of commonFiles) {
+          try {
+            await fs.access(`${application.path}/${file}`);
+            mainFile = file;
+            break;
+          } catch {
+            continue;
+          }
+        }
+        
+        if (!mainFile) {
+          throw new Error('No main file found. Please specify a valid command.');
+        }
+        
+        // Set appropriate command based on file type
+        if (mainFile.endsWith('.ts')) {
+          command = `tsx ${mainFile}`;
+        } else {
+          command = `node ${mainFile}`;
+        }
+      }
+
+      const child = spawn('sh', ['-c', command], {
         cwd: application.path,
         detached: true,
         stdio: 'pipe' // Change to pipe to capture errors
@@ -121,7 +153,7 @@ export class PM2Service {
         name: application.name,
         startTime: new Date(),
         status: 'running',
-        command: application.command,
+        command: command,
         path: application.path
       });
 
@@ -176,17 +208,22 @@ export class PM2Service {
         // Extract the main file from command if it's a node command
         let startCommand = application.command;
         let mainFile = '';
+        let useTypeScript = false;
         
         // Check if command is empty or only contains flags
         if (!startCommand || startCommand.trim() === '') {
-          // Try common entry points
-          const commonFiles = ['index.js', 'server.js', 'app.js', 'main.js'];
+          // Try common entry points - check TypeScript files first, then JavaScript
+          const commonFiles = [
+            'index.ts', 'server.ts', 'app.ts', 'main.ts',
+            'index.js', 'server.js', 'app.js', 'main.js'
+          ];
           const fs = await import('fs').then(m => m.promises);
           
           for (const file of commonFiles) {
             try {
               await fs.access(`${application.path}/${file}`);
               mainFile = file;
+              useTypeScript = file.endsWith('.ts');
               break;
             } catch {
               continue;
@@ -196,15 +233,55 @@ export class PM2Service {
           if (!mainFile) {
             throw new Error('No main file found. Please specify a valid command.');
           }
-          startCommand = `node ${mainFile}`;
+          
+          // Set appropriate command based on file type
+          if (useTypeScript) {
+            startCommand = `tsx ${mainFile}`;
+          } else {
+            startCommand = `node ${mainFile}`;
+          }
         }
         
-        // If command starts with npm/yarn, use it directly with ecosystem file
+        // Check if the main file is TypeScript
+        if (startCommand.includes('.ts') || startCommand.startsWith('tsx ')) {
+          useTypeScript = true;
+        }
+        
+        // If command starts with npm/yarn, use it directly
         if (startCommand.startsWith('npm ') || startCommand.startsWith('yarn ')) {
           const command = `cd ${application.path} && pm2 start --name "${application.name}" -- ${startCommand}`;
           await execAsync(command);
+        } else if (useTypeScript) {
+          // For TypeScript files, use tsx or ts-node interpreter
+          const tsMatch = startCommand.match(/^(?:tsx|ts-node)\s+(.+)$/);
+          if (tsMatch) {
+            mainFile = tsMatch[1].trim();
+          } else {
+            // Extract file from node command or assume it's the file directly
+            const nodeMatch = startCommand.match(/^node\s+(.+)$/);
+            if (nodeMatch) {
+              mainFile = nodeMatch[1].trim();
+            } else {
+              mainFile = startCommand.split(' ')[0];
+            }
+          }
+          
+          // Check if tsx is available, otherwise use ts-node
+          try {
+            await execAsync('tsx --version');
+            const command = `cd ${application.path} && pm2 start "${mainFile}" --name "${application.name}" --interpreter tsx`;
+            await execAsync(command);
+          } catch {
+            try {
+              await execAsync('ts-node --version');
+              const command = `cd ${application.path} && pm2 start "${mainFile}" --name "${application.name}" --interpreter ts-node`;
+              await execAsync(command);
+            } catch {
+              throw new Error('TypeScript runtime not found. Please install tsx or ts-node: npm install -g tsx');
+            }
+          }
         } else {
-          // For node commands, extract the file name
+          // For JavaScript files or other commands
           const nodeMatch = startCommand.match(/^node\s+(.+)$/);
           if (nodeMatch) {
             mainFile = nodeMatch[1].trim();
