@@ -62,12 +62,12 @@ export default function Applications() {
         action: 'start',
         timestamp: new Date().toISOString()
       });
-      
+
       await apiRequest("POST", `/api/applications/${id}/start`);
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
-      
+
       // تتبع نجاح تشغيل التطبيق
       trackUserAction('application_start_success', {
         applicationId: id,
@@ -75,7 +75,7 @@ export default function Applications() {
         result: 'success',
         timestamp: new Date().toISOString()
       });
-      
+
       toast({
         title: "تم التشغيل",
         description: "تم تشغيل التطبيق بنجاح",
@@ -87,7 +87,7 @@ export default function Applications() {
         applicationId: id,
         action: 'start',
         result: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : String(error) || 'Unknown error',
         timestamp: new Date().toISOString()
       });
 
@@ -139,7 +139,7 @@ export default function Applications() {
         applicationId: id,
         action: 'stop',
         result: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : String(error) || 'Unknown error',
         timestamp: new Date().toISOString()
       });
       if (isUnauthorizedError(error)) {
@@ -188,7 +188,7 @@ export default function Applications() {
         applicationId: id,
         action: 'restart',
         result: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : String(error) || 'Unknown error',
         timestamp: new Date().toISOString()
       });
       if (isUnauthorizedError(error)) {

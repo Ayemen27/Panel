@@ -1,4 +1,3 @@
-
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { EventEmitter } from 'events';
@@ -63,7 +62,7 @@ export class MonitoringService extends EventEmitter {
       try {
         const metrics = await this.collectMetrics();
         this.emit('metrics', metrics);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error collecting metrics:', error);
         this.emit('error', error);
       }
@@ -73,7 +72,7 @@ export class MonitoringService extends EventEmitter {
     try {
       const metrics = await this.collectMetrics();
       this.emit('metrics', metrics);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error collecting initial metrics:', error);
     }
   }
@@ -112,20 +111,20 @@ export class MonitoringService extends EventEmitter {
       const { stdout: cpuUsage } = await execAsync(
         "top -bn1 | grep '%Cpu' | awk '{print $2}' | sed 's/%us,//'"
       );
-      
+
       // Get load average
       const { stdout: loadAvg } = await execAsync("uptime | awk -F'load average:' '{print $2}'");
       const loadAverage = loadAvg.trim().split(',').map(x => parseFloat(x.trim()));
-      
+
       // Get process count
       const { stdout: processCount } = await execAsync("ps aux | wc -l");
-      
+
       return {
         usage: parseFloat(cpuUsage.trim()) || 0,
         loadAverage: loadAverage.slice(0, 3),
         processes: parseInt(processCount.trim()) - 1 // Subtract header line
       };
-    } catch (error) {
+    } catch (error: any) {
       return { usage: 0, loadAverage: [0, 0, 0], processes: 0 };
     }
   }
@@ -134,12 +133,12 @@ export class MonitoringService extends EventEmitter {
     try {
       const { stdout } = await execAsync("free -b | grep '^Mem:'");
       const parts = stdout.trim().split(/\s+/);
-      
+
       const total = parseInt(parts[1]);
       const used = parseInt(parts[2]);
       const free = parseInt(parts[3]);
       const cached = parseInt(parts[6]) || 0;
-      
+
       return {
         total,
         used,
@@ -147,7 +146,7 @@ export class MonitoringService extends EventEmitter {
         usage: (used / total) * 100,
         cached
       };
-    } catch (error) {
+    } catch (error: any) {
       return { total: 0, used: 0, free: 0, usage: 0, cached: 0 };
     }
   }
@@ -156,17 +155,17 @@ export class MonitoringService extends EventEmitter {
     try {
       const { stdout } = await execAsync("df -B1 / | tail -1");
       const parts = stdout.trim().split(/\s+/);
-      
+
       const total = parseInt(parts[1]);
       const used = parseInt(parts[2]);
       const free = parseInt(parts[3]);
-      
+
       // Get inode info
       const { stdout: inodeInfo } = await execAsync("df -i / | tail -1");
       const inodeParts = inodeInfo.trim().split(/\s+/);
       const inodesTotal = parseInt(inodeParts[1]);
       const inodesUsed = parseInt(inodeParts[2]);
-      
+
       return {
         total,
         used,
@@ -175,7 +174,7 @@ export class MonitoringService extends EventEmitter {
         inodesTotal,
         inodesUsed
       };
-    } catch (error) {
+    } catch (error: any) {
       return { total: 0, used: 0, free: 0, usage: 0, inodesUsed: 0, inodesTotal: 0 };
     }
   }
@@ -184,28 +183,28 @@ export class MonitoringService extends EventEmitter {
     try {
       const { stdout } = await execAsync("cat /proc/net/dev | grep -E 'eth0|ens|enp' | head -1");
       const parts = stdout.trim().split(/\s+/);
-      
+
       const bytesIn = parseInt(parts[1]) || 0;
       const packetsIn = parseInt(parts[2]) || 0;
       const bytesOut = parseInt(parts[9]) || 0;
       const packetsOut = parseInt(parts[10]) || 0;
-      
+
       // Calculate delta if we have previous stats
       let deltaIn = 0, deltaOut = 0;
       if (this.lastNetworkStats) {
         deltaIn = bytesIn - this.lastNetworkStats.bytesIn;
         deltaOut = bytesOut - this.lastNetworkStats.bytesOut;
       }
-      
+
       this.lastNetworkStats = { bytesIn, bytesOut };
-      
+
       return {
         bytesIn: deltaIn,
         bytesOut: deltaOut,
         packetsIn,
         packetsOut
       };
-    } catch (error) {
+    } catch (error: any) {
       return { bytesIn: 0, bytesOut: 0, packetsIn: 0, packetsOut: 0 };
     }
   }
@@ -214,21 +213,21 @@ export class MonitoringService extends EventEmitter {
     try {
       const { stdout } = await execAsync("ps -eo stat --no-headers | sort | uniq -c");
       const lines = stdout.trim().split('\n');
-      
+
       let total = 0, running = 0, sleeping = 0, zombie = 0;
-      
+
       for (const line of lines) {
         const [count, state] = line.trim().split(/\s+/);
         const num = parseInt(count);
         total += num;
-        
+
         if (state.startsWith('R')) running += num;
         else if (state.startsWith('S') || state.startsWith('I')) sleeping += num;
         else if (state.startsWith('Z')) zombie += num;
       }
-      
+
       return { total, running, sleeping, zombie };
-    } catch (error) {
+    } catch (error: any) {
       return { total: 0, running: 0, sleeping: 0, zombie: 0 };
     }
   }
@@ -241,10 +240,10 @@ export class MonitoringService extends EventEmitter {
     threshold: number;
   }>> {
     const alerts = [];
-    
+
     try {
       const metrics = await this.collectMetrics();
-      
+
       // CPU alerts
       if (metrics.cpu.usage > 90) {
         alerts.push({
@@ -263,7 +262,7 @@ export class MonitoringService extends EventEmitter {
           threshold: 75
         });
       }
-      
+
       // Memory alerts
       if (metrics.memory.usage > 95) {
         alerts.push({
@@ -282,7 +281,7 @@ export class MonitoringService extends EventEmitter {
           threshold: 85
         });
       }
-      
+
       // Disk alerts
       if (metrics.disk.usage > 95) {
         alerts.push({
@@ -301,7 +300,7 @@ export class MonitoringService extends EventEmitter {
           threshold: 85
         });
       }
-      
+
       // Process alerts
       if (metrics.processes.zombie > 10) {
         alerts.push({
@@ -312,11 +311,11 @@ export class MonitoringService extends EventEmitter {
           threshold: 10
         });
       }
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Error generating alerts:', error);
     }
-    
+
     return alerts;
   }
 }
