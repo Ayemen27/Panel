@@ -31,7 +31,7 @@ import { files } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import cors from "cors";
 import express, { type Response, NextFunction } from "express";
-import { ENV_CONFIG } from "../shared/environment";
+import { ENV_CONFIG } from "../shared/environment.js";
 
 // 🛡️ SECURITY: WebSocket clients store - simplified but secure
 const wsClients = new Set<WebSocket>();
