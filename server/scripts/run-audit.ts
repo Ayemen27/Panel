@@ -1,6 +1,4 @@
 
-#!/usr/bin/env tsx
-
 import { auditService } from '../services/auditService';
 import { AuditHelpers } from '../utils/auditHelpers';
 import { promises as fs } from 'fs';
