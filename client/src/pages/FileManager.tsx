@@ -94,7 +94,7 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Types for Real System Files
+// Types for Unified File System - النظام الموحد الوحيد
 interface RealFileItem {
   name: string;
   type: 'file' | 'directory';
@@ -161,7 +161,7 @@ function FileManagerCore() {
     breadcrumbsLength: breadcrumbs.length
   });
 
-  // Fetch real files
+  // Fetch files from unified system - النظام الموحد الوحيد
   const { 
     data: realFilesData, 
     isLoading: isRealFilesLoading, 

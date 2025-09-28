@@ -38,7 +38,9 @@ export interface FileOperationResult {
 }
 
 /**
- * خدمة موحدة لإدارة الملفات - تجمع وظائف FileManagerService و RealFileSystemService
+ * الخدمة الموحدة الوحيدة لإدارة جميع أنواع الملفات
+ * تحل محل جميع الخدمات القديمة: FileManagerService, RealFileSystemService
+ * هذه هي الخدمة الوحيدة المستخدمة في النظام
  */
 export class UnifiedFileService {
   private storage: IStorage;
