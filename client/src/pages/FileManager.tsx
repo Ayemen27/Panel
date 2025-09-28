@@ -209,25 +209,67 @@ export default function FileManager() {
   const { data: realFilesData, isLoading: isRealFilesLoading, error: realFilesError, refetch: refetchRealFiles } = useQuery<DirectoryListing>({
     queryKey: ['/api/real-files/browse', currentPath],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/real-files/browse', {
-        path: currentPath
-      });
-      const result = await response.json();
+      console.log('🔍 Fetching directory contents for:', currentPath);
+      
+      try {
+        const response = await apiRequest('GET', '/api/real-files/browse', {
+          path: currentPath
+        }, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
 
-      if (!result.success) {
-        throw new Error(result.error || result.message);
+        console.log('📡 API Response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error response:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ API Success response:', result);
+
+        if (!result.success && !result.data) {
+          throw new Error(result.error || result.message || 'Failed to fetch directory contents');
+        }
+
+        // Handle both direct data and wrapped response formats
+        const directoryData = result.data || result;
+        
+        if (!directoryData || !directoryData.items) {
+          throw new Error('Invalid directory data format received');
+        }
+
+        console.log(`📁 Found ${directoryData.items.length} items in directory`);
+        return directoryData;
+
+      } catch (error: any) {
+        console.error('❌ Directory fetch error:', error);
+        throw new Error(error.message || 'Failed to load directory contents');
       }
-
-      return result.data;
     },
-    enabled: fileSystemMode === 'real',
+    enabled: fileSystemMode === 'real' && !!currentPath,
     retry: (failureCount, error: Error) => {
+      console.log(`🔄 Retry attempt ${failureCount} for error:`, error.message);
+      
       // Don't retry on path validation errors
-      if (error.message.includes('Path validation failed') || error.message.includes('Access denied')) {
+      if (error.message.includes('Path validation failed') || 
+          error.message.includes('Access denied') ||
+          error.message.includes('404') ||
+          error.message.includes('403')) {
+        console.log('🚫 Not retrying due to permanent error');
         return false;
       }
       return failureCount < 2;
-    }
+    },
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   // Search database files
@@ -1711,8 +1753,19 @@ export default function FileManager() {
             </h1>
           </div>
 
-          {/* Right: Home Icon */}
-          <div className="flex items-center">
+          {/* Right: Home and Refresh Icons */}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20 touch-manipulation"
+              onClick={handlePullToRefresh}
+              disabled={isRefreshing}
+              data-testid="button-refresh"
+              title="تحديث"
+            >
+              <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
+            </Button>
             <Button
               size="sm"
               variant="ghost"
@@ -1731,6 +1784,7 @@ export default function FileManager() {
                 }
               }}
               data-testid="button-home"
+              title="الرئيسية"
             >
               <Home className="w-5 h-5" />
             </Button>
@@ -2028,10 +2082,32 @@ export default function FileManager() {
 
         {/* Path Error Alert */}
         {pathError && (
-          <Alert className="mb-4" data-testid="path-error-alert">
+          <Alert className="mb-4 mx-2 sm:mx-0" data-testid="path-error-alert" variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
               <strong>خطأ في المسار:</strong> {pathError}
+              <div className="mt-2 flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    setCurrentPath('/home/administrator');
+                    setPathError(null);
+                  }}
+                  className="h-6 text-xs"
+                >
+                  العودة للمجلد الرئيسي
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handlePullToRefresh}
+                  disabled={isRefreshing}
+                  className="h-6 text-xs"
+                >
+                  إعادة المحاولة
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}

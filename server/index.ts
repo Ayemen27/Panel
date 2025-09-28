@@ -40,8 +40,28 @@ if (ENV_CONFIG.name === 'development' && !ENV_CONFIG.isReplit) {
   log('🔒 Trust proxy: 2 levels (custom domain)');
 }
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// إعداد حدود حجم الطلبات لتجنب "Request entity too large"
+app.use(express.json({ 
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    // تحقق من صحة JSON قبل المعالجة
+    try {
+      JSON.parse(buf.toString());
+    } catch (e) {
+      res.status(400).json({ 
+        success: false, 
+        error: 'Invalid JSON format',
+        message: 'البيانات المرسلة غير صحيحة' 
+      });
+      return;
+    }
+  }
+}));
+app.use(express.urlencoded({ 
+  limit: '50mb', 
+  extended: true,
+  parameterLimit: 10000
+}));
 
 // Authentication is now handled in registerRoutes
 

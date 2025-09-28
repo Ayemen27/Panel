@@ -13,28 +13,48 @@ router.get('/browse', isAuthenticated, async (req, res) => {
     const { path } = req.query;
     const userId = req.user!.id;
 
+    console.log(`📁 Browse request: path="${path}", userId="${userId}"`);
+
     if (!path || typeof path !== 'string') {
+      console.warn('❌ Missing or invalid path parameter');
       return res.status(400).json({
         success: false,
-        error: 'Path parameter is required'
+        error: 'Path parameter is required',
+        message: 'Path parameter is required'
       });
     }
 
     const result = await realFileService.listDirectory(path, userId);
 
     if (!result.success) {
-      return res.status(400).json(result);
+      console.error(`❌ Directory listing failed: ${result.message}`, result.error);
+      return res.status(400).json({
+        success: false,
+        error: result.error || result.message,
+        message: result.message
+      });
     }
+
+    console.log(`✅ Directory listed successfully: ${result.data?.items?.length || 0} items`);
+    
+    // Set cache headers to prevent 304 responses during development
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
 
     res.json({
       success: true,
       data: result.data
     });
   } catch (error) {
+    console.error('💥 Error browsing directory:', error);
     logger.error('Error browsing directory:', error as any);
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'Internal server error',
+      message: 'خطأ داخلي في الخادم'
     });
   }
 });

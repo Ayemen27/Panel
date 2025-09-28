@@ -21,24 +21,43 @@ export async function apiRequest(
     method,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       ...options?.headers,
     },
     credentials: 'include',
     ...options,
   };
 
+  let fullUrl = endpoint;
+
   if (data && method !== 'GET') {
     config.body = JSON.stringify(data);
-  } else if (data && method === 'GET' && !endpoint.includes('?')) {
-    const params = new URLSearchParams(data);
-    endpoint += `?${params}`;
+  } else if (data && method === 'GET') {
+    const params = new URLSearchParams();
+    
+    // Handle nested objects in query parameters
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        params.append(key, String(value));
+      }
+    });
+    
+    const separator = endpoint.includes('?') ? '&' : '?';
+    fullUrl = `${endpoint}${separator}${params.toString()}`;
   }
 
+  console.log(`🌐 ${method} ${fullUrl}`);
+
   try {
-    const response = await fetch(endpoint, config); // Use the potentially modified endpoint
+    const response = await fetch(fullUrl, config);
+
+    console.log(`📡 Response: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      let errorDetails = '';
 
       // محاولة الحصول على رسالة خطأ من الخادم
       try {
@@ -46,15 +65,27 @@ export async function apiRequest(
         if (errorData.message) {
           errorMessage = errorData.message;
         }
+        if (errorData.error) {
+          errorDetails = errorData.error;
+        }
       } catch {
-        // تجاهل أخطاء تحليل JSON
+        // إذا فشل تحليل JSON، استخدم النص
+        try {
+          errorDetails = await response.text();
+        } catch {
+          // تجاهل أخطاء قراءة النص
+        }
       }
 
-      throw new Error(errorMessage);
+      const fullError = errorDetails ? `${errorMessage} - ${errorDetails}` : errorMessage;
+      console.error('❌ API Error:', fullError);
+      throw new Error(fullError);
     }
 
     return response;
   } catch (error) {
+    console.error('❌ Network/Fetch Error:', error);
+    
     // معالجة أخطاء الشبكة
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('فشل في الاتصال بالخادم. تحقق من اتصال الإنترنت.');
