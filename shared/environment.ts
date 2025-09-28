@@ -55,6 +55,11 @@ function detectServerEnvironment(): {
 } {
   const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
 
+  // فحص أولاً إذا كان المستخدم يريد محاكاة سيرفر خارجي
+  const forceExternalServer = processEnv.FORCE_EXTERNAL_SERVER === 'true' ||
+                             processEnv.SIMULATE_EXTERNAL === 'true' ||
+                             processEnv.SERVER_MODE === 'external';
+
   // اكتشاف Replit محسن وأكثر دقة
   const replitIndicators = [
     'REPL_ID',
@@ -67,12 +72,12 @@ function detectServerEnvironment(): {
   ];
 
   // فحص أكثر تفصيلاً لبيئة Replit
-  const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]) ||
-                        processEnv.npm_config_user_config?.includes('/home/runner/') ||
-                        processEnv.PWD?.startsWith('/home/runner/') ||
-                        processEnv.HOME === '/home/runner' ||
-                        processEnv.HOSTNAME?.length === 12 || // Replit hostname pattern
-                        (typeof process !== 'undefined' && process.cwd && process.cwd().includes('/home/runner/'));
+  const isReplitEnvironment = replitIndicators.some(indicator => processEnv[indicator]) ||
+                             processEnv.npm_config_user_config?.includes('/home/runner/') ||
+                             processEnv.PWD?.startsWith('/home/runner/') ||
+                             processEnv.HOME === '/home/runner' ||
+                             processEnv.HOSTNAME?.length === 12 || // Replit hostname pattern
+                             (typeof process !== 'undefined' && process.cwd && process.cwd().includes('/home/runner/'));
 
   // اكتشاف إضافي من hostname - تحسين الدقة
   const hostname = processEnv.HOSTNAME || '';
@@ -96,11 +101,18 @@ function detectServerEnvironment(): {
                         processEnv.DOMAIN === 'panel.binarjoinanelytic.info';
 
   let serverType: 'replit' | 'external' | 'local' = 'local';
+  let isReplit = false;
 
-  if (isReplitServer || isReplitByHostname) {
-    serverType = 'replit';
+  // إذا كان المستخدم يريد محاكاة سيرفر خارجي، استخدم إعدادات external حتى لو كنا في Replit
+  if (forceExternalServer) {
+    serverType = 'external';
+    isReplit = false;
   } else if (isExternalServer || isCustomDomain) {
     serverType = 'external';
+    isReplit = false;
+  } else if (isReplitEnvironment || isReplitByHostname) {
+    serverType = 'replit';
+    isReplit = true;
   }
 
   // طباعة معلومات التشخيص لتسهيل التتبع
@@ -117,7 +129,7 @@ function detectServerEnvironment(): {
   }
 
   return {
-    isReplit: isReplitServer || isReplitByHostname,
+    isReplit,
     isProduction,
     isDevelopment,
     isCustomDomain,
@@ -148,6 +160,10 @@ function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): Envir
     external: {
       root: (() => {
         try {
+          // استخدام متغير بيئة للمسار الأساسي للسيرفر الخارجي
+          const customRoot = typeof process !== 'undefined' && process.env.SERVER_ROOT;
+          if (customRoot) return customRoot;
+          
           return typeof process !== 'undefined' &&
                  process.cwd &&
                  typeof process.cwd === 'function' &&
