@@ -29,7 +29,7 @@ type LoginData = z.infer<typeof loginSchema>;
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const { login, user, isLoading, error: authError, setError } = useAuth(); // استخدام useAuth hook
+  const { login, user, isLoading, error: authError } = useAuth(); // استخدام useAuth hook
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
@@ -53,13 +53,23 @@ export default function AuthPage() {
 
         if (!response.ok) {
           console.warn('🔐 [AuthPage] Server health check failed:', response.status);
-          setError(`الخادم غير متاح (${response.status}). يرجى التحقق من حالة الاتصال.`);
+          toast({
+            variant: "destructive",
+            title: "خطأ في الاتصال",
+            description: `الخادم غير متاح (${response.status}). يرجى التحقق من حالة الاتصال.`,
+            duration: 5000,
+          });
         } else {
           console.log('🔐 [AuthPage] Server health check passed');
         }
       } catch (error) {
         console.error('🔐 [AuthPage] Server health check error:', error);
-        setError('لا يمكن الاتصال بالخادم. يرجى التحقق من الاتصال بالإنترنت.');
+        toast({
+          variant: "destructive",
+          title: "خطأ في الاتصال",
+          description: 'لا يمكن الاتصال بالخادم. يرجى التحقق من الاتصال بالإنترنت.',
+          duration: 5000,
+        });
       }
     };
 
@@ -77,9 +87,8 @@ export default function AuthPage() {
   });
 
   const onLogin = (data: LoginData) => {
-    // Clear any previous auth errors before attempting a new login
-    setError("");
-    login(data.username, data.password); // استدعاء دالة login من useAuth hook
+    // استدعاء دالة login من useAuth hook
+    login(data.username, data.password);
   };
 
   // منع العرض إذا كان المستخدم يقوم بتسجيل الدخول أو بيانات المستخدم لا تزال قيد التحميل
