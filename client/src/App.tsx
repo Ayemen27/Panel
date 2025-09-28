@@ -128,7 +128,19 @@ function Router() {
   // If user is not authenticated, show auth page
   if (!isAuthenticated) {
     console.log('User not authenticated, showing AuthPage');
-    return <AuthPage />;
+    return (
+      <Switch>
+        <Route path="/auth">
+          <AuthPage />
+        </Route>
+        <Route path="/login">
+          <AuthPage />
+        </Route>
+        <Route>
+          <AuthPage />
+        </Route>
+      </Switch>
+    );
   }
 
   // If user is authenticated, show protected routes
@@ -138,7 +150,10 @@ function Router() {
   return (
     <MainLayout>
       <Switch>
-          <Route path="/">
+        <Route path="/">
+          <Dashboard />
+        </Route>
+        <Route path="/auth">
           <Dashboard />
         </Route>
         <Route path="/dashboard">

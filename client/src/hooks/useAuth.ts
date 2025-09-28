@@ -194,28 +194,35 @@ export const useAuth = () => {
     const currentPath = window.location.pathname;
 
     if (isAuthenticated && user) {
-      authLog('Authentication Success - Checking navigation', {
+      authLog('User authenticated - checking for navigation', {
         userId: user.id,
         username: user.username,
         role: user.role,
         currentPath
       });
 
-      // Redirect to dashboard if on auth pages
-      if (currentPath === '/' || currentPath === '/login' || currentPath === '/auth') {
-        authLog('Redirecting to dashboard', { from: currentPath });
-        navigate('/dashboard');
+      // Only redirect if we're on auth-related pages
+      if (currentPath === '/' || currentPath === '/auth' || currentPath === '/login') {
+        authLog('Redirecting authenticated user to dashboard', { from: currentPath });
+        setTimeout(() => {
+          navigate('/dashboard');
+          console.log('✅ Navigation executed to dashboard from:', currentPath);
+        }, 100);
       }
     } else if (isAuthenticated === false) {
-      authLog('Authentication Failed - Redirecting to home', {
+      authLog('User not authenticated - checking for navigation', {
         error: error?.message,
         currentPath
       });
 
-      // Redirect to auth page if on protected routes
-      if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/auth') {
-        authLog('Redirecting to home/login', { from: currentPath });
-        navigate('/');
+      // Only redirect if we're on protected routes
+      const isProtectedRoute = !['/auth', '/login', '/'].includes(currentPath);
+      if (isProtectedRoute) {
+        authLog('Redirecting unauthenticated user to auth page', { from: currentPath });
+        setTimeout(() => {
+          navigate('/auth');
+          console.log('✅ Navigation executed to auth from:', currentPath);
+        }, 100);
       }
     }
   }, [isAuthenticated, user, error, navigate]);

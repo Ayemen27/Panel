@@ -90,12 +90,8 @@ export function useAuth() {
         variant: "default",
       });
 
-      // إعادة توجيه إلى لوحة التحكم مع تأخير قصير
-      console.log('🔄 Navigating to dashboard...');
-      setTimeout(() => {
-        navigate('/dashboard');
-        console.log('✅ Navigation completed to:', window.location.pathname);
-      }, 100);
+      // التنقل سيتم إدارته تلقائياً من useAuth hook
+      console.log('🔄 Login successful - navigation will be handled by useAuth');
     },
     onError: (error: Error) => {
       console.error('Login mutation error:', error);
@@ -153,14 +149,7 @@ export default function AuthPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // إذا كان المستخدم محملًا بالفعل، قم بإعادة توجيهه
-  useEffect(() => {
-    if (isLoadingUser) return; // لا تفعل شيئًا إذا كانت بيانات المستخدم لا تزال قيد التحميل
-    if (user) {
-      console.log("User already logged in, navigating to dashboard.");
-      navigate("/dashboard");
-    }
-  }, [user, isLoadingUser, navigate]);
+  // تنبيه: إدارة التنقل تتم الآن في useAuth hook
 
 
   // نموذج تسجيل الدخول
