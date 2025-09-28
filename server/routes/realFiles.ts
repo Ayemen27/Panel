@@ -1,11 +1,11 @@
 import express from 'express';
-import { RealFileSystemService } from '../services/realFileSystemService';
+import { UnifiedFileService } from '../services/unifiedFileService';
 import { storage } from '../storage';
 import { isAuthenticated } from '../auth';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
-const realFileService = new RealFileSystemService(storage);
+const unifiedFileService = new UnifiedFileService(storage);
 
 // Browse directory
 router.get('/browse', isAuthenticated, async (req, res) => {
@@ -24,7 +24,7 @@ router.get('/browse', isAuthenticated, async (req, res) => {
       });
     }
 
-    const result = await realFileService.listDirectory(path, userId);
+    const result = await unifiedFileService.listDirectory(path, userId);
 
     if (!result.success) {
       console.error(`❌ Directory listing failed: ${result.message}`, result.error);
@@ -72,7 +72,7 @@ router.get('/content', isAuthenticated, async (req, res) => {
       });
     }
 
-    const result = await realFileService.readFileContent(path, userId);
+    const result = await unifiedFileService.readFileContent(path, userId);
 
     if (!result.success) {
       return res.status(400).json(result);

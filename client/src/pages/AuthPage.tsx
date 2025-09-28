@@ -29,7 +29,7 @@ type LoginData = z.infer<typeof loginSchema>;
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const { login, user, isLoading } = useAuth(); // استخدام useAuth hook
+  const { login, user, isLoading, error: authError, setError } = useAuth(); // استخدام useAuth hook
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
@@ -39,19 +39,46 @@ export default function AuthPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // تنبيه: إدارة التنقل تتم الآن في useAuth hook
+  // تأثير فحص حالة الخادم عند تحميل المكون
+  useEffect(() => {
+    console.log('🔐 [AuthPage] Component mounted');
+
+    // Check server health on component mount
+    const checkServerHealth = async () => {
+      try {
+        const response = await fetch('/api/health', {
+          method: 'GET',
+          cache: 'no-cache'
+        });
+
+        if (!response.ok) {
+          console.warn('🔐 [AuthPage] Server health check failed:', response.status);
+          setError(`الخادم غير متاح (${response.status}). يرجى التحقق من حالة الاتصال.`);
+        } else {
+          console.log('🔐 [AuthPage] Server health check passed');
+        }
+      } catch (error) {
+        console.error('🔐 [AuthPage] Server health check error:', error);
+        setError('لا يمكن الاتصال بالخادم. يرجى التحقق من الاتصال بالإنترنت.');
+      }
+    };
+
+    checkServerHealth();
+  }, []);
 
 
   // نموذج تسجيل الدخول
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "binarjoinanalytic", // القيمة الافتراضية لسهولة الاختبار
+      username: "binarjoinjoin", // القيمة الافتراضية لسهولة الاختبار
       password: "",
     },
   });
 
   const onLogin = (data: LoginData) => {
+    // Clear any previous auth errors before attempting a new login
+    setError("");
     login(data.username, data.password); // استدعاء دالة login من useAuth hook
   };
 
@@ -66,6 +93,19 @@ export default function AuthPage() {
       </div>
     );
   }
+
+  // عرض رسالة الخطأ إذا كانت موجودة
+  useEffect(() => {
+    if (authError) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في المصادقة",
+        description: authError,
+        duration: 5000,
+      });
+    }
+  }, [authError, toast]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
@@ -82,7 +122,7 @@ export default function AuthPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 shadow-lg">
                 <Building2 className="w-10 h-10 text-white" />
               </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:bg-slate-900 animate-pulse"></div>
             </div>
 
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-2">

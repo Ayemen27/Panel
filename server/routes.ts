@@ -24,8 +24,7 @@ import { nginxService } from "./services/nginxService";
 import { sslService } from "./services/sslService";
 import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
-import { FileManagerService } from "./services/fileManagerService";
-import { RealFileSystemService } from "./services/realFileSystemService";
+import { UnifiedFileService } from "./services/unifiedFileService";
 import { db } from "./db";
 import { files } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -36,11 +35,8 @@ import { ENV_CONFIG } from "../shared/environment.js";
 // 🛡️ SECURITY: WebSocket clients store - simplified but secure
 const wsClients = new Set<WebSocket>();
 
-// File Manager Service instance
-const fileManagerService = new FileManagerService(storage);
-
-// Real File System Service instance
-const realFileSystemService = new RealFileSystemService(storage);
+// Unified File Service instance
+const unifiedFileService = new UnifiedFileService(storage);
 
 // Unified CORS configuration for both HTTP and WebSocket
 function setupCORS(app: Express) {
