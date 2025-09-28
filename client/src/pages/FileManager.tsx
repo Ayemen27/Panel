@@ -142,16 +142,16 @@ type FileSystemMode = 'database' | 'real';
 // File Manager Component
 export default function FileManager() {
   const { toast } = useToast();
-  
+
   // File System Mode State
   const [fileSystemMode, setFileSystemMode] = useState<FileSystemMode>('real');
-  
+
   // Database Files State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  
+
   // Real Files State
   const [currentPath, setCurrentPath] = useState<string>('/home/administrator/Panel');
-  
+
   // Common State
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -170,23 +170,23 @@ export default function FileManager() {
   const [storageSection, setStorageSection] = useState('main');
   const [showMainLibraries, setShowMainLibraries] = useState(true);
   const [activeTab, setActiveTab] = useState<'files' | 'favorites' | 'recent'>('files');
-  
+
   // File Preview State
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [isFilePreviewOpen, setIsFilePreviewOpen] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
-  
+
   // Drag & Drop State
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
-  
+
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: null, name: 'الرئيسية', path: '/home/administrator' }
   ]);
-  
+
   // Initialize real files with default allowed path
   useEffect(() => {
     if (fileSystemMode === 'real') {
@@ -213,11 +213,11 @@ export default function FileManager() {
         path: currentPath
       });
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || result.message);
       }
-      
+
       return result.data;
     },
     enabled: fileSystemMode === 'real',
@@ -241,18 +241,16 @@ export default function FileManager() {
     mutationFn: async (filePath: string) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
+
       try {
-        const response = await apiRequest('GET', '/api/real-files/content', {
-          path: filePath
-        });
+        const response = await apiRequest('GET', `/api/real-files/content?path=${encodeURIComponent(filePath)}`);
         clearTimeout(timeoutId);
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message || 'فشل في قراءة الملف');
         }
-        
+
         return result.data;
       } catch (error: any) {
         clearTimeout(timeoutId);
@@ -290,7 +288,7 @@ export default function FileManager() {
     }
 
     const realFile = file as RealFileItem;
-    
+
     // Check if file is too large (>5MB)
     if (realFile.size > 5 * 1024 * 1024) {
       toast({
@@ -345,11 +343,11 @@ export default function FileManager() {
           mode: data.type === 'folder' ? '0755' : '0644'
         });
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message);
         }
-        
+
         return result;
       }
     },
@@ -406,7 +404,7 @@ export default function FileManager() {
         // Get recent files (last 7 days) and sort by date
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
+
         files = files.filter(file => {
           const fileDate = 'modified' in file ? new Date(file.modified) : 
                           'updatedAt' in file ? new Date(file.updatedAt) : new Date(0);
@@ -468,11 +466,11 @@ export default function FileManager() {
 
     return files;
   }, [fileSystemMode, searchQuery, databaseSearchResults, databaseFiles, realFilesData?.items, sortBy, sortOrder, activeTab]);
-  
+
   const isLoading = fileSystemMode === 'database' 
     ? (searchQuery ? isDatabaseSearching : isDatabaseLoading)
     : isRealFilesLoading;
-  
+
   const refetch = fileSystemMode === 'database' ? refetchDatabase : refetchRealFiles;
 
   // Pull to refresh handler
@@ -525,7 +523,7 @@ export default function FileManager() {
     }
 
     const files = Array.from(e.dataTransfer.files);
-    
+
     for (const file of files) {
       if (file.size > 50 * 1024 * 1024) { // 50MB limit
         toast({
@@ -543,7 +541,7 @@ export default function FileManager() {
           type: 'file',
           content
         });
-        
+
         toast({
           title: "تم الرفع",
           description: `تم رفع ${file.name} بنجاح`
@@ -560,7 +558,7 @@ export default function FileManager() {
 
   const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     for (const file of files) {
       try {
         const content = await file.text();
@@ -569,7 +567,7 @@ export default function FileManager() {
           type: 'file',
           content
         });
-        
+
         toast({
           title: "تم الرفع",
           description: `تم رفع ${file.name} بنجاح`
@@ -582,7 +580,7 @@ export default function FileManager() {
         });
       }
     }
-    
+
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -612,14 +610,14 @@ export default function FileManager() {
       // Navigate back
       const newBreadcrumbs = breadcrumbs.slice(0, -1);
       setBreadcrumbs(newBreadcrumbs);
-      
+
       // If returning to home, show main libraries
       if (newBreadcrumbs.length === 1) {
         setShowMainLibraries(true);
         setStorageSection('main');
         return;
       }
-      
+
       if (fileSystemMode === 'database') {
         setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
       } else {
@@ -641,11 +639,11 @@ export default function FileManager() {
           path: itemPath
         });
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message);
         }
-        
+
         return result;
       }
     },
@@ -687,11 +685,11 @@ export default function FileManager() {
           destinationPath: destPath
         });
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message);
         }
-        
+
         return result;
       }
     },
@@ -765,11 +763,11 @@ export default function FileManager() {
           newPath
         });
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message);
         }
-        
+
         return result;
       }
     },
@@ -819,14 +817,14 @@ export default function FileManager() {
   const handleBreadcrumbClick = (index: number) => {
     const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
     setBreadcrumbs(newBreadcrumbs);
-    
+
     // If clicking on the first breadcrumb (home), return to main libraries
     if (index === 0) {
       setShowMainLibraries(true);
       setStorageSection('main');
       return;
     }
-    
+
     if (fileSystemMode === 'database') {
       setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
     } else {
@@ -918,10 +916,10 @@ export default function FileManager() {
       }
       return Folder;
     }
-    
+
     const name = getItemName(item);
     const ext = name.split('.').pop()?.toLowerCase();
-    
+
     switch (ext) {
       case 'js':
       case 'ts':
@@ -1001,7 +999,7 @@ export default function FileManager() {
     freeSpace: number;
     usagePercentage: number;
   }
-  
+
   interface CategoryStats {
     id: string;
     name: string;
@@ -1011,7 +1009,7 @@ export default function FileManager() {
     iconColor: string;
     bgColor: string;
   }
-  
+
   interface SystemStats {
     mainStorage: StorageStats;
     categories: CategoryStats[];
@@ -1272,14 +1270,14 @@ export default function FileManager() {
         });
         return;
       }
-      
+
       createItemMutation.mutate({
         name: itemName.trim(),
         type: itemType,
         parentId: fileSystemMode === 'database' ? (currentFolderId || undefined) : undefined,
         content: itemType === 'file' && fileSystemMode === 'real' ? fileContent : undefined
       });
-      
+
       setItemName('');
       setFileContent('');
     };
@@ -1292,7 +1290,7 @@ export default function FileManager() {
               {itemType === 'folder' ? 'إنشاء مجلد' : 'إنشاء ملف'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Input
@@ -1705,14 +1703,14 @@ export default function FileManager() {
               </SheetContent>
             </Sheet>
           </div>
-          
+
           {/* Center: Title */}
           <div className="flex items-center justify-center flex-1 mx-4">
             <h1 className="text-lg sm:text-xl font-semibold text-center">
               مدير الملفات +
             </h1>
           </div>
-          
+
           {/* Right: Home Icon */}
           <div className="flex items-center">
             <Button
@@ -1740,7 +1738,7 @@ export default function FileManager() {
         </div>
       </div>
 
-      
+
 
       {/* Sidebar */}
       <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
@@ -1758,7 +1756,7 @@ export default function FileManager() {
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </div>
-            
+
             {/* Storage Usage */}
             <div className="p-4 border-b">
               <div className="mb-2">
@@ -1770,7 +1768,7 @@ export default function FileManager() {
                 </div>
               </div>
             </div>
-            
+
             {/* Storage Categories */}
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-3 gap-4 p-4">
@@ -1941,7 +1939,7 @@ export default function FileManager() {
                 <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
               </div>
             </div>
-            
+
             {/* View Mode Toggle for Mobile */}
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">عرض الملفات</Label>
@@ -1972,7 +1970,7 @@ export default function FileManager() {
                 <Label className="text-xs text-muted-foreground">ملفات النظام</Label>
               </div>
             </div>
-            
+
             {/* Create New */}
             <Button 
               onClick={() => {
@@ -2037,7 +2035,7 @@ export default function FileManager() {
             </AlertDescription>
           </Alert>
         )}
-        
+
         {/* Real Files Info */}
         {fileSystemMode === 'real' && realFilesData && (
           <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-muted/30 rounded-lg mx-2 sm:mx-0" data-testid="real-files-info">
@@ -2164,7 +2162,7 @@ export default function FileManager() {
                       <List className="w-4 h-4" />
                     </Button>
                   </div>
-                  
+
                   {/* Advanced Sort Options */}
                   <div className="flex items-center gap-1">
                     {/* No Sort Option */}
@@ -2177,7 +2175,7 @@ export default function FileManager() {
                     >
                       بدون فرز
                     </Button>
-                    
+
                     {/* Name Sort */}
                     <Button
                       size="sm"
@@ -2303,7 +2301,7 @@ export default function FileManager() {
 
       {/* Modals & Dialogs */}
       <CreateItemModal />
-      
+
       {/* File Preview Dialog */}
       <Dialog open={isFilePreviewOpen} onOpenChange={setIsFilePreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" data-testid="file-preview-dialog">
@@ -2316,7 +2314,7 @@ export default function FileManager() {
               المسار: {(selectedFile as RealFileItem)?.absolutePath}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="flex-1 overflow-hidden">
             {isLoadingContent ? (
               <div className="flex items-center justify-center h-64">
@@ -2361,7 +2359,7 @@ export default function FileManager() {
               </ScrollArea>
             )}
           </div>
-          
+
           <div className="flex justify-between items-center pt-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {selectedFile && (

@@ -12,45 +12,30 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   endpoint: string,
   data?: any,
-  options: RequestInit = {}
+  options?: RequestInit
 ): Promise<Response> {
-  // تحقق من نوع الطلب وإزالة body للطلبات GET و HEAD
-  const isGetOrHead = method.toUpperCase() === 'GET' || method.toUpperCase() === 'HEAD';
-
-  // إعداد URL مع query parameters للطلبات GET
-  let url = endpoint;
-  if (isGetOrHead && data && typeof data === 'object') {
-    const params = new URLSearchParams();
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined && data[key] !== null) {
-        params.append(key, String(data[key]));
-      }
-    });
-    if (params.toString()) {
-      url += (url.includes('?') ? '&' : '?') + params.toString();
-    }
-  }
-
   const config: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...options?.headers,
     },
     credentials: 'include',
     ...options,
   };
 
-  // إضافة body فقط للطلبات غير GET/HEAD
-  if (data && !isGetOrHead) {
+  if (data && method !== 'GET') {
     config.body = JSON.stringify(data);
+  } else if (data && method === 'GET' && !endpoint.includes('?')) {
+    const params = new URLSearchParams(data);
+    endpoint += `?${params}`;
   }
 
   try {
-    const response = await fetch(url, config);
+    const response = await fetch(endpoint, config); // Use the potentially modified endpoint
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
