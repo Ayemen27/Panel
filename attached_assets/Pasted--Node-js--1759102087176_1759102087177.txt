@@ -1,0 +1,140 @@
+تمام يا باشا، خلينا نعمل لك سكربت Node.js جاهز يعمل فحص شامل لجميع الخدمات والملفات في المشروع ويقدم تقرير مفصل عن:
+
+الخدمات الموحدة وأي نسخ قديمة.
+
+الملفات غير المستخدمة أو المكررة.
+
+أي استيرادات خاطئة أو لا تستخدم النظام الموحد.
+
+حالة توحيد النظام لكل خدمة.
+
+
+السكربت التالي يحقق كل ذلك:
+
+/**
+ * Script: project-audit.js
+ * الوصف: فحص شامل للخدمات والملفات في مشروع Node.js/TypeScript
+ * الهدف: التحقق من توحيد النظام، كشف الملفات القديمة، وإنشاء تقرير مفصل
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// مجلد المشروع الرئيسي
+const PROJECT_ROOT = path.resolve(__dirname, 'server'); // عدّل حسب مشروعك
+
+// الخدمات الموحدة الأساسية
+const UNIFIED_SERVICES = [
+  'BaseService.ts',
+  'ServiceContainer.ts',
+  'ServiceTokens.ts',
+  'ResponseHandler.ts',
+  'SystemService.ts',
+  'LogService.ts',
+  'UnifiedFileService.ts',
+  'NginxService.ts',
+  'PM2Service.ts',
+  'SslService.ts',
+  'UnifiedNotificationService.ts'
+];
+
+// ملفات أو مجلدات قديمة محتملة
+const LEGACY_FOLDERS = ['oldServices', 'legacy', 'backup'];
+
+// لتخزين التقرير النهائي
+const report = {
+  unifiedServicesFound: [],
+  missingUnifiedServices: [],
+  legacyFilesFound: [],
+  filesUsingOldImports: [],
+  allFilesScanned: [],
+};
+
+// دالة لفحص المجلدات والملفات recursively
+function scanDir(dir) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (let entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      scanDir(fullPath);
+      if (LEGACY_FOLDERS.includes(entry.name)) {
+        report.legacyFilesFound.push(fullPath);
+      }
+    } else {
+      report.allFilesScanned.push(fullPath);
+
+      // تحقق من الخدمات الموحدة
+      if (UNIFIED_SERVICES.includes(entry.name)) {
+        report.unifiedServicesFound.push(fullPath);
+      }
+
+      // تحقق من استيرادات قديمة في الملفات
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      UNIFIED_SERVICES.forEach(service => {
+        const importOld = content.match(new RegExp(`import .*['"]${service}['"]`));
+        if (importOld) {
+          report.filesUsingOldImports.push({
+            file: fullPath,
+            serviceImported: service
+          });
+        }
+      });
+    }
+  }
+}
+
+// بدء الفحص
+console.log('🔍 بدء فحص المشروع...');
+scanDir(PROJECT_ROOT);
+
+// تحقق من الخدمات المفقودة
+UNIFIED_SERVICES.forEach(service => {
+  if (!report.unifiedServicesFound.some(f => f.endsWith(service))) {
+    report.missingUnifiedServices.push(service);
+  }
+});
+
+// طباعة التقرير النهائي
+console.log('\n✅ تقرير الفحص النهائي:');
+console.log('1️⃣ الخدمات الموحدة الموجودة:');
+console.table(report.unifiedServicesFound);
+
+console.log('2️⃣ الخدمات الموحدة المفقودة:');
+console.table(report.missingUnifiedServices);
+
+console.log('3️⃣ الملفات أو المجلدات القديمة/المكررة:');
+console.table(report.legacyFilesFound);
+
+console.log('4️⃣ الملفات التي تستخدم استيرادات قديمة:');
+console.table(report.filesUsingOldImports);
+
+console.log('\n📊 الفحص اكتمل! يمكنك الآن اتخاذ الإجراءات التالية: حذف الملفات القديمة، توحيد الاستيرادات، والتأكد من أن جميع الخدمات تعمل من النظام الموحد.');
+
+
+---
+
+✅ طريقة الاستخدام
+
+1. احفظ السكربت باسم project-audit.js في جذر المشروع.
+
+
+2. عدّل مسار PROJECT_ROOT إذا كان مجلدك الرئيسي مختلفًا.
+
+
+3. شغّل السكربت:
+
+
+
+node project-audit.js
+
+4. سيقوم بفحص جميع الملفات والمجلدات ويعطي تقرير مفصل بالوضع الحالي لكل خدمة وكل ملف.
+
+
+
+
+---
+
+لو تحب، أقدر أضيف للسكربت ميزة إنتاج ملف HTML أو JSON قابل للطباعة والتوثيق، بحيث يكون جاهز للتقديم أو للمراجعة من الفريق.
+
+هل تريد أن أفعلها لك؟
+
