@@ -71,13 +71,10 @@ function detectServerEnvironment(): {
     'REPLIT'
   ];
 
-  // فحص أكثر تفصيلاً لبيئة Replit
-  const isReplitEnvironment = replitIndicators.some(indicator => processEnv[indicator]) ||
-                             processEnv.npm_config_user_config?.includes('/home/runner/') ||
-                             processEnv.PWD?.startsWith('/home/runner/') ||
-                             processEnv.HOME === '/home/runner' ||
-                             processEnv.HOSTNAME?.length === 12 || // Replit hostname pattern
-                             (typeof process !== 'undefined' && process.cwd && process.cwd().includes('/home/runner/'));
+  // فحص أكثر تفصيلاً لبيئة Replit - تجنب الخلط مع السيرفر الخارجي
+  const isReplitEnvironment = replitIndicators.some(indicator => processEnv[indicator]) &&
+                             !processEnv.PWD?.includes('/home/administrator/') &&
+                             !process.cwd().includes('/home/administrator/');
 
   // اكتشاف إضافي من hostname - تحسين الدقة
   const hostname = processEnv.HOSTNAME || '';
@@ -149,9 +146,9 @@ function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): Envir
         try {
           return typeof process !== 'undefined' &&
                  process.cwd &&
-                 typeof process.cwd === 'function' ? process.cwd() : '/home/runner';
+                 typeof process.cwd === 'function' ? process.cwd() : '/home/administrator/Panel';
         } catch {
-          return '/home/runner';
+          return '/home/administrator/Panel';
         }
       })(),
       logs: './logs',

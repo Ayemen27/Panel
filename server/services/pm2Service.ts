@@ -563,7 +563,7 @@ export class PM2Service {
             }
           }
 
-          const { stdout: altOutput } = await execAsync(`${pm2Path} list --format json`);
+          const { stdout: altOutput } = await execAsync('pm2 list --format json');
           let altCleanOutput = altOutput.trim();
 
           // Clean alternative output too
@@ -674,9 +674,7 @@ export class PM2Service {
 
     if (pm2Available) {
       try {
-        const pm2Path = getPM2Path();
-        if (!pm2Path) throw new Error('PM2 path not found');
-        const { stdout } = await execAsync(`${pm2Path} logs ${name} --lines ${lines} --nostream`);
+        const { stdout } = await execAsync(`pm2 logs ${name} --lines ${lines} --nostream`);
         return stdout.split('\n').filter(line => line.trim() !== '');
       } catch (error) {
         throw new Error(`Failed to get PM2 logs: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
@@ -703,9 +701,7 @@ export class PM2Service {
 
     if (pm2Available) {
       try {
-        const pm2Path = getPM2Path();
-        if (!pm2Path) throw new Error('PM2 path not found');
-        const { stdout } = await execAsync(`${pm2Path} jlist`);
+        const { stdout } = await execAsync('pm2 jlist');
         const processes: PM2Process[] = JSON.parse(stdout);
 
         const process = processes.find(p => p.name === name);
@@ -744,9 +740,7 @@ export class PM2Service {
 
     if (pm2Available) {
       try {
-        const pm2Path = getPM2Path();
-        if (!pm2Path) throw new Error('PM2 path not found');
-        await execAsync(`${pm2Path} save`);
+        await execAsync('pm2 save');
       } catch (error) {
         throw new Error(`Failed to save PM2 configuration: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
@@ -761,9 +755,7 @@ export class PM2Service {
 
     if (pm2Available) {
       try {
-        const pm2Path = getPM2Path();
-        if (!pm2Path) throw new Error('PM2 path not found');
-        await execAsync(`${pm2Path} resurrect`);
+        await execAsync('pm2 resurrect');
       } catch (error) {
         throw new Error(`Failed to resurrect PM2 processes: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`);
       }
