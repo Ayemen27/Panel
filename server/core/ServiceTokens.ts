@@ -6,6 +6,7 @@ export enum ServiceTokens {
   // Core System Services
   SYSTEM_SERVICE = 'SystemService',
   LOG_SERVICE = 'LogService',
+  AUDIT = 'AuditService',
   AUDIT_SERVICE = 'AuditService',
   MONITORING_SERVICE = 'MonitoringService',
   
@@ -17,7 +18,9 @@ export enum ServiceTokens {
   // Application Services
   UNIFIED_NOTIFICATION_SERVICE = 'UnifiedNotificationService',
   UNIFIED_FILE_SERVICE = 'UnifiedFileService',
+  BACKUP = 'BackupService',
   BACKUP_SERVICE = 'BackupService',
+  DEPLOYMENT = 'DeploymentService',
   DEPLOYMENT_SERVICE = 'DeploymentService',
   STORAGE_STATS_SERVICE = 'StorageStatsService',
   

@@ -15,7 +15,7 @@ import { AuditService } from '../services/auditService';
 import { BackupService } from '../services/backupService';
 import { DeploymentService } from '../services/deploymentService';
 import { UnifiedFileService } from '../services/unifiedFileService';
-import { UnifiedNotificationService } from '../services/unifiedNotificationService';
+import { UnifiedNotificationService } from '../services/UnifiedNotificationService';
 import { MonitoringService } from '../services/monitoringService';
 import { StorageStatsService } from '../services/storageStatsService';
 import { NginxService } from '../services/nginxService';
@@ -171,6 +171,96 @@ export class ServiceContainer {
    */
   getStorage(): IStorage {
     return this.storage;
+  }
+
+  /**
+   * الحصول على خدمة باستخدام token
+   */
+  resolveByToken<T extends BaseService>(token: ServiceTokens): T {
+    const tokenName = token.toString();
+    
+    // تحديد الفئة المناسبة بناءً على token
+    let ServiceClass: ServiceConstructor<BaseService>;
+    
+    switch (token) {
+      case ServiceTokens.SYSTEM_SERVICE:
+        ServiceClass = SystemService as any;
+        break;
+      case ServiceTokens.LOG_SERVICE:
+        ServiceClass = LogService as any;
+        break;
+      case ServiceTokens.AUDIT:
+      case ServiceTokens.AUDIT_SERVICE:
+        ServiceClass = AuditService as any;
+        break;
+      case ServiceTokens.BACKUP:
+      case ServiceTokens.BACKUP_SERVICE:
+        ServiceClass = BackupService as any;
+        break;
+      case ServiceTokens.DEPLOYMENT:
+      case ServiceTokens.DEPLOYMENT_SERVICE:
+        ServiceClass = DeploymentService as any;
+        break;
+      case ServiceTokens.UNIFIED_FILE_SERVICE:
+        ServiceClass = UnifiedFileService as any;
+        break;
+      case ServiceTokens.UNIFIED_NOTIFICATION_SERVICE:
+        ServiceClass = UnifiedNotificationService as any;
+        break;
+      case ServiceTokens.MONITORING_SERVICE:
+        ServiceClass = MonitoringService as any;
+        break;
+      case ServiceTokens.STORAGE_STATS_SERVICE:
+        ServiceClass = StorageStatsService as any;
+        break;
+      case ServiceTokens.NGINX_SERVICE:
+        ServiceClass = NginxService as any;
+        break;
+      case ServiceTokens.PM2_SERVICE:
+        ServiceClass = PM2Service as any;
+        break;
+      case ServiceTokens.SSL_SERVICE:
+        ServiceClass = SslService as any;
+        break;
+      default:
+        throw new Error(`خدمة غير مدعومة: ${token}`);
+    }
+    
+    return this.resolve(tokenName, ServiceClass) as T;
+  }
+
+  /**
+   * الحصول على service registry
+   */
+  getServiceRegistry(): Partial<ServiceRegistry> {
+    return this.serviceRegistry;
+  }
+
+  /**
+   * Helper methods for common services
+   */
+  getSystemService(): SystemService {
+    return this.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
+  }
+
+  getLogService(): LogService {
+    return this.resolveByToken<LogService>(ServiceTokens.LOG_SERVICE);
+  }
+
+  getFileService(): UnifiedFileService {
+    return this.resolveByToken<UnifiedFileService>(ServiceTokens.UNIFIED_FILE_SERVICE);
+  }
+
+  getMonitoringService(): MonitoringService {
+    return this.resolveByToken<MonitoringService>(ServiceTokens.MONITORING_SERVICE);
+  }
+
+  getPM2Service(): PM2Service {
+    return this.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
+  }
+
+  getNotificationService(): UnifiedNotificationService {
+    return this.resolveByToken<UnifiedNotificationService>(ServiceTokens.UNIFIED_NOTIFICATION_SERVICE);
   }
 }
 
