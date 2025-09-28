@@ -3,12 +3,20 @@
  * يستخدم BaseService و ResponseHandler و ServiceContainer
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { ResponseHandler } from '../core/ResponseHandler';
 import { ServiceContainer } from '../core/ServiceContainer';
 import { UnifiedNotificationService } from '../services/UnifiedNotificationService';
+import { ServiceTokens } from '../core/ServiceTokens';
 import { serviceInjectionMiddleware } from '../core/ServiceContainer';
 import { storage } from '../storage';
+import { isAuthenticated, requireRole } from '../auth';
+
+// Enhanced Request interface with services
+interface AuthenticatedRequest extends Request {
+  services: ServiceContainer;
+  user?: any;
+}
 
 // إنشاء Router
 const router = Router();
@@ -20,18 +28,17 @@ router.use(serviceInjectionMiddleware(storage));
  * جلب إشعارات المستخدم مع تصفح
  * GET /api/unified/notifications
  */
-router.get('/', async (req: any, res) => {
+router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     // الحصول على خدمة الإشعارات من الحاوي
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     // المعاملات من query string
-    const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100); // حد أقصى 100
-    const type = req.query.type;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100); // حد أقصى 100
+    const type = req.query.type as string;
     const acknowledged = req.query.acknowledged === 'true' ? true : 
                         req.query.acknowledged === 'false' ? false : undefined;
     const resolved = req.query.resolved === 'true' ? true : 
@@ -63,11 +70,10 @@ router.get('/', async (req: any, res) => {
  * إنشاء إشعار جديد (للمسؤولين)
  * POST /api/unified/notifications
  */
-router.post('/', async (req: any, res) => {
+router.post('/', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     // إنشاء الإشعار
@@ -90,11 +96,10 @@ router.post('/', async (req: any, res) => {
  * تعليم إشعار كمقروء
  * PUT /api/unified/notifications/:id/read
  */
-router.put('/:id/read', async (req: any, res) => {
+router.put('/:id/read', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     const result = await notificationService.markAsRead(req.params.id);
@@ -115,11 +120,10 @@ router.put('/:id/read', async (req: any, res) => {
  * تعليم جميع الإشعارات كمقروءة
  * PUT /api/unified/notifications/read-all
  */
-router.put('/read-all', async (req: any, res) => {
+router.put('/read-all', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     const result = await notificationService.markAllAsRead();
@@ -140,11 +144,10 @@ router.put('/read-all', async (req: any, res) => {
  * حل إشعار (للمسؤولين)
  * PUT /api/unified/notifications/:id/resolve
  */
-router.put('/:id/resolve', async (req: any, res) => {
+router.put('/:id/resolve', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     const result = await notificationService.resolveNotification(req.params.id);
@@ -165,11 +168,10 @@ router.put('/:id/resolve', async (req: any, res) => {
  * الحصول على إحصائيات الإشعارات
  * GET /api/unified/notifications/stats
  */
-router.get('/stats', async (req: any, res) => {
+router.get('/stats', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     const result = await notificationService.getNotificationStats();
@@ -190,11 +192,10 @@ router.get('/stats', async (req: any, res) => {
  * إنشاء إشعار سريع
  * POST /api/unified/notifications/quick
  */
-router.post('/quick', async (req: any, res) => {
+router.post('/quick', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     const { type, title, message, level = 'medium' } = req.body;
@@ -229,11 +230,10 @@ router.post('/quick', async (req: any, res) => {
  * إنشاء إشعار للجميع (للمسؤولين)
  * POST /api/unified/notifications/broadcast
  */
-router.post('/broadcast', async (req: any, res) => {
+router.post('/broadcast', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const notificationService = req.services.resolve(
-      'notificationService', 
-      UnifiedNotificationService
+    const notificationService = req.services.resolveByToken<UnifiedNotificationService>(
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE
     );
 
     const { type, title, message, level = 'medium' } = req.body;

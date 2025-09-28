@@ -27,6 +27,7 @@ import type { LogService } from "./services/logService";
 import type { AuditService } from "./services/auditService";
 import type { ServiceContainer } from "./core/ServiceContainer";
 import type { UnifiedFileService } from "./services/unifiedFileService";
+import type { UnifiedNotificationService } from "./services/UnifiedNotificationService";
 import type { StorageStatsService } from "./services/storageStatsService";
 // Import services - النظام الموحد الوحيد
 // Unified file service handled by unifiedFileRoutes
@@ -1155,13 +1156,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Notification routes
+  // Notification routes - Updated to use UnifiedNotificationService
   app.get('/api/notifications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = getUserId(req)!;
+      // DI Phase 3: Use service container instead of direct storage access
+      const notificationService = req.services.resolveByToken<UnifiedNotificationService>(ServiceTokens.UNIFIED_NOTIFICATION_SERVICE);
+      
       const limit = parseInt(req.query.limit as string) || 50;
-      const notifications = await storage.getNotifications(userId, limit);
-      res.json(notifications);
+      const page = parseInt(req.query.page as string) || 1;
+      
+      // Use unified service with pagination
+      const result = await notificationService.getUserNotifications({
+        page,
+        limit
+      });
+      
+      // Maintain backward compatibility by returning the notifications array
+      if (result.success) {
+        res.json(result.data.notifications);
+      } else {
+        throw new Error(result.error || 'Failed to fetch notifications');
+      }
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Failed to fetch notifications" });
@@ -1170,9 +1185,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/notifications/:id/acknowledge', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
+      // DI Phase 3: Use service container instead of direct storage access
+      const notificationService = req.services.resolveByToken<UnifiedNotificationService>(ServiceTokens.UNIFIED_NOTIFICATION_SERVICE);
+      
       const { id } = req.params;
-      await storage.acknowledgeNotification(id);
-      res.json({ message: "Notification acknowledged" });
+      const result = await notificationService.markAsRead(id);
+      
+      if (result.success) {
+        res.json({ message: "Notification acknowledged" });
+      } else {
+        throw new Error(result.error || 'Failed to acknowledge notification');
+      }
     } catch (error) {
       console.error("Error acknowledging notification:", error);
       res.status(500).json({ message: "Failed to acknowledge notification" });
@@ -1181,9 +1204,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/notifications/:id/resolve', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
+      // DI Phase 3: Use service container instead of direct storage access  
+      const notificationService = req.services.resolveByToken<UnifiedNotificationService>(ServiceTokens.UNIFIED_NOTIFICATION_SERVICE);
+      
       const { id } = req.params;
-      await storage.resolveNotification(id);
-      res.json({ message: "Notification resolved" });
+      const result = await notificationService.resolveNotification(id);
+      
+      if (result.success) {
+        res.json({ message: "Notification resolved" });
+      } else {
+        throw new Error(result.error || 'Failed to resolve notification');
+      }
     } catch (error) {
       console.error("Error resolving notification:", error);
       res.status(500).json({ message: "Failed to resolve notification" });
