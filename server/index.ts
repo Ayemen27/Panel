@@ -15,7 +15,7 @@ logEnvironmentInfo();
 
 // تشخيص المسارات
 import { pathManager } from './utils/pathManager';
-import { setupDirectories } from './scripts/setup-directories';
+import { setupDirectories } from './scripts/setup-directories.js';
 
 // إنشاء المجلدات المطلوبة
 await setupDirectories();
@@ -76,6 +76,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // إعداد المجلدات المطلوبة قبل بدء الخادم
+  console.log('🏗️ Setting up directories...');
+  try {
+    await setupDirectories();
+    console.log('✅ Directory setup completed');
+  } catch (error) {
+    console.warn('⚠️ Directory setup failed, continuing anyway:', error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

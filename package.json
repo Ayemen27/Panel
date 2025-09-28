@@ -12,7 +12,9 @@
     "start": "NODE_ENV=production node dist/server/index.js",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
-    "audit:comprehensive": "tsx server/scripts/run-audit.ts"
+    "audit:comprehensive": "tsx server/scripts/run-audit.ts",
+    "diagnostics": "tsx server/scripts/environment-diagnostics.ts",
+    "setup:directories": "tsx server/scripts/setup-directories.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

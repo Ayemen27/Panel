@@ -55,26 +55,34 @@ function detectServerEnvironment(): {
 } {
   const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
 
-  // اكتشاف Replit من متغيرات البيئة المختلفة
+  // اكتشاف Replit من متغيرات البيئة المختلفة - محسن
   const replitIndicators = [
     'REPL_ID',
     'REPLIT_DB_URL',
     'REPL_SLUG',
     'REPLIT_CLUSTER',
     'REPLIT_ENVIRONMENT',
-    'REPL_URL'
+    'REPL_URL',
+    'REPLIT'
   ];
 
-  const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]);
+  const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]) ||
+                        processEnv.npm_config_user_config?.includes('/home/runner/') ||
+                        processEnv.PWD?.startsWith('/home/runner/') ||
+                        processEnv.HOME === '/home/runner';
 
   // اكتشاف إضافي من hostname - تحسين الدقة
   const hostname = processEnv.HOSTNAME || '';
-  const isReplitByHostname = hostname.includes('replit') && !hostname.includes('93.127.142.144');
+  const isReplitByHostname = (hostname.includes('replit') || hostname.length === 12) && 
+                            !hostname.includes('93.127.142.144') &&
+                            !hostname.includes('vps-fbaz');
 
   // اكتشاف السيرفر الخارجي من IP أو hostname
   const isExternalServer = hostname.includes('93.127.142.144') ||
+                          hostname.includes('vps-fbaz') ||
                           processEnv.EXTERNAL_SERVER === 'true' ||
-                          processEnv.SERVER_TYPE === 'external';
+                          processEnv.SERVER_TYPE === 'external' ||
+                          processEnv.PWD?.includes('/home/administrator/');
 
   const nodeEnv = processEnv.NODE_ENV || 'development';
   const isProduction = nodeEnv === 'production';
@@ -92,6 +100,19 @@ function detectServerEnvironment(): {
     serverType = 'external';
   }
 
+  // طباعة معلومات التشخيص لتسهيل التتبع
+  if (typeof process !== 'undefined' && process.env) {
+    console.log('🔍 Server Environment Detection:');
+    console.log(`   PWD: ${processEnv.PWD || 'undefined'}`);
+    console.log(`   HOME: ${processEnv.HOME || 'undefined'}`);
+    console.log(`   HOSTNAME: ${hostname || 'undefined'}`);
+    console.log(`   REPL_ID: ${processEnv.REPL_ID ? 'defined' : 'undefined'}`);
+    console.log(`   Is Replit (env): ${isReplitServer}`);
+    console.log(`   Is Replit (hostname): ${isReplitByHostname}`);
+    console.log(`   Is External: ${isExternalServer}`);
+    console.log(`   Server Type: ${serverType}`);
+  }
+
   return {
     isReplit: isReplitServer || isReplitByHostname,
     isProduction,
@@ -105,13 +126,21 @@ function detectServerEnvironment(): {
 function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): EnvironmentConfig['paths'] {
   const basePaths = {
     replit: {
-      root: '/home/runner',
-      logs: '/home/runner/logs',
-      uploads: '/home/runner/uploads',
-      config: '/home/runner/.config',
-      ssl: '/home/runner/ssl',
-      nginx: '/etc/nginx',
-      pm2: '/home/runner/.pm2'
+      root: (() => {
+        try {
+          return typeof process !== 'undefined' &&
+                 process.cwd &&
+                 typeof process.cwd === 'function' ? process.cwd() : '/home/runner';
+        } catch {
+          return '/home/runner';
+        }
+      })(),
+      logs: './logs',
+      uploads: './uploads',
+      config: './config',
+      ssl: './ssl',
+      nginx: './nginx',
+      pm2: './pm2'
     },
     external: {
       root: (() => {
