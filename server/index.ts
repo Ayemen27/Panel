@@ -6,6 +6,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
 import { ENV_CONFIG, logEnvironmentInfo } from "../shared/environment";
+import { serviceInjectionMiddleware } from "./core/ServiceContainer.js";
+import { storage } from "./storage.js";
 
 // SSL certificate verification is enabled for security
 // If you encounter SSL issues with database connections, configure proper certificates
@@ -62,6 +64,12 @@ app.use(express.urlencoded({
   extended: true,
   parameterLimit: 10000
 }));
+
+// Phase 3 DI Enhancement: Apply service injection middleware
+// This creates a new ServiceContainer per request with proper context isolation
+log('🔌 Setting up Dependency Injection middleware...');
+app.use(serviceInjectionMiddleware(storage));
+log('✅ DI middleware configured - services available via req.services');
 
 // Authentication is now handled in registerRoutes
 

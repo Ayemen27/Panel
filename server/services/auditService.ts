@@ -5,9 +5,10 @@ import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { systemService } from './systemService';
 import { storage } from '../storage';
 import { AuditHelpers } from '../utils/auditHelpers';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 dotenv.config({ path: path.join(process.cwd(), 'server', '.env') });
@@ -54,9 +55,13 @@ export interface AuditReport {
   checklist: Record<string, 'PASS' | 'FAIL'>;
 }
 
-export class AuditService {
+export class AuditService extends BaseService {
   private issues: AuditIssue[] = [];
   private evidence: Record<string, any> = {};
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
 
   async runCompleteAudit(): Promise<AuditReport> {
     console.log('🔍 بدء الفحص الشامل للتطبيق...');
@@ -548,4 +553,5 @@ export class AuditService {
   }
 }
 
-export const auditService = new AuditService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const auditService = new AuditService();

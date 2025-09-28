@@ -6,6 +6,21 @@
 import { IStorage } from '../storage';
 import { BaseService, ServiceContext } from './BaseService';
 import { Request, Response, NextFunction } from 'express';
+import { ServiceTokens, ServiceDependencies, ServicePriority, ServiceConfig } from './ServiceTokens';
+
+// Import all service classes for factory helpers
+import { SystemService } from '../services/systemService';
+import { LogService } from '../services/logService';
+import { AuditService } from '../services/auditService';
+import { BackupService } from '../services/backupService';
+import { DeploymentService } from '../services/deploymentService';
+import { UnifiedFileService } from '../services/unifiedFileService';
+import { UnifiedNotificationService } from '../services/unifiedNotificationService';
+import { MonitoringService } from '../services/monitoringService';
+import { StorageStatsService } from '../services/storageStatsService';
+import { NginxService } from '../services/nginxService';
+import { PM2Service } from '../services/pm2Service';
+import { SslService } from '../services/sslService';
 
 export type ServiceConstructor<T extends BaseService> = new (
   storage: IStorage,
@@ -13,12 +28,32 @@ export type ServiceConstructor<T extends BaseService> = new (
 ) => T;
 
 /**
+ * Service Factory Type - يحدد كيفية إنشاء خدمة مع تبعياتها
+ */
+export type ServiceFactory<T extends BaseService> = {
+  constructor: ServiceConstructor<T>;
+  dependencies?: ServiceTokens[];
+  priority?: number;
+  config?: ServiceConfig;
+};
+
+/**
+ * Service Registry - خريطة شاملة لجميع الخدمات المتاحة
+ */
+export type ServiceRegistry = {
+  [K in ServiceTokens]: ServiceFactory<BaseService>;
+};
+
+/**
  * حاوي الخدمات per-request - كل طلب يحصل على حاويه الخاص
+ * محسن للمرحلة 2 مع ServiceTokens وFactory Helpers
  */
 export class ServiceContainer {
   private services: Map<string, BaseService> = new Map();
   private storage: IStorage;
   private context: ServiceContext;
+  private serviceRegistry: Partial<ServiceRegistry> = {};
+  private resolutionStack: Set<ServiceTokens> = new Set(); // لتجنب circular dependencies
 
   constructor(storage: IStorage, context: ServiceContext = {}) {
     this.storage = storage;
@@ -173,11 +208,104 @@ export function serviceInjectionMiddleware(storage: IStorage) {
 
 /**
  * Decorator للتسجيل التلقائي للخدمات (محظور الاستخدام الآن)
- * @deprecated استخدم resolve() مباشرة بدلاً من الـ decorator لتجنب الـ singleton issues
+ * @deprecated استخدم resolveByToken() مباشرة بدلاً من الـ decorator لتجنب الـ singleton issues
  */
 export function Injectable(name: string) {
   return function <T extends BaseService>(constructor: ServiceConstructor<T>) {
-    console.warn(`Injectable decorator لـ ${name} محظور الاستخدام. استخدم resolve() مباشرة.`);
+    console.warn(`Injectable decorator لـ ${name} محظور الاستخدام. استخدم resolveByToken() مباشرة.`);
     return constructor;
   };
 }
+
+/**
+ * Factory Helpers - مساعدات لإنشاء الخدمات بطريقة مبسطة
+ */
+export const ServiceHelpers = {
+  /**
+   * إنشاء حزمة خدمات أساسية (Core Services)
+   */
+  createCoreServices(container: ServiceContainer): {
+    systemService: SystemService;
+    logService: LogService;
+  } {
+    return {
+      systemService: container.getSystemService(),
+      logService: container.getLogService()
+    };
+  },
+
+  /**
+   * إنشاء حزمة خدمات البنية التحتية
+   */
+  createInfrastructureServices(container: ServiceContainer): {
+    fileService: UnifiedFileService;
+    monitoringService: MonitoringService;
+    pm2Service: PM2Service;
+  } {
+    return {
+      fileService: container.getFileService(),
+      monitoringService: container.getMonitoringService(),
+      pm2Service: container.getPM2Service()
+    };
+  },
+
+  /**
+   * إنشاء حزمة خدمات عمليات العمل
+   */
+  createBusinessServices(container: ServiceContainer): {
+    notificationService: UnifiedNotificationService;
+    auditService: AuditService;
+    backupService: BackupService;
+    deploymentService: DeploymentService;
+  } {
+    return {
+      notificationService: container.getNotificationService(),
+      auditService: container.resolveByToken<AuditService>(ServiceTokens.AUDIT),
+      backupService: container.resolveByToken<BackupService>(ServiceTokens.BACKUP),
+      deploymentService: container.resolveByToken<DeploymentService>(ServiceTokens.DEPLOYMENT)
+    };
+  }
+};
+
+/**
+ * مساعد لاختبار ServiceContainer وdebugging
+ */
+export const ServiceContainerUtils = {
+  /**
+   * طباعة معلومات تشخيصية عن الحاوي
+   */
+  debugContainer(container: ServiceContainer): void {
+    console.log('=== Service Container Debug Info ===');
+    console.log('Registered Services:', container.getServiceNames());
+    console.log('Service Count:', container.getServiceCount());
+    console.log('Context:', container.getContext());
+    console.log('Registry:', Object.keys(container.getServiceRegistry()));
+    console.log('====================================');
+  },
+
+  /**
+   * اختبار التبعيات والتأكد من عدم وجود circular dependencies
+   */
+  validateDependencies(container: ServiceContainer): {
+    valid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+    const registry = container.getServiceRegistry();
+    
+    for (const [token, factory] of Object.entries(registry)) {
+      if (factory?.dependencies) {
+        for (const dep of factory.dependencies) {
+          if (!registry[dep]) {
+            errors.push(`Missing dependency: ${token} requires ${dep} but ${dep} is not registered`);
+          }
+        }
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+};

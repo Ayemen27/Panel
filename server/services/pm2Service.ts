@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { pathManager, getPM2Path } from '../utils/pathManager';
 import type { Application } from '@shared/schema';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
@@ -34,9 +36,13 @@ interface ProcessInfo {
   path: string;
 }
 
-export class PM2Service {
+export class PM2Service extends BaseService {
   private fallbackProcesses: Map<string, ProcessInfo> = new Map();
   private pm2Available: boolean | null = null;
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
 
   // Check if PM2 is available in the system
   async checkPM2Availability(): Promise<boolean> {
@@ -766,4 +772,5 @@ export class PM2Service {
   }
 }
 
-export const pm2Service = new PM2Service();
+// Remove singleton export - will be managed by ServiceContainer
+// export const pm2Service = new PM2Service();

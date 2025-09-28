@@ -1,10 +1,16 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
-export class DeploymentService {
+export class DeploymentService extends BaseService {
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
   async checkDeploymentReadiness(): Promise<{
     ready: boolean;
     issues: Array<{
@@ -167,4 +173,5 @@ export class DeploymentService {
   }
 }
 
-export const deploymentService = new DeploymentService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const deploymentService = new DeploymentService();

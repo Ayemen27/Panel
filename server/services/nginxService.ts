@@ -2,12 +2,18 @@ import { exec } from 'child_process';
 import { promises as fs } from 'fs';
 import { promisify } from 'util';
 import path from 'path';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
-export class NginxService {
+export class NginxService extends BaseService {
   private readonly sitesAvailablePath = '/etc/nginx/sites-available';
   private readonly sitesEnabledPath = '/etc/nginx/sites-enabled';
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
 
   async testConfig(content?: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -205,4 +211,5 @@ server {
   }
 }
 
-export const nginxService = new NginxService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const nginxService = new NginxService();

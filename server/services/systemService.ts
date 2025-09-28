@@ -2,6 +2,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import memoize from 'memoizee';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
@@ -33,7 +35,7 @@ export interface ProcessInfo {
   status: string;
 }
 
-export class SystemService {
+export class SystemService extends BaseService {
   // Cache static system info for 5 minutes
   private getCachedSystemInfo = memoize(this._getSystemInfo.bind(this), { maxAge: 300000 });
   
@@ -42,6 +44,10 @@ export class SystemService {
     const { stdout } = await execAsync("nproc");
     return parseInt(stdout.trim());
   }, { maxAge: 600000 });
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
 
   async getSystemStats(): Promise<SystemStats> {
     try {
@@ -601,4 +607,5 @@ export class SystemService {
   }
 }
 
-export const systemService = new SystemService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const systemService = new SystemService();

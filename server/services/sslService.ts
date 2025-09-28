@@ -1,5 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
@@ -10,7 +12,11 @@ export interface SslCertificate {
   expiresAt: Date;
 }
 
-export class SslService {
+export class SslService extends BaseService {
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
   async issueCertificate(domain: string): Promise<SslCertificate> {
     try {
       // Issue certificate using certbot
@@ -128,4 +134,5 @@ export class SslService {
   }
 }
 
-export const sslService = new SslService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const sslService = new SslService();

@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 export interface StorageStats {
   totalSpace: number;
@@ -26,9 +28,13 @@ export interface SystemStats {
   trash: CategoryStats;
 }
 
-export class StorageStatsService {
+export class StorageStatsService extends BaseService {
   private readonly cacheTimeout = 5 * 60 * 1000; // 5 minutes
   private cache: { stats: SystemStats; timestamp: number } | null = null;
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
 
   /**
    * Get comprehensive storage statistics

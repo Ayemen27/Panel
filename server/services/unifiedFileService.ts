@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { existsSync, statSync, constants as fsConstants } from 'fs';
 import { IStorage, storage } from '../storage';
 import { logger } from '../utils/logger';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
 
 export interface UnifiedFileInfo {
   id?: string;
@@ -42,11 +43,9 @@ export interface FileOperationResult {
  * تحل محل جميع الخدمات القديمة: FileManagerService, RealFileSystemService
  * هذه هي الخدمة الوحيدة المستخدمة في النظام
  */
-export class UnifiedFileService {
-  private storage: IStorage;
-
-  constructor(storage: IStorage) {
-    this.storage = storage;
+export class UnifiedFileService extends BaseService {
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
   }
 
   /**

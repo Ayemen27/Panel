@@ -3,6 +3,8 @@ import { exec } from 'child_process';
 import { promises as fs } from 'fs';
 import { promisify } from 'util';
 import path from 'path';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
@@ -17,10 +19,11 @@ export interface BackupConfig {
   excludePaths?: string[];
 }
 
-export class BackupService {
+export class BackupService extends BaseService {
   private backupDir = '/home/administrator/backups';
 
-  constructor() {
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
     this.ensureBackupDirectory();
   }
 
@@ -278,4 +281,5 @@ export class BackupService {
   }
 }
 
-export const backupService = new BackupService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const backupService = new BackupService();

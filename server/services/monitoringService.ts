@@ -1,6 +1,8 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { EventEmitter } from 'events';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
@@ -40,14 +42,31 @@ export interface SystemMetrics {
   };
 }
 
-export class MonitoringService extends EventEmitter {
+export class MonitoringService extends BaseService {
   private isMonitoring = false;
   private monitoringInterval: NodeJS.Timeout | null = null;
   private lastNetworkStats: any = null;
+  private eventEmitter: EventEmitter;
 
-  constructor() {
-    super();
-    this.setMaxListeners(100); // Allow many clients to listen
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+    this.eventEmitter = new EventEmitter();
+    this.eventEmitter.setMaxListeners(100); // Allow many clients to listen
+  }
+
+  // EventEmitter proxy methods
+  emit(event: string | symbol, ...args: any[]): boolean {
+    return this.eventEmitter.emit(event, ...args);
+  }
+
+  on(event: string | symbol, listener: (...args: any[]) => void): this {
+    this.eventEmitter.on(event, listener);
+    return this;
+  }
+
+  removeListener(event: string | symbol, listener: (...args: any[]) => void): this {
+    this.eventEmitter.removeListener(event, listener);
+    return this;
   }
 
   async startMonitoring(intervalMs = 5000): Promise<void> {
@@ -320,4 +339,5 @@ export class MonitoringService extends EventEmitter {
   }
 }
 
-export const monitoringService = new MonitoringService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const monitoringService = new MonitoringService();

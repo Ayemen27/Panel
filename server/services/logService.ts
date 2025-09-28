@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 import { pathManager, getLogsPath, getNginxPath, getPM2Path } from '../utils/pathManager';
+import { BaseService, ServiceContext, ServiceResult } from '../core/BaseService';
+import { IStorage } from '../storage';
 
 const execAsync = promisify(exec);
 
@@ -147,10 +149,14 @@ interface LogOptions {
   endDate?: Date;
 }
 
-export class LogService {
+export class LogService extends BaseService {
   private static readonly LOG_DIR = getLogsPath();
   private static readonly NGINX_LOG_DIR = path.join(getNginxPath(), 'logs');
   private static readonly PM2_LOG_DIR = path.join(getPM2Path(), 'logs');
+
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+  }
 
   async getApplicationLogs(appName: string, lines = 100): Promise<LogEntry[]> {
     try {
@@ -554,4 +560,5 @@ export class LogService {
   }
 }
 
-export const logService = new LogService();
+// Remove singleton export - will be managed by ServiceContainer
+// export const logService = new LogService();

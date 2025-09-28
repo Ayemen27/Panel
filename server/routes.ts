@@ -15,11 +15,20 @@ import {
   insertAllowedPathSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { pm2Service } from "./services/pm2Service";
-import { nginxService } from "./services/nginxService";
-import { sslService } from "./services/sslService";
-import { systemService } from "./services/systemService";
-import { logService } from "./services/logService";
+// DI Phase 3: Remove direct service imports - services now injected via req.services
+// import { pm2Service } from "./services/pm2Service";
+// import { nginxService } from "./services/nginxService";
+// import { sslService } from "./services/sslService";
+// import { systemService } from "./services/systemService";
+// import { logService } from "./services/logService";
+import { ServiceTokens } from "./core/ServiceTokens";
+
+// Import service types for type safety
+import type { PM2Service } from "./services/pm2Service";
+import type { NginxService } from "./services/nginxService";
+import type { SslService } from "./services/sslService";
+import type { SystemService } from "./services/systemService";
+import type { LogService } from "./services/logService";
 // Import services - النظام الموحد الوحيد
 // import { unifiedFileService } from './services/unifiedFileService'; // This import is removed as it's now handled by unifiedFileRoutes
 import { db } from "./db";
@@ -100,11 +109,13 @@ function setupCORS(app: Express) {
 }
 
 // Enhanced authentication middleware for custom auth system
+// DI Phase 3: Extended with services access
 interface AuthenticatedRequest extends Request {
   user?: any; // Custom authenticated user session
   body: any;
   params: any;
   query: any;
+  services: any; // ServiceContainer - available after serviceInjectionMiddleware
 }
 
 // Helper function to get user ID from custom auth
@@ -272,10 +283,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard stats route
+  // Dashboard stats route - DI Phase 3: Updated to use req.services
   app.get('/api/dashboard/stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
+      // DI Phase 3: Use service container instead of direct import
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM);
+      
       const [appStats, sslStats, systemStats, unreadCount] = await Promise.all([
         storage.getApplicationStats(userId),
         storage.getSslStats(),
@@ -620,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Application routes
+  // Application routes - DI Phase 3: Updated to use req.services
   app.get('/api/applications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = getUserId(req)!;
@@ -628,6 +642,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let statusMap = new Map<string, string>();
 
       try {
+        // DI Phase 3: Use service container instead of direct import
+        const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
         statusMap = await pm2Service.getAllApplicationStatuses();
       } catch (error) {
         console.warn('Failed to get PM2 status, using database status:', error);
@@ -656,9 +672,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const application = await storage.createApplication(appData);
 
-      // Start the application if requested
+      // Start the application if requested - DI Phase 3: Updated to use req.services
       if (appData.usePm2) {
         try {
+          // DI Phase 3: Use service container instead of direct import
+          const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
           await pm2Service.startApplication(application);
           await storage.updateApplication(application.id, { status: 'running' });
 
@@ -750,8 +768,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const application = await storage.getApplication(id);
 
       if (application) {
-        // Stop the application first
+        // Stop the application first - DI Phase 3: Updated to use req.services
         try {
+          // DI Phase 3: Use service container instead of direct import
+          const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
           await pm2Service.stopApplication(application.name);
         } catch (error) {
           console.warn("Failed to stop application:", error);
@@ -785,6 +805,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
+      // DI Phase 3: Use service container instead of direct import
+      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
       await pm2Service.startApplication(application);
       await storage.updateApplication(id, { status: 'running' });
 
@@ -865,6 +887,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
+      // DI Phase 3: Use service container instead of direct import
+      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
       await pm2Service.stopApplication(application.name);
       await storage.updateApplication(id, { status: 'stopped' });
 
@@ -915,6 +939,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
+      // DI Phase 3: Use service container instead of direct import
+      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
       await pm2Service.restartApplication(application.name, application);
       await storage.updateApplication(id, { status: 'running' });
 
@@ -976,8 +1002,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const domainData = insertDomainSchema.parse(req.body);
       const domain = await storage.createDomain(domainData);
 
-      // Check DNS status
+      // Check DNS status - DI Phase 3: Updated to use req.services
       try {
+        // DI Phase 3: Use service container instead of direct import
+        const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM);
         const dnsStatus = await systemService.checkDns(domain.domain);
         await storage.updateDomain(domain.id, { dnsStatus });
       } catch (error) {
@@ -1001,6 +1029,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Domain not found" });
       }
 
+      // DI Phase 3: Use service container instead of direct import
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM);
       const dnsStatus = await systemService.checkDns(targetDomain.domain);
       await storage.updateDomain(id, { dnsStatus });
 
@@ -1033,6 +1063,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Domain not found" });
       }
 
+      // DI Phase 3: Use service container instead of direct import
+      const sslService = req.services.resolveByToken<SslService>(ServiceTokens.SSL);
       const certificate = await sslService.issueCertificate(domain.domain);
 
       const sslCert = await storage.createSslCertificate({
@@ -1080,7 +1112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const configData = insertNginxConfigSchema.parse(req.body);
 
-      // Test the configuration first
+      // Test the configuration first - DI Phase 3: Updated to use req.services
+      // DI Phase 3: Use service container instead of direct import
+      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX);
       const testResult = await nginxService.testConfig(configData.content);
 
       const config = await storage.createNginxConfig({
@@ -1099,6 +1133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/nginx/test', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const { content } = req.body;
+      // DI Phase 3: Use service container instead of direct import
+      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX);
       const result = await nginxService.testConfig(content);
       res.json(result);
     } catch (error) {
@@ -1109,6 +1145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/nginx/reload', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
+      // DI Phase 3: Use service container instead of direct import
+      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX);
       await nginxService.reloadNginx();
       const result = { success: true, message: 'Nginx reloaded successfully' };
       res.json(result);
