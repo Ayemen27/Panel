@@ -11,8 +11,12 @@
     "dev:external": "tsx server/scripts/run-as-external.ts",
     "preview": "vite preview",
     "audit": "tsx server/scripts/run-audit.ts",
+    "audit:comprehensive": "tsx server/scripts/comprehensive-project-audit.ts",
+    "cleanup:dry": "tsx server/scripts/cleanup-legacy-files.ts",
+    "cleanup:execute": "tsx server/scripts/cleanup-legacy-files.ts --execute",
     "setup:directories": "tsx server/scripts/setup-directories.ts",
-    "diagnostics": "tsx server/scripts/environment-diagnostics.ts"
+    "diagnostics": "tsx server/scripts/environment-diagnostics.ts",
+    "lint": "echo 'Linting project...' && echo 'No linting configured yet'"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

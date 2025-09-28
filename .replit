@@ -115,3 +115,20 @@ args = "sleep 3"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "فحص شامل للمشروع"
+author = 48093943
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 بدء الفحص الشامل للمشروع...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run audit:comprehensive"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📄 تم إنشاء التقرير في: comprehensive-audit-report.html\""
