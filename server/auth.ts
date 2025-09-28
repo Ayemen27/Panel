@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage.js";
 import { User as SelectUser, insertUserSchema } from "@shared/schema";
+import { ENV_CONFIG } from "@shared/environment";
 import { z } from "zod";
 import connectPg from "connect-pg-simple";
 import MemoryStore from "memorystore";
@@ -32,19 +33,12 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-// تحديد متغيرات البيئة
-const ENV_CONFIG = {
-  isDevelopment: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined,
-  isProduction: process.env.NODE_ENV === 'production',
-  isReplit: !!process.env.REPL_ID,
-  host: process.env.HOST || 'localhost', // افترض localhost إذا لم يتم تحديده
-};
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // أسبوع واحد
 
   // 🚨 SECURITY: إجبار SESSION_SECRET قوي في الإنتاج
-  if (ENV_CONFIG.isProduction && !process.env.SESSION_SECRET) {
+  if (ENV_CONFIG.name === 'production' && !process.env.SESSION_SECRET) {
     throw new Error('🚨 SECURITY CRITICAL: SESSION_SECRET environment variable is required in production');
   }
 
@@ -55,7 +49,7 @@ export function getSession() {
   let sessionStore;
 
   // 🚨 SECURITY: منع MemoryStore في الإنتاج
-  if (ENV_CONFIG.isProduction && !process.env.DATABASE_URL) {
+  if (ENV_CONFIG.name === 'production' && !process.env.DATABASE_URL) {
     throw new Error('🚨 SECURITY CRITICAL: Database connection required for session persistence in production');
   }
 
@@ -74,7 +68,7 @@ export function getSession() {
       throw new Error('No DATABASE_URL provided');
     }
   } catch (error) {
-    if (ENV_CONFIG.isProduction) {
+    if (ENV_CONFIG.name === 'production') {
       throw new Error(`🚨 CRITICAL: Failed to initialize session store in production: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     console.warn('⚠️ DEVELOPMENT: Falling back to MemoryStore:', error instanceof Error ? error.message : 'Unknown error');
@@ -86,12 +80,29 @@ export function getSession() {
   }
 
   // 🛡️ SECURITY: إعدادات كوكيز محسنة أمنياً
+  // اكتشاف النطاق المخصص وإعداد الكوكيز بناءً عليه
+  const isCustomDomain = process.env.CUSTOM_DOMAIN === 'true' || 
+                         process.env.DOMAIN?.includes('binarjoinanelytic.info') ||
+                         ENV_CONFIG.name === 'production' && !ENV_CONFIG.isReplit;
+  
+  // تحديد الدومين المناسب للكوكيز
+  let cookieDomain: string | undefined;
+  if (ENV_CONFIG.isReplit) {
+    cookieDomain = undefined; // Replit يدير الدومين تلقائياً
+  } else if (isCustomDomain) {
+    cookieDomain = 'panel.binarjoinanelytic.info'; // النطاق المخصص
+  } else if (ENV_CONFIG.host !== '0.0.0.0' && ENV_CONFIG.host !== 'localhost') {
+    cookieDomain = ENV_CONFIG.host;
+  } else {
+    cookieDomain = undefined; // للتطوير المحلي
+  }
+
   const cookieSettings = {
     httpOnly: true, // منع الوصول من JavaScript
-    secure: ENV_CONFIG.isProduction, // HTTPS only في الإنتاج
+    secure: isCustomDomain || ENV_CONFIG.name === 'production', // HTTPS للنطاق المخصص والإنتاج
     maxAge: sessionTtl,
-    sameSite: ENV_CONFIG.isProduction ? "strict" as const : "lax" as const, // ✅ SECURITY FIX: strict بدلاً من none
-    domain: ENV_CONFIG.isReplit ? undefined : ENV_CONFIG.host,
+    sameSite: (isCustomDomain || ENV_CONFIG.name === 'production') ? "strict" as const : "lax" as const,
+    domain: cookieDomain,
   };
 
   return session({
@@ -198,7 +209,7 @@ export function setupAuth(app: Express) {
   // تسجيل الدخول
   app.post("/api/login", loginLimiter, (req, res, next) => {
     // 🛡️ SECURITY FIX: تقليل logging للبيانات الحساسة في الإنتاج
-    if (!ENV_CONFIG.isProduction) {
+    if (ENV_CONFIG.name !== 'production') {
       console.log('Login attempt for user:', req.body.username?.substring(0, 3) + '***');
     }
 
@@ -210,7 +221,7 @@ export function setupAuth(app: Express) {
 
       if (!user) {
         // 🛡️ SECURITY FIX: تقليل logging لأسماء المستخدمين الفاشلة
-        if (!ENV_CONFIG.isProduction) {
+        if (ENV_CONFIG.name !== 'production') {
           console.log('Login failed for user:', req.body.username?.substring(0, 3) + '***');
         }
         return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
@@ -237,7 +248,7 @@ export function setupAuth(app: Express) {
             }
 
             // 🛡️ SECURITY FIX: إزالة session ID من logs
-            if (!ENV_CONFIG.isProduction) {
+            if (ENV_CONFIG.name !== 'production') {
               console.log('Login successful for user:', user.username?.substring(0, 3) + '***');
             }
 
