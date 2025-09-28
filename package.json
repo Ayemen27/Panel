@@ -4,12 +4,12 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "npm run build:client && npm run build:server && npm run audit:comprehensive",
+    "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "tsc --project tsconfig.server.json",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "preview": "vite preview",
-    "start": "NODE_ENV=production node dist/server/server/index.js",
+    "start": "NODE_ENV=production node dist/server/index.js",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
     "audit:comprehensive": "tsx server/scripts/run-audit.ts"

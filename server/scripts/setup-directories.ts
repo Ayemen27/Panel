@@ -71,11 +71,11 @@ async function setupDirectories() {
         }
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Failed to create directory ${dirPath}:`, error);
       
       // إذا فشل إنشاء المجلد في المسار المطلوب، أنشئه في مجلد temp
-      if (!isReplit && error.code === 'EACCES') {
+      if (!isReplit && error?.code === 'EACCES') {
         const fallbackPath = path.join('/tmp', path.basename(dirPath));
         try {
           fs.mkdirSync(fallbackPath, { recursive: true, mode: 0o755 });

@@ -3,12 +3,13 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
-import viteConfig from "../vite.config"; // صحيح إذا كان vite.config.js في مجلد رئيسي واحد أعلى
+import viteConfig from "../vite.config.js";
 import { nanoid } from "nanoid";
 import { Server } from "http";
 
 // إصلاح للحصول على __dirname في ES modules
 const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);;
 const __dirname = path.dirname(__filename);
 
 const viteLogger = createLogger();
@@ -66,7 +67,33 @@ export async function setupVite(app: Express, server: Server) {
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+
+export function serveStatic(app: Express) {
+  const distPath = path.resolve(__dirname, "..", "..", "dist", "public");
+  
+  if (!fs.existsSync(distPath)) {
+    log("❌ Distribution folder not found. Please run 'npm run build' first.");
+    return;
+  }
+
+  app.use(express.static(distPath));
+  
+  app.get("*", (req, res) => {
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send("Application not built. Run 'npm run build' first.");
+    }
+  });
+
+  log("📁 Serving static files from: " + distPath);
+}ace(e as Error);
       next(e);
     }
   });
