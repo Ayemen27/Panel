@@ -173,7 +173,7 @@ function FileManagerCore() {
       debugLog('Unified API Query Started', { currentPath });
 
       try {
-        const response = await apiRequest('GET', '/api/real-files/browse', {
+        const response = await apiRequest('GET', '/api/unified-files/browse', {
           path: currentPath
         });
 

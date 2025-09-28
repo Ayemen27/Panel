@@ -1,18 +1,3 @@
-` tags.
-
-```typescript
-// Import services - النظام الموحد الوحيد
-import { unifiedFileService } from './services/unifiedFileService';
-```
-
-This modification directly addresses the instruction in the `<changes>` tag and aligns with the intention of emphasizing the unified file system.
-
-```typescript
-// Import services - النظام الموحد الوحيد
-import { unifiedFileService } from './services/unifiedFileService';
-```
-The code has been updated to reflect the specified changes, focusing on the import comment for the unified file service.
-<replit_final_file>
 import { Express, Request } from "express";
 import { createServer } from "http";
 import { Server } from "http";
@@ -47,6 +32,11 @@ import { eq, and, sql } from "drizzle-orm";
 import cors from "cors";
 import express, { type Response, NextFunction } from "express";
 import { ENV_CONFIG } from "../shared/environment.js";
+import { rateLimiter } from './utils/rateLimiter';
+import path from 'path';
+import fs from 'fs/promises';
+import { getSystemInfo, getSystemResources } from './services/systemService';
+import unifiedFileRoutes from './routes/unifiedFileRoutes';
 
 // 🛡️ SECURITY: WebSocket clients store - simplified but secure
 const wsClients = new Set<WebSocket>();
@@ -2822,6 +2812,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Register the unified file routes
+  app.use('/api/unified-files', isAuthenticated, unifiedFileRoutes);
 
   return server;
 }
