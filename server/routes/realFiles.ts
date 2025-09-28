@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { UnifiedFileService } from '../services/unifiedFileService';
 import { storage } from '../storage';
@@ -106,12 +107,12 @@ router.post('/create', isAuthenticated, async (req, res) => {
 
     let result;
     if (type === 'directory') {
-      result = await realFileService.createDirectory(path, userId, {
+      result = await unifiedFileService.createDirectory(path, userId, {
         recursive: true,
         mode: mode || 0o755
       });
     } else {
-      result = await realFileService.createFile(path, userId, {
+      result = await unifiedFileService.createFile(path, userId, {
         content: content || '',
         mode: mode || 0o644
       });
@@ -147,7 +148,7 @@ router.delete('/delete', isAuthenticated, async (req, res) => {
       });
     }
 
-    const result = await realFileService.deleteItem(path, userId);
+    const result = await unifiedFileService.deleteItem(path, userId);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -179,7 +180,7 @@ router.put('/rename', isAuthenticated, async (req, res) => {
       });
     }
 
-    const result = await realFileService.renameItem(oldPath, newPath, userId);
+    const result = await unifiedFileService.renameItem(oldPath, newPath, userId);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -211,13 +212,13 @@ router.post('/copy', isAuthenticated, async (req, res) => {
       });
     }
 
-    const result = await realFileService.copyItem(sourcePath, destinationPath, userId);
+    const result = await unifiedFileService.copyItem(sourcePath, destinationPath, userId);
 
     if (!result.success) {
       return res.status(400).json(result);
     }
 
-    res.json({
+    res.status(201).json({
       success: true,
       data: result.data
     });
@@ -243,7 +244,7 @@ router.get('/info', isAuthenticated, async (req, res) => {
       });
     }
 
-    const result = await realFileService.getFileInfo(path, userId);
+    const result = await unifiedFileService.getFileInfo(path, userId);
 
     if (!result.success) {
       return res.status(400).json(result);

@@ -1205,8 +1205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      // Use FileManagerService to read file content safely
-      const result = await fileManagerService.readFile(file.path, userId);
+      // Use UnifiedFileService to read file content safely
+      const result = await unifiedFileService.readFileContent(file.path, userId);
 
       if (!result.success) {
         return res.status(400).json({ message: result.message });
@@ -1302,8 +1302,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createBackup(id, content, userId);
       }
 
-      // Use FileManagerService to write file safely
-      const result = await fileManagerService.writeFile(file.path, content, userId);
+      // Use UnifiedFileService to write file safely
+      const result = await unifiedFileService.writeFile(file.path, content, userId);
 
       if (!result.success) {
         return res.status(400).json({ message: result.message });
@@ -1744,8 +1744,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Use FileManagerService to read file
-      const result = await fileManagerService.readFile(file.path, userId || 'public');
+      // Use UnifiedFileService to read file
+      const result = await unifiedFileService.readFileContent(file.path, userId || 'public');
       if (!result.success) {
         return res.status(404).json({ message: result.message });
       }
