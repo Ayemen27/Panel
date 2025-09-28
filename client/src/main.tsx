@@ -1,9 +1,34 @@
+
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App.tsx";
 import "./index.css";
 import { logEnvironmentInfo, ENV_CONFIG, getWebSocketUrl } from "@shared/environment";
 import { errorLogger, updateAppState } from "./lib/errorLogger";
+
+// Create a single QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        // إذا كان الخطأ 401 (Unauthorized) أو 500، لا تعيد المحاولة
+        if (error instanceof Error && (
+          error.message.includes('401') ||
+          error.message.includes('500') ||
+          error.message.includes('Unauthorized') ||
+          error.message.includes('Internal Server Error')
+        )) {
+          console.log('🚫 Authentication/Server error - not retrying query:', error.message);
+          return false;
+        }
+        return failureCount < 2; // قلل عدد المحاولات
+      },
+    },
+  },
+});
 
 // Add global error handler for better debugging
 window.addEventListener('error', (event) => {
@@ -127,4 +152,10 @@ if (typeof window !== 'undefined') {
   }).catch(console.error);
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </React.StrictMode>
+);
