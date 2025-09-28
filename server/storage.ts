@@ -96,10 +96,27 @@ export interface IStorage {
 
   // Notification operations
   getNotifications(userId: string, limit?: number): Promise<Notification[]>;
+  getUserNotificationsWithPagination(params: {
+    userId: string;
+    page?: number;
+    limit?: number;
+    type?: string;
+    acknowledged?: boolean;
+    resolved?: boolean;
+  }): Promise<{ notifications: Notification[]; total: number; }>;
+  getNotificationById(id: string): Promise<Notification | null>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   acknowledgeNotification(id: string): Promise<void>;
   resolveNotification(id: string): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<number>;
   getUnreadNotificationCount(userId: string): Promise<number>;
+  getNotificationStats(userId: string): Promise<{
+    total: number;
+    unread: number;
+    byType: { type: string; count: number; }[];
+    last24Hours: number;
+  }>;
+  getActiveUsers(): Promise<{ id: string; }[]>;
 
   // System Log operations
   getSystemLogs(filters?: { source?: string; level?: string; applicationId?: string; limit?: number }): Promise<SystemLog[]>;
@@ -643,6 +660,140 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return result.count;
+  }
+
+  async getUserNotificationsWithPagination(params: {
+    userId: string;
+    page?: number;
+    limit?: number;
+    type?: string;
+    acknowledged?: boolean;
+    resolved?: boolean;
+  }): Promise<{ notifications: Notification[]; total: number; }> {
+    const { userId, page = 1, limit = 20, type, acknowledged, resolved } = params;
+    const offset = (page - 1) * limit;
+
+    // بناء شروط الاستعلام
+    const conditions = [eq(notifications.userId, userId)];
+    
+    if (type) {
+      conditions.push(eq(notifications.type, type));
+    }
+    if (acknowledged !== undefined) {
+      conditions.push(eq(notifications.acknowledged, acknowledged));
+    }
+    if (resolved !== undefined) {
+      conditions.push(eq(notifications.resolved, resolved));
+    }
+
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+    // جلب العدد الإجمالي
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(notifications)
+      .where(whereClause);
+
+    // جلب الإشعارات
+    const notificationsList = await db
+      .select()
+      .from(notifications)
+      .where(whereClause)
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      notifications: notificationsList,
+      total
+    };
+  }
+
+  async getNotificationById(id: string): Promise<Notification | null> {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id))
+      .limit(1);
+    
+    return notification || null;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<number> {
+    const result = await db
+      .update(notifications)
+      .set({ acknowledged: true, updatedAt: new Date() })
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.acknowledged, false)
+        )
+      )
+      .returning({ id: notifications.id });
+
+    return result.length;
+  }
+
+  async getNotificationStats(userId: string): Promise<{
+    total: number;
+    unread: number;
+    byType: { type: string; count: number; }[];
+    last24Hours: number;
+  }> {
+    // العدد الإجمالي
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(notifications)
+      .where(eq(notifications.userId, userId));
+
+    // عدد غير المقروءة
+    const [{ unread }] = await db
+      .select({ unread: count() })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.acknowledged, false)
+        )
+      );
+
+    // الإحصائيات حسب النوع
+    const byType = await db
+      .select({
+        type: notifications.type,
+        count: count()
+      })
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .groupBy(notifications.type);
+
+    // إشعارات آخر 24 ساعة
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const [{ last24Hours }] = await db
+      .select({ last24Hours: count() })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          gte(notifications.createdAt, yesterday)
+        )
+      );
+
+    return {
+      total,
+      unread,
+      byType,
+      last24Hours
+    };
+  }
+
+  async getActiveUsers(): Promise<{ id: string; }[]> {
+    return await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.isActive, true));
   }
 
   // System Log operations
