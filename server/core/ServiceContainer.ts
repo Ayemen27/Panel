@@ -7,6 +7,7 @@ import { IStorage } from '../storage';
 import { BaseService, ServiceContext } from './BaseService';
 import { Request, Response, NextFunction } from 'express';
 import { ServiceTokens, ServiceDependencies, ServicePriority, ServiceConfig, ServiceMetadata, ServiceFactory } from './ServiceTokens';
+import { ServiceError, ServiceErrorCode } from './ServiceError';
 
 // Import all service classes for factory helpers
 import { SystemService } from '../services/systemService';
@@ -487,62 +488,146 @@ export class ServiceContainer {
   }
 
   /**
-   * الحصول على خدمة باستخدام token
+   * الحصول على خدمة باستخدام token مع معالجة متقدمة للأخطاء
+   * Enhanced for Phase 2 with proper ServiceError wrapping
    */
   resolveByToken<T extends BaseService>(token: ServiceTokens): T {
     const tokenName = token.toString();
     
-    // الحصول على معلومات الخدمة من السجل الموحد
-    const registryEntry = ServiceContainer.CANONICAL_REGISTRY[token];
-    if (!registryEntry) {
-      throw new Error(`خدمة غير موجودة في السجل: ${token}`);
-    }
-    
-    const metadata = registryEntry.metadata;
-    if (!metadata.implemented) {
-      throw new Error(`خدمة غير مُطبقة: ${token} - ${metadata.description}`);
-    }
-    
-    // التحقق من وجود الخدمة في الحاوي
-    if (this.has(tokenName)) {
-      return this.get<T>(tokenName);
-    }
-    
-    // التحقق من التبعيات أولاً
-    if (metadata.dependencies.length > 0) {
-      this.resolveDependencies(metadata.dependencies);
-    }
-    
-    // إنشاء الخدمة باستخدام factory
     try {
-      const service = registryEntry.factory.create(this.storage, this.context);
+      // التحقق من وجود الخدمة في السجل
+      const registryEntry = ServiceContainer.CANONICAL_REGISTRY[token];
+      if (!registryEntry) {
+        throw ServiceError.notFound(
+          `Service not found in registry: ${token}`,
+          { token, availableServices: Object.keys(ServiceContainer.CANONICAL_REGISTRY) }
+        );
+      }
       
-      // تسجيل الخدمة في الحاوي
-      this.services.set(tokenName, service);
+      const metadata = registryEntry.metadata;
       
-      return service as T;
+      // التحقق من تطبيق الخدمة
+      if (!metadata.implemented) {
+        throw ServiceError.internal(
+          `Service not implemented: ${token} - ${metadata.description}`,
+          { 
+            token, 
+            version: metadata.version, 
+            category: metadata.category,
+            estimatedImplementationEffort: 'See service roadmap'
+          }
+        );
+      }
+      
+      // إرجاع الخدمة إذا كانت موجودة مسبقاً (caching)
+      if (this.has(tokenName)) {
+        return this.get<T>(tokenName);
+      }
+      
+      // التحقق من الدورة الدائرية في التبعيات
+      if (this.resolutionStack.has(token)) {
+        const circularPath = Array.from(this.resolutionStack).concat([token]).join(' -> ');
+        throw ServiceError.internal(
+          `Circular dependency detected: ${circularPath}`,
+          { 
+            circularPath, 
+            currentStack: Array.from(this.resolutionStack),
+            problematicToken: token
+          }
+        );
+      }
+      
+      // إضافة الخدمة للـ resolution stack
+      this.resolutionStack.add(token);
+      
+      try {
+        // حل التبعيات إذا وجدت
+        if (metadata.dependencies.length > 0) {
+          this.resolveDependenciesWithValidation(metadata.dependencies, token);
+        }
+        
+        // إنشاء الخدمة باستخدام factory
+        const service = registryEntry.factory.create(this.storage, this.context);
+        
+        // التحقق من صحة الخدمة المُنشأة
+        if (!service || !(service instanceof BaseService)) {
+          throw ServiceError.internal(
+            `Factory created invalid service instance for ${token}`,
+            { token, serviceType: typeof service }
+          );
+        }
+        
+        // تسجيل الخدمة في الحاوي
+        this.services.set(tokenName, service);
+        
+        return service as T;
+        
+      } finally {
+        // إزالة الخدمة من resolution stack
+        this.resolutionStack.delete(token);
+      }
+      
     } catch (error) {
-      throw new Error(`فشل في إنشاء خدمة ${token}: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+      // تحويل الأخطاء العادية إلى ServiceError إذا لم تكن كذلك
+      if (ServiceError.isServiceError(error)) {
+        throw error;
+      }
+      
+      throw ServiceError.internal(
+        `Failed to resolve service ${token}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { 
+          token, 
+          originalError: error instanceof Error ? error.message : error,
+          resolutionStack: Array.from(this.resolutionStack)
+        }
+      );
     }
   }
   
   /**
-   * حل التبعيات للخدمة
+   * حل التبعيات للخدمة مع التحقق المتقدم
+   * Enhanced dependency resolution with better validation
    */
-  private resolveDependencies(dependencies: ServiceTokens[]): void {
+  private resolveDependenciesWithValidation(dependencies: ServiceTokens[], parentToken: ServiceTokens): void {
     for (const dep of dependencies) {
-      if (this.resolutionStack.has(dep)) {
-        throw new Error(`اكتشاف تبعية دائرية: ${Array.from(this.resolutionStack).join(' -> ')} -> ${dep}`);
-      }
-      
-      this.resolutionStack.add(dep);
-      
       try {
+        // التحقق من وجود التبعية في السجل
+        const depEntry = ServiceContainer.CANONICAL_REGISTRY[dep];
+        if (!depEntry) {
+          throw ServiceError.internal(
+            `Missing dependency registration: ${parentToken} requires ${dep} but it's not in the registry`,
+            { parentToken, missingDependency: dep, availableDependencies: Object.keys(ServiceContainer.CANONICAL_REGISTRY) }
+          );
+        }
+        
+        // التحقق من تطبيق التبعية
+        if (!depEntry.metadata.implemented) {
+          throw ServiceError.internal(
+            `Unimplemented dependency: ${parentToken} requires ${dep} but it's not implemented`,
+            { parentToken, unimplementedDependency: dep, dependencyVersion: depEntry.metadata.version }
+          );
+        }
+        
+        // حل التبعية إذا لم تكن موجودة
         if (!this.has(dep.toString())) {
           this.resolveByToken(dep);
         }
-      } finally {
-        this.resolutionStack.delete(dep);
+        
+      } catch (error) {
+        // إثراء معلومات الخطأ مع سياق التبعية
+        if (ServiceError.isServiceError(error)) {
+          throw new ServiceError(
+            `Dependency resolution failed for ${parentToken} -> ${dep}: ${error.message}`,
+            error.code,
+            error.statusCode,
+            { ...error.details, parentToken, dependencyToken: dep }
+          );
+        }
+        
+        throw ServiceError.internal(
+          `Unexpected error resolving dependency ${dep} for ${parentToken}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          { parentToken, dependencyToken: dep, originalError: error }
+        );
       }
     }
   }
@@ -593,7 +678,60 @@ export class ServiceContainer {
   }
 
   /**
-   * Helper methods for common services
+   * Enhanced Factory Helper Methods - Phase 2
+   * مساعدات محسنة لإنشاء الخدمات مع دعم الـ Bundle Factory
+   */
+  
+  /**
+   * إنشاء مصنع حزم الخدمات للcontainer الحالي
+   */
+  createServiceBundleFactory(): ServiceBundleFactory {
+    return new ServiceBundleFactory(this);
+  }
+
+  /**
+   * الحصول على حزمة خدمات أساسية محسنة
+   */
+  getCoreServiceBundle(config?: ServiceBundleConfig): CoreServiceBundle {
+    const factory = this.createServiceBundleFactory();
+    return factory.createCoreBundle(config);
+  }
+
+  /**
+   * الحصول على حزمة خدمات النظام محسنة
+   */
+  getSystemServiceBundle(config?: ServiceBundleConfig): SystemServiceBundle {
+    const factory = this.createServiceBundleFactory();
+    return factory.createSystemBundle(config);
+  }
+
+  /**
+   * الحصول على حزمة خدمات الخادم محسنة
+   */
+  getServerServiceBundle(config?: ServiceBundleConfig): ServerServiceBundle {
+    const factory = this.createServiceBundleFactory();
+    return factory.createServerBundle(config);
+  }
+
+  /**
+   * الحصول على حزمة خدمات التطبيق محسنة
+   */
+  getApplicationServiceBundle(config?: ServiceBundleConfig): ApplicationServiceBundle {
+    const factory = this.createServiceBundleFactory();
+    return factory.createApplicationBundle(config);
+  }
+
+  /**
+   * الحصول على حزمة كاملة من جميع الخدمات
+   */
+  getFullServiceBundle(config?: ServiceBundleConfig): FullServiceBundle {
+    const factory = this.createServiceBundleFactory();
+    return factory.createFullBundle(config);
+  }
+
+  /**
+   * Legacy Helper Methods (تم الاحتفاظ بها للتوافق العكسي)
+   * @deprecated استخدم getXServiceBundle() أو resolveByToken() مباشرة
    */
   getSystemService(): SystemService {
     return this.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
@@ -664,52 +802,433 @@ export function Injectable(name: string) {
 }
 
 /**
- * Factory Helpers - مساعدات لإنشاء الخدمات بطريقة مبسطة
+ * Service Bundle Type Definitions - تعريفات أنواع حزم الخدمات المُطورة
+ * Enhanced for Phase 2 with strongly typed service bundles
+ */
+export interface CoreServiceBundle {
+  logService: LogService;
+  auditService: AuditService;
+  smartConnectionManager?: BaseService; // Singleton - handled separately
+}
+
+export interface SystemServiceBundle {
+  systemService: SystemService;
+  monitoringService: MonitoringService;
+  storageStatsService: StorageStatsService;
+}
+
+export interface ServerServiceBundle {
+  nginxService: NginxService;
+  pm2Service: PM2Service;
+  sslService: SslService;
+}
+
+export interface ApplicationServiceBundle {
+  unifiedFileService: UnifiedFileService;
+  unifiedNotificationService: UnifiedNotificationService;
+  backupService: BackupService;
+  deploymentService: DeploymentService;
+}
+
+export interface FullServiceBundle extends CoreServiceBundle, SystemServiceBundle, ServerServiceBundle, ApplicationServiceBundle {}
+
+/**
+ * Service Bundle Factory Configuration - تكوين مصانع حزم الخدمات
+ */
+export interface ServiceBundleConfig {
+  /** Whether to resolve dependencies automatically */
+  resolveDependencies?: boolean;
+  /** Whether to use lazy instantiation */
+  lazy?: boolean;
+  /** Partial context to apply to all services in bundle */
+  partialContext?: Partial<ServiceContext>;
+  /** Services to exclude from bundle */
+  exclude?: ServiceTokens[];
+  /** Additional validation rules */
+  validateOnCreation?: boolean;
+}
+
+/**
+ * Enhanced Token-Driven Service Bundle Creators - Phase 2
+ * مصانع حزم الخدمات المُحسنة والموجهة بالـ Tokens
+ */
+export class ServiceBundleFactory {
+  private container: ServiceContainer;
+  private cache: Map<string, any> = new Map();
+  private lazyInitGuards: Map<ServiceTokens, () => BaseService> = new Map();
+
+  constructor(container: ServiceContainer) {
+    this.container = container;
+  }
+
+  /**
+   * إنشاء حزمة الخدمات الأساسية - Core Services Bundle
+   * Token-driven with automatic dependency resolution
+   */
+  createCoreBundle(config: ServiceBundleConfig = {}): CoreServiceBundle {
+    const cacheKey = this.generateCacheKey('core', config);
+    
+    if (config.lazy !== false && this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    const tokens: ServiceTokens[] = [
+      ServiceTokens.LOG_SERVICE,
+      ServiceTokens.AUDIT_SERVICE
+    ].filter(token => !config.exclude?.includes(token));
+
+    const bundle = this.createBundleFromTokens<CoreServiceBundle>(tokens, config, {
+      logService: ServiceTokens.LOG_SERVICE,
+      auditService: ServiceTokens.AUDIT_SERVICE
+    });
+
+    this.cache.set(cacheKey, bundle);
+    return bundle;
+  }
+
+  /**
+   * إنشاء حزمة خدمات النظام - System Services Bundle
+   */
+  createSystemBundle(config: ServiceBundleConfig = {}): SystemServiceBundle {
+    const cacheKey = this.generateCacheKey('system', config);
+    
+    if (config.lazy !== false && this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    const tokens: ServiceTokens[] = [
+      ServiceTokens.SYSTEM_SERVICE,
+      ServiceTokens.MONITORING_SERVICE,
+      ServiceTokens.STORAGE_STATS_SERVICE
+    ].filter(token => !config.exclude?.includes(token));
+
+    const bundle = this.createBundleFromTokens<SystemServiceBundle>(tokens, config, {
+      systemService: ServiceTokens.SYSTEM_SERVICE,
+      monitoringService: ServiceTokens.MONITORING_SERVICE,
+      storageStatsService: ServiceTokens.STORAGE_STATS_SERVICE
+    });
+
+    this.cache.set(cacheKey, bundle);
+    return bundle;
+  }
+
+  /**
+   * إنشاء حزمة خدمات الخادم - Server Services Bundle
+   */
+  createServerBundle(config: ServiceBundleConfig = {}): ServerServiceBundle {
+    const cacheKey = this.generateCacheKey('server', config);
+    
+    if (config.lazy !== false && this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    const tokens: ServiceTokens[] = [
+      ServiceTokens.NGINX_SERVICE,
+      ServiceTokens.PM2_SERVICE,
+      ServiceTokens.SSL_SERVICE
+    ].filter(token => !config.exclude?.includes(token));
+
+    const bundle = this.createBundleFromTokens<ServerServiceBundle>(tokens, config, {
+      nginxService: ServiceTokens.NGINX_SERVICE,
+      pm2Service: ServiceTokens.PM2_SERVICE,
+      sslService: ServiceTokens.SSL_SERVICE
+    });
+
+    this.cache.set(cacheKey, bundle);
+    return bundle;
+  }
+
+  /**
+   * إنشاء حزمة خدمات التطبيق - Application Services Bundle
+   */
+  createApplicationBundle(config: ServiceBundleConfig = {}): ApplicationServiceBundle {
+    const cacheKey = this.generateCacheKey('application', config);
+    
+    if (config.lazy !== false && this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    const tokens: ServiceTokens[] = [
+      ServiceTokens.UNIFIED_FILE_SERVICE,
+      ServiceTokens.UNIFIED_NOTIFICATION_SERVICE,
+      ServiceTokens.BACKUP_SERVICE,
+      ServiceTokens.DEPLOYMENT_SERVICE
+    ].filter(token => !config.exclude?.includes(token));
+
+    const bundle = this.createBundleFromTokens<ApplicationServiceBundle>(tokens, config, {
+      unifiedFileService: ServiceTokens.UNIFIED_FILE_SERVICE,
+      unifiedNotificationService: ServiceTokens.UNIFIED_NOTIFICATION_SERVICE,
+      backupService: ServiceTokens.BACKUP_SERVICE,
+      deploymentService: ServiceTokens.DEPLOYMENT_SERVICE
+    });
+
+    this.cache.set(cacheKey, bundle);
+    return bundle;
+  }
+
+  /**
+   * إنشاء حزمة كاملة من جميع الخدمات
+   * Full service bundle with smart dependency resolution
+   */
+  createFullBundle(config: ServiceBundleConfig = {}): FullServiceBundle {
+    const cacheKey = this.generateCacheKey('full', config);
+    
+    if (config.lazy !== false && this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    // إنشاء الحزم الفرعية مع تمرير التكوين
+    const coreBundle = this.createCoreBundle(config);
+    const systemBundle = this.createSystemBundle(config);
+    const serverBundle = this.createServerBundle(config);
+    const applicationBundle = this.createApplicationBundle(config);
+
+    const fullBundle = {
+      ...coreBundle,
+      ...systemBundle,
+      ...serverBundle,
+      ...applicationBundle
+    };
+
+    this.cache.set(cacheKey, fullBundle);
+    return fullBundle;
+  }
+
+  /**
+   * إنشاء حزمة مخصصة من tokens محددة
+   * Custom bundle creation with specific tokens
+   */
+  createCustomBundle<T = Record<string, BaseService>>(
+    tokens: ServiceTokens[], 
+    config: ServiceBundleConfig = {},
+    propertyMap?: Record<string, ServiceTokens>
+  ): T {
+    const cacheKey = this.generateCacheKey('custom', config, tokens);
+    
+    if (config.lazy !== false && this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    const filteredTokens = tokens.filter(token => !config.exclude?.includes(token));
+    const bundle = this.createBundleFromTokens<T>(filteredTokens, config, propertyMap);
+    
+    this.cache.set(cacheKey, bundle);
+    return bundle;
+  }
+
+  /**
+   * Core bundle creation logic with token resolution
+   * الدالة الأساسية لإنشاء الحزم من الـ tokens
+   */
+  private createBundleFromTokens<T>(
+    tokens: ServiceTokens[], 
+    config: ServiceBundleConfig,
+    propertyMap?: Record<string, ServiceTokens>
+  ): T {
+    const bundle: any = {};
+    
+    // تطبيق السياق الجزئي إذا تم تمريره
+    if (config.partialContext) {
+      this.container.updateContext(config.partialContext);
+    }
+
+    for (const token of tokens) {
+      try {
+        // تحديد اسم الخاصية
+        const propertyName = this.getPropertyNameForToken(token, propertyMap);
+        
+        if (config.lazy) {
+          // Lazy instantiation guard
+          bundle[propertyName] = this.createLazyGetter(token);
+        } else {
+          // Immediate resolution
+          const service = this.container.resolveByToken(token);
+          
+          if (config.validateOnCreation) {
+            this.validateServiceInstance(service, token);
+          }
+          
+          bundle[propertyName] = service;
+        }
+        
+      } catch (error) {
+        if (ServiceError.isServiceError(error)) {
+          throw new ServiceError(
+            `Failed to create bundle: ${error.message}`,
+            error.code,
+            error.statusCode,
+            { ...error.details, bundleToken: token, bundleTokens: tokens }
+          );
+        }
+        
+        throw ServiceError.internal(
+          `Bundle creation failed for token ${token}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          { token, bundleTokens: tokens, originalError: error }
+        );
+      }
+    }
+
+    return bundle as T;
+  }
+
+  /**
+   * إنشاء lazy getter للخدمة
+   */
+  private createLazyGetter(token: ServiceTokens): any {
+    let service: BaseService | null = null;
+    
+    return new Proxy({}, {
+      get: (target, prop) => {
+        if (!service) {
+          service = this.container.resolveByToken(token);
+        }
+        return (service as any)[prop];
+      },
+      
+      set: (target, prop, value) => {
+        if (!service) {
+          service = this.container.resolveByToken(token);
+        }
+        (service as any)[prop] = value;
+        return true;
+      }
+    });
+  }
+
+  /**
+   * تحديد اسم الخاصية للtoken
+   */
+  private getPropertyNameForToken(token: ServiceTokens, propertyMap?: Record<string, ServiceTokens>): string {
+    if (propertyMap) {
+      const entry = Object.entries(propertyMap).find(([, mappedToken]) => mappedToken === token);
+      if (entry) {
+        return entry[0];
+      }
+    }
+    
+    // تحويل من CamelCase إلى camelCase
+    return token.charAt(0).toLowerCase() + token.slice(1);
+  }
+
+  /**
+   * التحقق من صحة instance الخدمة
+   */
+  private validateServiceInstance(service: any, token: ServiceTokens): void {
+    if (!service) {
+      throw ServiceError.internal(`Service instance is null for token ${token}`);
+    }
+    
+    if (!(service instanceof BaseService)) {
+      throw ServiceError.internal(
+        `Service instance is not a BaseService for token ${token}`,
+        { serviceType: typeof service, expectedType: 'BaseService' }
+      );
+    }
+    
+    // التحقق من وجود الدوال الأساسية
+    if (typeof service.setContext !== 'function') {
+      throw ServiceError.internal(
+        `Service instance missing required methods for token ${token}`,
+        { missingMethods: ['setContext'] }
+      );
+    }
+  }
+
+  /**
+   * إنشاء cache key فريد للحزمة
+   */
+  private generateCacheKey(bundleType: string, config: ServiceBundleConfig, tokens?: ServiceTokens[]): string {
+    const configHash = JSON.stringify({
+      lazy: config.lazy,
+      exclude: config.exclude?.sort(),
+      partialContext: config.partialContext,
+      validateOnCreation: config.validateOnCreation
+    });
+    
+    const tokensHash = tokens ? JSON.stringify(tokens.sort()) : '';
+    return `${bundleType}:${Buffer.from(configHash + tokensHash).toString('base64').slice(0, 16)}`;
+  }
+
+  /**
+   * مسح الcache
+   */
+  clearCache(): void {
+    this.cache.clear();
+    this.lazyInitGuards.clear();
+  }
+
+  /**
+   * الحصول على معلومات الcache
+   */
+  getCacheInfo(): { size: number; keys: string[] } {
+    return {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys())
+    };
+  }
+}
+
+/**
+ * Enhanced Service Helpers - Phase 2
+ * مساعدات الخدمات المُحسنة مع دعم Token-driven bundles
  */
 export const ServiceHelpers = {
   /**
-   * إنشاء حزمة خدمات أساسية (Core Services)
+   * إنشاء مصنع حزم خدمات جديد
    */
-  createCoreServices(container: ServiceContainer): {
-    systemService: SystemService;
-    logService: LogService;
-  } {
-    return {
-      systemService: container.getSystemService(),
-      logService: container.getLogService()
-    };
+  createBundleFactory(container: ServiceContainer): ServiceBundleFactory {
+    return new ServiceBundleFactory(container);
   },
 
   /**
-   * إنشاء حزمة خدمات البنية التحتية
+   * إنشاء حزمة خدمات أساسية (Legacy support - الاستخدام المباشر)
+   * @deprecated استخدم ServiceBundleFactory.createCoreBundle() بدلاً من ذلك
    */
-  createInfrastructureServices(container: ServiceContainer): {
-    fileService: UnifiedFileService;
-    monitoringService: MonitoringService;
-    pm2Service: PM2Service;
-  } {
-    return {
-      fileService: container.getFileService(),
-      monitoringService: container.getMonitoringService(),
-      pm2Service: container.getPM2Service()
-    };
+  createCoreServices(container: ServiceContainer): CoreServiceBundle {
+    const factory = new ServiceBundleFactory(container);
+    return factory.createCoreBundle();
   },
 
   /**
-   * إنشاء حزمة خدمات عمليات العمل
+   * إنشاء حزمة خدمات النظام (Legacy support)
+   * @deprecated استخدم ServiceBundleFactory.createSystemBundle() بدلاً من ذلك
    */
-  createBusinessServices(container: ServiceContainer): {
-    notificationService: UnifiedNotificationService;
-    auditService: AuditService;
-    backupService: BackupService;
-    deploymentService: DeploymentService;
-  } {
-    return {
-      notificationService: container.getNotificationService(),
-      auditService: container.resolveByToken<AuditService>(ServiceTokens.AUDIT_SERVICE),
-      backupService: container.resolveByToken<BackupService>(ServiceTokens.BACKUP_SERVICE),
-      deploymentService: container.resolveByToken<DeploymentService>(ServiceTokens.DEPLOYMENT_SERVICE)
-    };
+  createSystemServices(container: ServiceContainer): SystemServiceBundle {
+    const factory = new ServiceBundleFactory(container);
+    return factory.createSystemBundle();
+  },
+
+  /**
+   * إنشاء حزمة مخصصة بسيطة
+   */
+  createServicesFromTokens<T = Record<string, BaseService>>(
+    container: ServiceContainer,
+    tokens: ServiceTokens[],
+    config?: ServiceBundleConfig
+  ): T {
+    const factory = new ServiceBundleFactory(container);
+    return factory.createCustomBundle<T>(tokens, config);
+  },
+
+  /**
+   * Utility لحل خدمة واحدة مع معالجة الأخطاء
+   */
+  resolveServiceSafely<T extends BaseService>(
+    container: ServiceContainer,
+    token: ServiceTokens,
+    fallback?: T
+  ): T | null {
+    try {
+      return container.resolveByToken<T>(token);
+    } catch (error) {
+      if (fallback) {
+        return fallback;
+      }
+      
+      // تسجيل الخطأ والإرجاع null
+      console.warn(`Failed to resolve service ${token}:`, error instanceof Error ? error.message : error);
+      return null;
+    }
   }
 };
 
