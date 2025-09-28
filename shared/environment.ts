@@ -92,6 +92,10 @@ function detectServerEnvironment(): {
                           processEnv.SERVER_TYPE === 'external' ||
                           processEnv.PWD?.includes('/home/administrator/');
 
+  // إذا كان المسار الحالي يحتوي على /home/administrator/ فهو بالتأكيد ليس Replit
+  const isDefinitelyExternal = processEnv.PWD?.includes('/home/administrator/') ||
+                              process.cwd().includes('/home/administrator/');
+
   const nodeEnv = processEnv.NODE_ENV || 'development';
   const isProduction = nodeEnv === 'production';
   const isDevelopment = nodeEnv === 'development';
@@ -103,8 +107,8 @@ function detectServerEnvironment(): {
   let serverType: 'replit' | 'external' | 'local' = 'local';
   let isReplit = false;
 
-  // إذا كان المستخدم يريد محاكاة سيرفر خارجي، استخدم إعدادات external حتى لو كنا في Replit
-  if (forceExternalServer) {
+  // إذا كان المسار الحالي يحتوي على /home/administrator/ فهو بالتأكيد خارجي
+  if (isDefinitelyExternal || forceExternalServer) {
     serverType = 'external';
     isReplit = false;
   } else if (isExternalServer || isCustomDomain) {

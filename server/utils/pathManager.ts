@@ -34,7 +34,10 @@ export class PathManager {
       console.log(`✅ Created path: ${resolvedPath}`);
       return resolvedPath;
     } catch (error) {
-      console.warn(`⚠️ Could not create directory ${resolvedPath}:`, error);
+      // فقط اطبع الخطأ إذا كنا في بيئة Replit الفعلية
+      if (ENV_CONFIG.isReplit && ENV_CONFIG.name === 'replit') {
+        console.warn(`⚠️ Could not create directory ${resolvedPath}:`, error);
+      }
 
       // استخدام fallback إذا تم توفيره
       if (fallback) {
@@ -46,7 +49,10 @@ export class PathManager {
           console.log(`✅ Created fallback path: ${resolvedFallback}`);
           return resolvedFallback;
         } catch (fallbackError) {
-          console.warn(`⚠️ Fallback also failed ${resolvedFallback}:`, fallbackError);
+          // فقط اطبع الخطأ إذا كنا في بيئة Replit الفعلية
+          if (ENV_CONFIG.isReplit && ENV_CONFIG.name === 'replit') {
+            console.warn(`⚠️ Fallback also failed ${resolvedFallback}:`, fallbackError);
+          }
         }
       }
 

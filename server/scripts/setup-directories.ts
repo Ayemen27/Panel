@@ -34,8 +34,6 @@ const REPLIT_SPECIFIC_DIRECTORIES = [
 ];
 
 async function setupDirectories() {
-  console.log('🏗️ Setting up required directories for Replit environment...');
-  
   // اكتشاف البيئة المحسن
   const isReplit = !!(
     process.env.REPL_ID ||
@@ -43,9 +41,15 @@ async function setupDirectories() {
     process.env.REPL_SLUG ||
     process.env.REPLIT_CLUSTER ||
     process.env.REPLIT_ENVIRONMENT ||
-    process.env.PWD?.startsWith('/home/runner/') ||
-    process.env.HOME === '/home/runner'
+    (process.env.PWD?.startsWith('/home/runner/') && !process.env.PWD?.includes('/home/administrator/')) ||
+    (process.env.HOME === '/home/runner' && !process.cwd().includes('/home/administrator/'))
   );
+
+  if (isReplit) {
+    console.log('🏗️ Setting up required directories for Replit environment...');
+  } else {
+    console.log('🏗️ Setting up required directories for external environment...');
+  }
   
   const isVPS = process.env.HOSTNAME?.includes('93.127.142.144') || 
                process.env.HOSTNAME?.includes('vps-fbaz') ||
@@ -127,7 +131,10 @@ async function createDirectory(dirPath: string, displayName: string) {
     }
     
   } catch (error: unknown) {
-    console.error(`❌ Failed to create directory ${displayName} (${dirPath}):`, error);
+    // فقط اطبع الخطأ إذا كنا في بيئة Replit الفعلية
+    if (isReplit && ENV_CONFIG.name === 'replit') {
+      console.error(`❌ Failed to create directory ${displayName} (${dirPath}):`, error);
+    }
     
     // إذا فشل إنشاء المجلد، جرب مسار بديل
     if (error && typeof error === 'object' && 'code' in error && error.code === 'EACCES') {
