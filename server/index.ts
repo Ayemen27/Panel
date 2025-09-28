@@ -133,41 +133,68 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified for Replit
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
+  let port = parseInt(process.env.PORT || '5001', 10);
   console.log(`🔧 Server will start on port: ${port}`);
 
-  // Check if port is available
-  const net = await import('net');
-  const checkPort = (port: number): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const tester = net.createServer()
-        .once('error', () => resolve(false))
-        .once('listening', () => {
-          tester.close();
-          resolve(true);
-        })
-        .listen(port, '0.0.0.0');
+  // سيتم معالجة port conflicts في tryStartServer function
+
+  // معالجة أخطاء بدء السيرفر
+  const startServer = (targetPort: number) => {
+    return new Promise<void>((resolve, reject) => {
+      // تسجيل error handler قبل بدء الاستماع
+      server.once('error', (error: any) => {
+        log(`❌ Server error on port ${targetPort}: ${error.message || error}`);
+        if (error.code === 'EADDRINUSE') {
+          log(`❌ Port ${targetPort} is already in use`);
+          reject(new Error(`Port ${targetPort} is already in use`));
+        } else {
+          reject(error);
+        }
+      });
+      
+      const serverInstance = server.listen(targetPort, "0.0.0.0", () => {
+        log(`Server listening on all interfaces at port ${targetPort}`);
+        log(`WebSocket server available at ws://localhost:${targetPort}/ws`);
+        resolve();
+      });
     });
   };
 
-  const isPortAvailable = await checkPort(port);
-  if (!isPortAvailable) {
-    log(`⚠️ Port ${port} is already in use. Attempting to kill existing process...`);
+  // محاولة بدء السيرفر مع fallback للمنافذ البديلة
+  const tryStartServer = async () => {
+    log(`🚀 Starting server on port ${port}...`);
     try {
-      const { exec } = await import('child_process');
-      const { promisify } = await import('util');
-      const execAsync = promisify(exec);
-      await execAsync(`pkill -f "node.*${port}"`);
-      log(`✅ Killed existing process on port ${port}`);
-      // Wait a moment for the port to be freed
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await startServer(port);
     } catch (error) {
-      log(`❌ Failed to kill existing process: ${error}`);
+      log(`❌ Server failed to start on port ${port}: ${error}`);
+      // إذا كنا في Replit وفشل المنفذ الأساسي، جرب منافذ بديلة
+      if (ENV_CONFIG.isReplit) {
+        const fallbackPorts = [5001, 5002, 8080, 8000, 3000];
+        let serverStarted = false;
+        
+        for (const fallbackPort of fallbackPorts) {
+          try {
+            log(`🚨 Attempting fallback to port ${fallbackPort}`);
+            await startServer(fallbackPort);
+            serverStarted = true;
+            break;
+          } catch (fallbackError) {
+            log(`❌ Fallback port ${fallbackPort} also failed`);
+          }
+        }
+        
+        if (!serverStarted) {
+          log(`💥 All ports failed, server cannot start`);
+          process.exit(1);
+        }
+      } else {
+        log(`💥 Server failed to start: ${error}`);
+        process.exit(1);
+      }
     }
-  }
+  };
 
-  server.listen(port, "0.0.0.0", () => {
-    log(`Server listening on all interfaces at port ${port}`);
-    log(`WebSocket server available at ws://localhost:${port}/ws`);
-  });
+  log(`🔄 About to call tryStartServer...`);
+  await tryStartServer();
+  log(`✅ Server startup process completed`);
 })();
