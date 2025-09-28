@@ -10,11 +10,6 @@ import {
   insertSslCertificateSchema,
   insertNginxConfigSchema,
   insertNotificationSchema,
-  insertFileSchema,
-  insertFilePermissionSchema,
-  insertFileLockSchema,
-  insertFileBackupSchema,
-  insertAllowedPathSchema,
   insertFrontendErrorSchema,
   insertUserActivitySchema
 } from "@shared/schema";
@@ -25,7 +20,7 @@ import { sslService } from "./services/sslService";
 import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
 // Import services - النظام الموحد الوحيد
-import { unifiedFileService } from './services/unifiedFileService';
+// import { unifiedFileService } from './services/unifiedFileService'; // This import is removed as it's now handled by unifiedFileRoutes
 import { db } from "./db";
 import { files } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -40,9 +35,6 @@ import unifiedFileRoutes from './routes/unifiedFileRoutes';
 
 // 🛡️ SECURITY: WebSocket clients store - simplified but secure
 const wsClients = new Set<WebSocket>();
-
-// Unified File Service instance - النظام الموحد الوحيد
-let unifiedFileService: UnifiedFileService;
 
 // Unified CORS configuration for both HTTP and WebSocket
 function setupCORS(app: Express) {
@@ -138,10 +130,10 @@ export function broadcast(message: any) {
 export async function registerRoutes(app: Express): Promise<Server> {
   const server = createServer(app);
 
-  // Initialize UnifiedFileService after storage is ready
-  if (!unifiedFileService) {
-    unifiedFileService = new UnifiedFileService(storage);
-  }
+  // Initialize UnifiedFileService - This is now handled within unifiedFileRoutes
+  // if (!unifiedFileService) {
+  //   unifiedFileService = new UnifiedFileService(storage);
+  // }
 
   // Setup CORS first
   setupCORS(app);
@@ -802,24 +794,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ message: "Application started successfully" });
     } catch (error) {
-        console.error("Error starting application:", error);
+      console.error("Error starting application:", error);
 
-        // Update application status to error
-        await storage.updateApplication(id, { status: 'error' });
+      // Update application status to error
+      await storage.updateApplication(id, { status: 'error' });
 
-        // Provide specific error messages based on error type
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      // Provide specific error messages based on error type
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-        // Log detailed error for debugging
-        if (application) {
-          console.error(`Application "${application.name}" failed to start:`, {
-            path: application.path,
-            command: application.command,
-            error: errorMessage
-          });
-        }
+      // Log detailed error for debugging
+      if (application) {
+        console.error(`Application "${application.name}" failed to start:`, {
+          path: application.path,
+          command: application.command,
+          error: errorMessage
+        });
+      }
 
-        if (errorMessage.includes('PM2') || errorMessage.includes('pm2') || errorMessage.includes('Permission denied')) {
+      if (errorMessage.includes('PM2') || errorMessage.includes('pm2') || errorMessage.includes('Permission denied')) {
         res.status(503).json({
           message: "Process manager configuration error",
           details: errorMessage,
@@ -859,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           troubleshooting: "Check application logs for more details"
         });
       }
-      }
+    }
   });
 
   app.post('/api/applications/:id/stop', isAuthenticated, async (req: AuthenticatedRequest, res) => {
@@ -1163,666 +1155,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // FILE MANAGEMENT API ROUTES
   // ==========================================
 
-  // File CRUD Operations
-  app.get('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const {parentId, type} = req.query;
+  // File CRUD Operations - These are now handled by unifiedFileRoutes
+  // app.get('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/:id/content', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.put('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/:id/content', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.delete('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/search', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/trash', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/trash/:trashId/restore', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.delete('/api/files/trash/:trashId', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => { ... });
+  // app.delete('/api/files/trash', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/:id/backups', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/:id/backup', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/backups/:backupId/restore', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/:id/permissions', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/:id/permissions', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.delete('/api/files/permissions/:permissionId', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/:id/locks', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/:id/lock', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.delete('/api/files/:id/lock', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/audit', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/:id/copy', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/:id/duplicate', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.post('/api/files/:id/share', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
+  // app.get('/api/files/:id/download', async (req: Request, res) => { ... });
+  // app.get('/api/files/:folderId?', isAuthenticated, async (req: AuthenticatedRequest, res) => { ... });
 
-      const files = await storage.getFiles(
-        parentId as string || null,
-        userId
-      );
-
-      res.json(files);
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      res.status(500).json({ message: "Failed to fetch files" });
-    }
-  });
-
-  app.get('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      const file = await storage.getFile(id, userId);
-
-      if (!file) {
-        return res.status(404).json({ message: "File not found" });
-      }
-
-      res.json(file);
-    } catch (error) {
-      console.error("Error fetching file:", error);
-      res.status(500).json({ message: "Failed to fetch file" });
-    }
-  });
-
-  app.get('/api/files/:id/content', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      // Check if file exists and user has permission
-      const file = await storage.getFile(id, userId);
-      if (!file) {
-        return res.status(404).json({ message: "File not found" });
-      }
-
-      // Check read permission
-      const hasPermission = await storage.checkFilePermission(id, userId, 'read');
-      if (!hasPermission) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Use UnifiedFileService to read file content safely
-      const result = await unifiedFileService.readFileContent(file.path, userId);
-
-      if (!result.success) {
-        return res.status(400).json({ message: result.message });
-      }
-
-      res.json({
-        content: result.data.content,
-        mimeType: result.data.mimeType,
-        size: result.data.size
-      });
-    } catch (error) {
-      console.error("Error reading file content:", error);
-      res.status(500).json({ message: "Failed to read file content" });
-    }
-  });
-
-  app.post('/api/files', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const fileData = insertFileSchema.parse({
-        ...req.body,
-        ownerId: userId
-      });
-
-      const file = await storage.createFile(fileData);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: file.id,
-        action: 'create',
-        userId,
-        details: `Created ${file.type}: ${file.name}`,
-        newValue: { name: file.name, type: file.type, path: file.path }
-      });
-
-      res.status(201).json(file);
-    } catch (error) {
-      console.error("Error creating file:", error);
-      res.status(400).json({ message: "Failed to create file" });
-    }
-  });
-
-  app.put('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-      const updates = req.body;
-
-      // Get current file for audit log
-      const currentFile = await storage.getFile(id, userId);
-      if (!currentFile) {
-        return res.status(404).json({ message: "File not found" });
-      }
-
-      const updatedFile = await storage.updateFile(id, updates, userId);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: id,
-        action: 'update',
-        userId,
-        details: `Updated file: ${updatedFile.name}`,
-        oldValue: currentFile,
-        newValue: updatedFile
-      });
-
-      res.json(updatedFile);
-    } catch (error) {
-      console.error("Error updating file:", error);
-      res.status(400).json({ message: "Failed to update file" });
-    }
-  });
-
-  app.post('/api/files/:id/content', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-      const { content, backup = true, saveAction = 'none' } = req.body;
-
-      const file = await storage.getFile(id, userId);
-      if (!file) {
-        return res.status(404).json({ message: "File not found" });
-      }
-
-      // Check write permission
-      const hasPermission = await storage.checkFilePermission(id, userId, 'write');
-      if (!hasPermission) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Create backup if requested
-      if (backup) {
-        await storage.createBackup(id, content, userId);
-      }
-
-      // Use UnifiedFileService to write file safely
-      const result = await unifiedFileService.writeFile(file.path, content, userId);
-
-      if (!result.success) {
-        return res.status(400).json({ message: result.message });
-      }
-
-      // Update file metadata
-      await storage.updateFile(id, {
-        size: Buffer.byteLength(content, 'utf8'),
-        checksum: result.data?.checksum
-      }, userId);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: id,
-        action: 'update',
-        userId,
-        details: `Updated file content: ${file.name}`,
-        newValue: { size: Buffer.byteLength(content, 'utf8') }
-      });
-
-      res.json({
-        message: "File saved successfully",
-        backup: backup ? "created" : "skipped",
-        checksum: result.data?.checksum
-      });
-    } catch (error) {
-      console.error("Error saving file content:", error);
-      res.status(500).json({ message: "Failed to save file content" });
-    }
-  });
-
-  app.delete('/api/files/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-      const { permanent = false } = req.query;
-
-      if (permanent === 'true') {
-        // Permanent delete - only for admins
-        const user = await storage.getUser(userId);
-        if (user?.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required for permanent delete" });
-        }
-
-        await storage.deleteFile(id, userId);
-
-        res.json({ message: "File permanently deleted" });
-      } else {
-        // Move to trash
-        const trashItem = await storage.moveToTrash(id, userId);
-
-        res.json({
-          message: "File moved to trash",
-          trashId: trashItem.id
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting file:", error);
-      res.status(500).json({ message: "Failed to delete file" });
-    }
-  });
-
-  // Search and Filter
-  app.get('/api/files/search', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { q, type, tags } = req.query;
-
-      const filters: any = {};
-      if (type) filters.type = type as 'file' | 'folder';
-      if (tags) filters.tags = (tags as string).split(',');
-
-      const files = await storage.searchFiles(userId, q as string || '', filters);
-
-      res.json(files);
-    } catch (error) {
-      console.error("Error searching files:", error);
-      res.status(500).json({ message: "Failed to search files" });
-    }
-  });
-
-  // Trash Operations
-  app.get('/api/files/trash', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const trashFiles = await storage.getTrashFiles(userId);
-
-      res.json(trashFiles);
-    } catch (error) {
-      console.error("Error fetching trash files:", error);
-      res.status(500).json({ message: "Failed to fetch trash files" });
-    }
-  });
-
-  app.post('/api/files/trash/:trashId/restore', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { trashId } = req.params;
-
-      const restoredFile = await storage.restoreFromTrash(trashId, userId);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: restoredFile.id,
-        action: 'restore',
-        userId,
-        details: `Restored from trash: ${restoredFile.name}`
-      });
-
-      res.json({
-        message: "File restored successfully",
-        file: restoredFile
-      });
-    } catch (error) {
-      console.error("Error restoring file:", error);
-      res.status(500).json({ message: "Failed to restore file" });
-    }
-  });
-
-  app.delete('/api/files/trash/:trashId', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { trashId } = req.params;
-
-      await storage.permanentDelete(trashId, userId);
-
-      res.json({ message: "File permanently deleted" });
-    } catch (error) {
-      console.error("Error permanently deleting file:", error);
-      res.status(500).json({ message: "Failed to permanently delete file" });
-    }
-  });
-
-  app.delete('/api/files/trash', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-
-      await storage.emptyTrash(userId);
-
-      res.json({ message: "Trash emptied successfully" });
-    } catch (error) {
-      console.error("Error emptying trash:", error);
-      res.status(500).json({ message: "Failed to empty trash" });
-    }
-  });
-
-  // Backup Operations
-  app.get('/api/files/:id/backups', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      const backups = await storage.getFileBackups(id, userId);
-
-      res.json(backups);
-    } catch (error) {
-      console.error("Error fetching file backups:", error);
-      res.status(500).json({ message: "Failed to fetch file backups" });
-    }
-  });
-
-  app.post('/api/files/:id/backup', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-      const { content } = req.body;
-
-      const backup = await storage.createBackup(id, content, userId);
-
-      res.status(201).json(backup);
-    } catch (error) {
-      console.error("Error creating backup:", error);
-      res.status(500).json({ message: "Failed to create backup" });
-    }
-  });
-
-  app.post('/api/files/backups/:backupId/restore', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { backupId } = req.params;
-
-      const restoredFile = await storage.restoreBackup(backupId, userId);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: restoredFile.id,
-        action: 'restore',
-        userId,
-        details: `Restored from backup: ${restoredFile.name}`
-      });
-
-      res.json({
-        message: "File restored from backup successfully",
-        file: restoredFile
-      });
-    } catch (error) {
-      console.error("Error restoring from backup:", error);
-      res.status(500).json({ message: "Failed to restore from backup" });
-    }
-  });
-
-  // Permission Operations
-  app.get('/api/files/:id/permissions', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      const permissions = await storage.getFilePermissions(id, userId);
-
-      res.json(permissions);
-    } catch (error) {
-      console.error("Error fetching file permissions:", error);
-      res.status(500).json({ message: "Failed to fetch file permissions" });
-    }
-  });
-
-  app.post('/api/files/:id/permissions', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-      const permissionData = insertFilePermissionSchema.parse({
-        ...req.body,
-        fileId: id,
-        grantedBy: userId
-      });
-
-      const permission = await storage.setFilePermission(permissionData, userId);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: id,
-        action: 'share',
-        userId,
-        details: `Granted ${permission.permission} permission`,
-        newValue: permission
-      });
-
-      res.status(201).json(permission);
-    } catch (error) {
-      console.error("Error setting file permission:", error);
-      res.status(400).json({ message: "Failed to set file permission" });
-    }
-  });
-
-  app.delete('/api/files/permissions/:permissionId', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { permissionId } = req.params;
-
-      await storage.removeFilePermission(permissionId, userId);
-
-      res.json({ message: "Permission removed successfully" });
-    } catch (error) {
-      console.error("Error removing file permission:", error);
-      res.status(500).json({ message: "Failed to remove file permission" });
-    }
-  });
-
-  // Lock Operations
-  app.get('/api/files/:id/locks', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const { id } = req.params;
-
-      const locks = await storage.getFileLocks(id);
-
-      res.json(locks);
-    } catch (error) {
-      console.error("Error fetching file locks:", error);
-      res.status(500).json({ message: "Failed to fetch file locks" });
-    }
-  });
-
-  app.post('/api/files/:id/lock', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-      const { lockType = 'write', ttl } = req.body;
-
-      const lock = await storage.lockFile(id, userId, lockType, ttl);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: id,
-        action: 'access',
-        userId,
-        details: `Applied ${lockType} lock`,
-        newValue: lock
-      });
-
-      res.status(201).json(lock);
-    } catch (error) {
-      console.error("Error locking file:", error);
-      res.status(400).json({ message: "Failed to lock file" });
-    }
-  });
-
-  app.delete('/api/files/:id/lock', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      await storage.unlockFile(id, userId);
-
-      // Create audit log
-      await storage.createAuditLog({
-        fileId: id,
-        action: 'access',
-        userId,
-        details: 'Removed file lock'
-      });
-
-      res.json({ message: "File unlocked successfully" });
-    } catch (error) {
-      console.error("Error unlocking file:", error);
-      res.status(500).json({ message: "Failed to unlock file" });
-    }
-  });
-
-  // Audit Log Operations
-  app.get('/api/files/audit', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { fileId, limit } = req.query;
-
-      const logs = await storage.getFileAuditLogs(
-        fileId as string,
-        userId,
-        parseInt(limit as string) || 50
-      );
-
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching audit logs:", error);
-      res.status(500).json({ message: "Failed to fetch audit logs" });
-    }
-  });
-
-  // Copy and Share Operations
-  app.post('/api/files/:id/copy', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      // Validate request body
-      const copySchema = z.object({
-        destinationFolderId: z.string().nullable().optional(),
-        name: z.string().min(1).max(255).optional()
-      });
-
-      const { destinationFolderId, name } = copySchema.parse(req.body);
-
-      const copiedFile = await storage.copyFile(id, destinationFolderId || null, userId, name);
-
-      res.status(201).json(copiedFile);
-    } catch (error) {
-      console.error("Error copying file:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to copy file" });
-    }
-  });
-
-  app.post('/api/files/:id/duplicate', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      const duplicatedFile = await storage.duplicateFile(id, userId);
-
-      res.status(201).json(duplicatedFile);
-    } catch (error) {
-      console.error("Error duplicating file:", error);
-      res.status(400).json({ message: "Failed to duplicate file" });
-    }
-  });
-
-  app.post('/api/files/:id/share', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      const { id } = req.params;
-
-      // Validate request body
-      const shareSchema = z.object({
-        isPublic: z.boolean()
-      });
-
-      const { isPublic } = shareSchema.parse(req.body);
-
-      const sharedFile = await storage.shareFile(id, isPublic, userId);
-
-      res.json({
-        file: sharedFile,
-        publicUrl: isPublic ? storage.getPublicFileUrl(id) : null
-      });
-    } catch (error) {
-      console.error("Error sharing file:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to share file" });
-    }
-  });
-
-  app.get('/api/files/:id/download', async (req: Request, res) => {
-    try {
-      const { id } = req.params;
-      const { public: isPublicRequest } = req.query;
-      const isPublicDownload = isPublicRequest === 'true';
-
-      // For public downloads, find file without user filter
-      let file;
-      let userId = null;
-
-      if (isPublicDownload) {
-        // Get file without user restriction for public downloads
-        const [publicFile] = await db
-          .select()
-          .from(files)
-          .where(and(eq(files.id, id), eq(files.isPublic, true)));
-
-        if (!publicFile) {
-          return res.status(404).json({ message: "Public file not found" });
-        }
-        file = publicFile;
-      } else {
-        // Authenticated download - require login
-        const authenticatedReq = req as AuthenticatedRequest;
-        if (!authenticatedReq.user) {
-          return res.status(401).json({ message: "Authentication required" });
-        }
-
-        userId = getUserId(authenticatedReq)!;
-        file = await storage.getFile(id, userId);
-
-        if (!file) {
-          return res.status(404).json({ message: "File not found" });
-        }
-
-        // Check permissions for authenticated downloads
-        const hasAccess = await storage.checkFilePermission(id, userId, 'read');
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied" });
-        }
-      }
-
-      // Use UnifiedFileService to read file
-      const result = await unifiedFileService.readFileContent(file.path, userId || 'public');
-      if (!result.success) {
-        return res.status(404).json({ message: result.message });
-      }
-
-      // Set appropriate headers for download
-      res.setHeader('Content-Disposition', `attachment; filename="${file.name}"`);
-      res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
-
-      // Handle file content - if it's binary, send as buffer
-      const content = result.data?.content || '';
-      if (file.mimeType && !file.mimeType.startsWith('text/') && file.mimeType !== 'application/json') {
-        // For binary files, create a buffer
-        res.setHeader('Content-Length', (file.size || 0).toString());
-        res.send(Buffer.from(content, 'binary'));
-      } else {
-        // For text files, send as string
-        res.send(content);
-      }
-
-      // Create audit log for authenticated downloads
-      if (userId) {
-        await storage.createAuditLog({
-          fileId: id,
-          action: 'access',
-          userId,
-          details: `Downloaded file: ${file.name}`
-        });
-      }
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      res.status(500).json({ message: "Failed to download file" });
-    }
-  });
-
-  // Get files and folders in current directory - placed last to avoid route conflicts
-  app.get('/api/files/:folderId?', isAuthenticated, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req)!;
-      // Support both query param and path param for folder ID
-      const folderId = req.params.folderId || req.query.folderId || null;
-
-      // Convert 'root' or 'null' string to actual null
-      const actualFolderId = (folderId === 'root' || folderId === 'null') ? null : folderId as string || null;
-
-      // Get files in the specified folder (or root if no folderId)
-      const rawFiles = await storage.getFiles(actualFolderId, userId);
-
-      // Normalize data to match FileItem interface from frontend
-      const files = rawFiles.map(file => ({
-        ...file,
-        size: file.size || 0, // Ensure size is never null
-        createdAt: file.createdAt instanceof Date ? file.createdAt.toISOString() : (file.createdAt || new Date().toISOString()),
-        updatedAt: file.updatedAt instanceof Date ? file.updatedAt.toISOString() : (file.updatedAt || new Date().toISOString()),
-        tags: file.tags || [], // Ensure tags is always an array
-        metadata: file.metadata || {}, // Ensure metadata is always an object
-        isPublic: file.isPublic || false, // Ensure boolean
-        checksum: file.checksum || undefined, // Convert null to undefined
-        mimeType: file.mimeType || undefined, // Convert null to undefined
-      }));
-
-      res.json(files);
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      res.status(500).json({ message: "Failed to fetch files" });
-    }
-  });
 
   // System logs routes
   app.get('/api/logs', isAuthenticated, async (req: AuthenticatedRequest, res) => {
@@ -2070,7 +1431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     verifyClient: (info: any) => {
       // Verify Origin for security
       const origin = info.origin;
-      const url = new URL(info.req.url, `http://${info.req.headers.host}`);
+      const url = new URL(info.req.url || '', `http://${info.req.headers.host}`);
       const token = url.searchParams.get('token');
 
       console.log('🔍 WebSocket connection attempt:');
@@ -2470,6 +1831,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
+
       const result = await unifiedFileService.listDirectory(dirPath, userId);
 
       if (!result.success) {
@@ -2507,6 +1871,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'File path parameter is required'
         });
       }
+
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
 
       const result = await unifiedFileService.readFileContent(filePath, userId);
 
@@ -2554,6 +1921,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
+
       const result = await unifiedFileService.writeFile(filePath, content, userId);
 
       if (!result.success) {
@@ -2591,6 +1961,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'Directory path is required'
         });
       }
+
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
 
       const result = await unifiedFileService.createDirectory(dirPath, userId, { recursive });
 
@@ -2630,6 +2003,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
+
       const result = await unifiedFileService.deleteItem(itemPath, userId);
 
       if (!result.success) {
@@ -2667,6 +2043,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'Old path and new path are required'
         });
       }
+
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
 
       const result = await unifiedFileService.renameItem(oldPath, newPath, userId);
 
@@ -2706,6 +2085,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
+
       const result = await unifiedFileService.copyItem(sourcePath, destinationPath, userId);
 
       if (!result.success) {
@@ -2744,6 +2126,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Ensure UnifiedFileService is imported and initialized correctly before use
+      const { unifiedFileService } = await import('./services/unifiedFileService');
+
       const result = await unifiedFileService.getFileInfo(itemPath, userId);
 
       if (!result.success) {
@@ -2767,7 +2152,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
 
 
   // ===================================
