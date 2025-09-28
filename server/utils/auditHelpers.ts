@@ -133,7 +133,7 @@ export class AuditHelpers {
       for (const endpoint of apiEndpoints) {
         try {
           const { stdout } = await execAsync(
-            `curl -w "%{time_total}" -s -o /dev/null http://localhost:6000${endpoint}`
+            `curl -w "%{time_total}" -s -o /dev/null http://localhost:5000${endpoint}`
           );
           result.apiResponseTimes[endpoint] = parseFloat(stdout) * 1000;
         } catch (error) {

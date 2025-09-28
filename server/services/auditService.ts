@@ -181,7 +181,7 @@ export class AuditService extends BaseService {
       try {
         const start = Date.now();
         const { stdout, stderr } = await execAsync(
-          `curl -s -w "%{http_code}\\n%{time_total}\\n" -o /dev/null http://localhost:6000${endpoint.path}`
+          `curl -s -w "%{http_code}\\n%{time_total}\\n" -o /dev/null http://localhost:5000${endpoint.path}`
         );
         const responseTime = Date.now() - start;
 
@@ -198,7 +198,7 @@ export class AuditService extends BaseService {
             severity: 'High',
             category: 'Functionality',
             description: `الـ API يرجع status code غير متوقع: ${statusCode}`,
-            reproductionSteps: [`curl -i http://localhost:6000${endpoint.path}`],
+            reproductionSteps: [`curl -i http://localhost:5000${endpoint.path}`],
             affectedFiles: ['server/routes.ts'],
             suggestedFix: 'مراجعة منطق الـ API وإصلاح المشكلة'
           });
@@ -211,7 +211,7 @@ export class AuditService extends BaseService {
             severity: 'Medium',
             category: 'Performance',
             description: `وقت الاستجابة ${curlTime}ms يُعتبر بطيئاً`,
-            reproductionSteps: [`curl -w "%{time_total}" http://localhost:6000${endpoint.path}`],
+            reproductionSteps: [`curl -w "%{time_total}" http://localhost:5000${endpoint.path}`],
             affectedFiles: ['server/routes.ts'],
             suggestedFix: 'تحسين الاستعلامات أو إضافة caching'
           });
@@ -223,7 +223,7 @@ export class AuditService extends BaseService {
           severity: 'Critical',
           category: 'Functionality',
           description: 'فشل في الوصول للـ API',
-          reproductionSteps: [`curl -i http://localhost:6000${endpoint.path}`],
+          reproductionSteps: [`curl -i http://localhost:5000${endpoint.path}`],
           affectedFiles: ['server/routes.ts'],
           suggestedFix: 'التأكد من أن الخادم يعمل ومراجعة الأخطاء'
         });
@@ -315,7 +315,7 @@ export class AuditService extends BaseService {
       for (const endpoint of apiEndpoints) {
         try {
           const { stdout } = await execAsync(
-            `curl -w "%{time_total}" -s -o /dev/null http://localhost:6000${endpoint}`
+            `curl -w "%{time_total}" -s -o /dev/null http://localhost:5000${endpoint}`
           );
           responseTimes[endpoint] = parseFloat(stdout) * 1000;
         } catch (error) {
@@ -480,7 +480,7 @@ export class AuditService extends BaseService {
 
     try {
       // فحص الـ health endpoint
-      await execAsync('curl -f http://localhost:6000/api/health');
+      await execAsync('curl -f http://localhost:5000/api/health');
       checklist['Health Endpoint'] = 'PASS';
     } catch (error) {
       checklist['Health Endpoint'] = 'FAIL';

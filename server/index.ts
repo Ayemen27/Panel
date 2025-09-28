@@ -161,7 +161,7 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified for Replit
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  let port = parseInt(process.env.PORT || '5001', 10);
+  let port = parseInt(process.env.PORT || '5000', 10);
   console.log(`🔧 Server will start on port: ${port}`);
 
   // سيتم معالجة port conflicts في tryStartServer function
