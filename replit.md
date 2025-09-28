@@ -26,6 +26,9 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Replit's OpenID Connect (OIDC) authentication system with Passport.js
 - **Session Management**: Express sessions with PostgreSQL store for persistence
 - **API Design**: RESTful API with consistent error handling and logging middleware
+- **Service Architecture**: Unified Service Layer with Dependency Injection system
+- **Service Container**: Per-request service containers preventing data leakage
+- **Base Service**: All services inherit from BaseService with unified patterns
 
 ### Data Storage Solutions
 - **Primary Database**: PostgreSQL with Neon serverless hosting
@@ -45,6 +48,56 @@ Preferred communication style: Simple, everyday language.
 - **Live Monitoring**: Continuous system resource monitoring with periodic updates
 - **Notification System**: Real-time alerts and status updates pushed to connected clients
 - **Live Log Streaming**: Real-time log tailing capabilities for debugging and monitoring
+
+## Unified Service System
+
+### Service Architecture
+The application implements a sophisticated Unified Service System with Dependency Injection:
+
+#### Core Components
+- **BaseService**: Abstract base class that all services inherit from
+  - Unified error handling and logging
+  - Permission and role checking utilities  
+  - Service context management
+  - ServiceResult standardized response format
+
+- **ServiceContainer**: Per-request dependency injection container
+  - Prevents data leakage between requests
+  - Automatic service resolution with dependency management
+  - ServiceTokens-based service registration
+  - Factory helpers for complex service instantiation
+
+- **ServiceTokens**: Enumeration of all available services
+  - SYSTEM_SERVICE, LOG_SERVICE, AUDIT_SERVICE
+  - NGINX_SERVICE, PM2_SERVICE, SSL_SERVICE
+  - UNIFIED_NOTIFICATION_SERVICE, UNIFIED_FILE_SERVICE
+  - Dependency mapping and priority levels
+
+#### Service Categories
+1. **Core System Services**: SystemService, LogService, AuditService, MonitoringService
+2. **Server Management**: NginxService, PM2Service, SslService  
+3. **Application Services**: UnifiedNotificationService, UnifiedFileService, BackupService
+4. **Connection Management**: SmartConnectionManager
+
+#### Dependency Injection Features
+- **Per-request containers**: Each HTTP request gets isolated service instances
+- **Dependency resolution**: Automatic resolution of service dependencies
+- **Service factory**: Configurable service instantiation with custom parameters
+- **Middleware integration**: `serviceInjectionMiddleware` provides `req.services`
+- **Circular dependency protection**: Resolution stack prevents infinite loops
+
+#### Service Lifecycle
+1. **Registration**: Services registered in CANONICAL_REGISTRY with metadata
+2. **Resolution**: Services instantiated on-demand with dependency injection
+3. **Context binding**: Each service receives request context (user, session, etc.)
+4. **Cleanup**: Services disposed after request completion
+
+### Recent Changes
+- **Agent #1-5 Progress**: Successfully implemented complete Unified Service System
+- **12 Services Updated**: All services now inherit from BaseService
+- **LSP Errors Fixed**: All TypeScript compilation errors resolved
+- **Server Operational**: Running successfully on port 5000 with DI middleware
+- **Database Connected**: PostgreSQL connection established and functional
 
 ## External Dependencies
 

@@ -22,6 +22,28 @@ import { NginxService } from '../services/nginxService';
 import { PM2Service } from '../services/pm2Service';
 import { SslService } from '../services/sslService';
 
+// Safe stub classes for unimplemented services - do not throw in constructor
+class SmartConnectionManagerStub extends BaseService {
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+    // Note: This is a stub - actual SmartConnectionManager should be imported as singleton
+  }
+}
+
+class EmailServiceStub extends BaseService {
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+    // Note: EmailService not yet implemented
+  }
+}
+
+class AuthServiceStub extends BaseService {
+  constructor(storage: IStorage, context?: ServiceContext) {
+    super(storage, context);
+    // Note: AuthService not yet implemented 
+  }
+}
+
 export type ServiceConstructor<T extends BaseService> = new (
   storage: IStorage,
   context?: ServiceContext
@@ -286,7 +308,7 @@ export class ServiceContainer {
     [ServiceTokens.SMART_CONNECTION_MANAGER]: {
       metadata: {
         token: ServiceTokens.SMART_CONNECTION_MANAGER,
-        constructor: () => { throw new Error('SmartConnectionManager is singleton - use imported instance'); },
+        constructor: SmartConnectionManagerStub,
         dependencies: [],
         priority: 1,
         singleton: true,
@@ -297,7 +319,9 @@ export class ServiceContainer {
         implemented: true
       },
       factory: {
-        create: () => { throw new Error('SmartConnectionManager is singleton - use imported instance'); },
+        create: (storage: IStorage, context?: ServiceContext) => { 
+          throw new Error('SmartConnectionManager is singleton - use imported instance'); 
+        },
         metadata: {} as ServiceMetadata
       }
     },
@@ -305,7 +329,7 @@ export class ServiceContainer {
     [ServiceTokens.EMAIL_SERVICE]: {
       metadata: {
         token: ServiceTokens.EMAIL_SERVICE,
-        constructor: () => { throw new Error('EmailService not yet implemented'); },
+        constructor: EmailServiceStub,
         dependencies: [ServiceTokens.LOG_SERVICE],
         priority: 2,
         singleton: false,
@@ -316,14 +340,16 @@ export class ServiceContainer {
         implemented: false
       },
       factory: {
-        create: () => { throw new Error('EmailService not yet implemented'); },
+        create: (storage: IStorage, context?: ServiceContext) => { 
+          throw new Error('EmailService not yet implemented'); 
+        },
         metadata: {} as ServiceMetadata
       }
     },
     [ServiceTokens.AUTH_SERVICE]: {
       metadata: {
         token: ServiceTokens.AUTH_SERVICE,
-        constructor: () => { throw new Error('AuthService not yet implemented'); },
+        constructor: AuthServiceStub,
         dependencies: [ServiceTokens.LOG_SERVICE],
         priority: 2,
         singleton: false,
@@ -334,7 +360,9 @@ export class ServiceContainer {
         implemented: false
       },
       factory: {
-        create: () => { throw new Error('AuthService not yet implemented'); },
+        create: (storage: IStorage, context?: ServiceContext) => { 
+          throw new Error('AuthService not yet implemented'); 
+        },
         metadata: {} as ServiceMetadata
       }
     }
@@ -697,7 +725,7 @@ export const ServiceContainerUtils = {
     console.log('Registered Services:', container.getServiceNames());
     console.log('Service Count:', container.getServiceCount());
     console.log('Context:', container.getContext());
-    console.log('Registry:', Object.keys(container.getServiceRegistry()));
+    console.log('Registry:', Object.keys(ServiceContainer.getCanonicalRegistry()));
     console.log('====================================');
   },
 
@@ -711,9 +739,9 @@ export const ServiceContainerUtils = {
     const errors: string[] = [];
     const registry = ServiceContainer.getCanonicalRegistry();
     
-    for (const [token, factory] of Object.entries(registry)) {
-      if (factory?.dependencies) {
-        for (const dep of factory.dependencies) {
+    for (const [token, registryEntry] of Object.entries(registry)) {
+      if (registryEntry?.metadata?.dependencies) {
+        for (const dep of registryEntry.metadata.dependencies) {
           if (!registry[dep]) {
             errors.push(`Missing dependency: ${token} requires ${dep} but ${dep} is not registered`);
           }

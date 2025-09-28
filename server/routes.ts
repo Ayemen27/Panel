@@ -15,12 +15,7 @@ import {
   insertAllowedPathSchema
 } from "@shared/schema";
 import { z } from "zod";
-// DI Phase 3: Remove direct service imports - services now injected via req.services
-// import { pm2Service } from "./services/pm2Service";
-// import { nginxService } from "./services/nginxService";
-// import { sslService } from "./services/sslService";
-// import { systemService } from "./services/systemService";
-// import { logService } from "./services/logService";
+// DI Phase 3: Direct service imports removed - services now injected via req.services
 import { ServiceTokens } from "./core/ServiceTokens";
 
 // Import service types for type safety
@@ -30,7 +25,7 @@ import type { SslService } from "./services/sslService";
 import type { SystemService } from "./services/systemService";
 import type { LogService } from "./services/logService";
 // Import services - النظام الموحد الوحيد
-// import { unifiedFileService } from './services/unifiedFileService'; // This import is removed as it's now handled by unifiedFileRoutes
+// Unified file service handled by unifiedFileRoutes
 import { db } from "./db";
 import { files } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -288,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req)!;
       // DI Phase 3: Use service container instead of direct import
-      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM);
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
       
       const [appStats, sslStats, systemStats, unreadCount] = await Promise.all([
         storage.getApplicationStats(userId),
@@ -643,7 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         // DI Phase 3: Use service container instead of direct import
-        const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
+        const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
         statusMap = await pm2Service.getAllApplicationStatuses();
       } catch (error) {
         console.warn('Failed to get PM2 status, using database status:', error);
@@ -676,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (appData.usePm2) {
         try {
           // DI Phase 3: Use service container instead of direct import
-          const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
+          const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
           await pm2Service.startApplication(application);
           await storage.updateApplication(application.id, { status: 'running' });
 
@@ -771,7 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Stop the application first - DI Phase 3: Updated to use req.services
         try {
           // DI Phase 3: Use service container instead of direct import
-          const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
+          const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
           await pm2Service.stopApplication(application.name);
         } catch (error) {
           console.warn("Failed to stop application:", error);
@@ -806,7 +801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // DI Phase 3: Use service container instead of direct import
-      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
+      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
       await pm2Service.startApplication(application);
       await storage.updateApplication(id, { status: 'running' });
 
@@ -888,7 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // DI Phase 3: Use service container instead of direct import
-      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
+      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
       await pm2Service.stopApplication(application.name);
       await storage.updateApplication(id, { status: 'stopped' });
 
@@ -940,7 +935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // DI Phase 3: Use service container instead of direct import
-      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2);
+      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
       await pm2Service.restartApplication(application.name, application);
       await storage.updateApplication(id, { status: 'running' });
 
@@ -1005,7 +1000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check DNS status - DI Phase 3: Updated to use req.services
       try {
         // DI Phase 3: Use service container instead of direct import
-        const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM);
+        const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
         const dnsStatus = await systemService.checkDns(domain.domain);
         await storage.updateDomain(domain.id, { dnsStatus });
       } catch (error) {
@@ -1030,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // DI Phase 3: Use service container instead of direct import
-      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM);
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
       const dnsStatus = await systemService.checkDns(targetDomain.domain);
       await storage.updateDomain(id, { dnsStatus });
 
@@ -1064,7 +1059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // DI Phase 3: Use service container instead of direct import
-      const sslService = req.services.resolveByToken<SslService>(ServiceTokens.SSL);
+      const sslService = req.services.resolveByToken<SslService>(ServiceTokens.SSL_SERVICE);
       const certificate = await sslService.issueCertificate(domain.domain);
 
       const sslCert = await storage.createSslCertificate({
@@ -1114,7 +1109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Test the configuration first - DI Phase 3: Updated to use req.services
       // DI Phase 3: Use service container instead of direct import
-      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX);
+      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX_SERVICE);
       const testResult = await nginxService.testConfig(configData.content);
 
       const config = await storage.createNginxConfig({
@@ -1134,7 +1129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { content } = req.body;
       // DI Phase 3: Use service container instead of direct import
-      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX);
+      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX_SERVICE);
       const result = await nginxService.testConfig(content);
       res.json(result);
     } catch (error) {
@@ -1146,7 +1141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/nginx/reload', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
       // DI Phase 3: Use service container instead of direct import
-      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX);
+      const nginxService = req.services.resolveByToken<NginxService>(ServiceTokens.NGINX_SERVICE);
       await nginxService.reloadNginx();
       const result = { success: true, message: 'Nginx reloaded successfully' };
       res.json(result);
@@ -1253,6 +1248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
+      const logService = req.services.resolveByToken<LogService>(ServiceTokens.LOG_SERVICE);
       const logs = await logService.getApplicationLogs(application.name);
       res.json(logs);
     } catch (error) {
@@ -1264,6 +1260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // System info routes
   app.get('/api/system/info', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
       const systemInfo = await systemService.getSystemInfo();
       res.json(systemInfo);
     } catch (error) {
@@ -1274,6 +1271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/system/processes', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
+      const pm2Service = req.services.resolveByToken<PM2Service>(ServiceTokens.PM2_SERVICE);
       const processes = await pm2Service.listProcesses();
       res.json(processes);
     } catch (error) {
@@ -1287,8 +1285,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Health check route (public - no authentication required)
-  app.get('/api/health', async (req, res) => {
+  app.get('/api/health', async (req: AuthenticatedRequest, res) => {
     try {
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
       const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
     } catch (error) {
@@ -1311,6 +1310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // System health check route (for HealthCheck page)
   app.get('/api/system/health-check', async (req: AuthenticatedRequest, res) => {
     try {
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
       const healthStatus = await systemService.performHealthCheck();
       res.json(healthStatus);
     } catch (error) {
@@ -1456,6 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Command not allowed" });
       }
 
+      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
       const result = await systemService.executeCommand(command);
       res.json(result);
     } catch (error) {
