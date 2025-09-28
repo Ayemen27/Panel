@@ -10,6 +10,7 @@ interface User {
   lastName?: string;
   role?: 'admin' | 'user' | 'moderator' | 'viewer';
   profileImageUrl?: string;
+  token?: string; // Session ID used as token for WebSocket authentication
 }
 
 export type UserRole = 'admin' | 'user' | 'moderator' | 'viewer';
