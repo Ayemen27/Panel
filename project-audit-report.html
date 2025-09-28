@@ -1,0 +1,2197 @@
+
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير فحص المشروع الشامل</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-number { font-size: 2em; font-weight: bold; display: block; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #ddd; }
+        th { background: #3498db; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .status-unified { color: #27ae60; font-weight: bold; }
+        .status-legacy { color: #e74c3c; font-weight: bold; }
+        .status-partial { color: #f39c12; font-weight: bold; }
+        .recommendation { background: #e8f6f3; border-right: 4px solid #27ae60; padding: 15px; margin: 15px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 تقرير فحص المشروع الشامل</h1>
+        <p><strong>تاريخ التقرير:</strong> ٢٨‏/٩‏/٢٠٢٥</p>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-number">267</span>
+                إجمالي الملفات المفحوصة
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">18</span>
+                خدمات موحدة موجودة
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">0</span>
+                ملفات قديمة محتملة
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">37</span>
+                ملفات تستخدم أنماط قديمة
+            </div>
+        </div>
+
+        <h2>📊 حالة الخدمات الموحدة</h2>
+        <table>
+            <thead>
+                <tr><th>اسم الملف</th><th>يستخدم BaseService</th><th>يستخدم ServiceContainer</th><th>الحالة</th></tr>
+            </thead>
+            <tbody>
+                
+                    <tr>
+                        <td>audit-report-2025-09-27.json</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ApplicationLogs-DOddBBHE.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ComprehensiveAudit-D2z7tt3M.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Domains-1PTy4azs.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>FileManager-BKEP__bn.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>HealthCheck-CawIYO1b.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Logs-CRJGTPDF.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Nginx-C-3yGfk9.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>PathManager-Cw30rzlE.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Processes-BIJn_Tls.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>SSL-USpFv30O.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Terminal-Bcuy6ykA.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>arrow-left-Dpar6ajo.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>calendar-DNPi1pFF.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>circle-alert-XTuuHfmX.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>connectionTest-Cm70ttvL.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>copy-DJbdCO2e.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>database-CU1ZoYTr.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>download-DRlsAF3m.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>filter-bC3drT9L.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>index-DAfNQzoF.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>search-DE5yb1Cp.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>select-BLEWlz1j.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>separator-D6tryC8S.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>tabs-LAKwS-KM.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>App.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ActivityTracking.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>AddAppModal.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ApplicationTable.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>EditAppModal.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ErrorBoundaryButton.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>LoadingSpinner.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>StatusBadge.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ApplicationsList.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>NotificationsList.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>QuickActions.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>StatsCard.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>SystemResources.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>FileItem.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>FileManagerCore.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>BottomNavigation.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Header.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>MainLayout.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Sidebar.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>RoleGuard.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>accordion.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>alert-dialog.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>alert.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>aspect-ratio.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>avatar.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>badge.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>breadcrumb.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>button.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>calendar.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>card.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>carousel.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>chart.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>checkbox.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>collapsible.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>command.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>context-menu.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>dialog.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>drawer.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>dropdown-menu.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>form.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>hover-card.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>input-otp.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>input.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>label.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>menubar.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>navigation-menu.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>pagination.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>popover.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>progress.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>radio-group.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>resizable.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>scroll-area.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>select.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>separator.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>sheet.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>sidebar.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>skeleton.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>slider.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>switch.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>table.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>tabs.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>textarea.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>toast.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>toaster.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>toggle-group.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>toggle.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>tooltip.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ActivityContext.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ErrorContext.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>NotificationContext.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ThemeContext.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>use-mobile.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>use-toast.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>useActivityTracker.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>useAuth.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>useErrorLogger.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>useWebSocket.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>authUtils.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>errorLogger.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>queryClient.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>userActivityTracker.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>utils.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>main.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ApplicationLogs.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Applications.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>AuthPage.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ComprehensiveAudit.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Dashboard.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Domains.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>FileManager.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>HealthCheck.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Landing.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Logs.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Nginx.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>PathManager.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Processes.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>SSL.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Terminal.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>not-found.tsx</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>connectionTest.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>websocketDiagnostics.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>components.json</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>index.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ApplicationLogs-lUlDi8Sc.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ComprehensiveAudit-BGK4yj8W.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Domains-C_Mk96nP.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>FileManager-B3PK7ykw.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>HealthCheck-BUkAEYYi.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Logs-CDma8tTd.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Nginx-DAGqqlwn.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>PathManager-HNwP0fZ0.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Processes-C4buDdZ6.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>SSL-DHXt_EzF.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>Terminal-Dy8tFGN_.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>arrow-left-BaCGzLpt.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>calendar-BXCHAd1r.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>circle-alert-DNOk64NL.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>connectionTest-C5MX3Ueg.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>copy-B_HsolfW.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>database-CzsbhkTr.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>download-DOF1r5sK.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>filter-Cs1wRUOw.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>index-ClPqTJCa.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>search-BGaVsxZX.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>select-DZiQ8IPL.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>separator-Dh02n-M4.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>tabs-Dun2HakJ.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>auth.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>db.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>001_add_default_paths.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>realFiles.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>routes.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>run-audit.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>setup-default-paths.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>setup-system.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>environment-diagnostics.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>run-as-external.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>setup-directories.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>auditService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>backupService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>deploymentService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>fileManagerService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>logService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>monitoringService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>nginxService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>pm2Service.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>realFileSystemService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>smart-connection-manager.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>sslService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>storageStatsService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>systemService.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>storage.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>auditHelpers.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>env-loader.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>logger.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>pathManager.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>vite.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>environment.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>schema.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>vite.config.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>drizzle.config.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ecosystem.config.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>package-lock.json</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>package.json</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>postcss.config.js</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>project-audit.js</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>auth.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>BaseService.ts</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ResponseHandler.ts</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ServiceContainer.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ServiceError.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>ServiceTokens.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>db.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>index.ts</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>001_add_default_paths.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>UnifiedNotificationRoutes.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>unifiedFileRoutes.ts</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>routes.ts</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>environment-diagnostics.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>run-as-external.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>run-audit.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>setup-default-paths.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>setup-directories.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>setup-system.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>UnifiedNotificationService.ts</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>auditService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>backupService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>deploymentService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>logService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>monitoringService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>nginxService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>pm2Service.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>smart-connection-manager.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>sslService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>storageStatsService.ts</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>systemService.ts</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>unifiedFileService.ts</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>storage.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>serviceRegistry.test.ts</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td class="status-partial">
+                            موحد جزئياً
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>auditHelpers.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>env-loader.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>logger.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>pathManager.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>rateLimiter.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>vite.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>environment.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>schema.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>tailwind.config.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>tsconfig.json</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>tsconfig.server.json</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+                    <tr>
+                        <td>vite.config.ts</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td class="status-legacy">
+                            غير موحد
+                        </td>
+                    </tr>
+                
+            </tbody>
+        </table>
+
+        
+
+        <div class="recommendation">
+            <h3>📝 التوصيات:</h3>
+            <ul>
+                <li>حذف الملفات القديمة المحددة في التقرير</li>
+                <li>توحيد الخدمات غير الموحدة لاستخدام BaseService</li>
+                <li>تحديث الاستيرادات لاستخدام النظام الموحد</li>
+                <li>مراجعة الملفات غير المستخدمة وحذفها إذا لزم الأمر</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
