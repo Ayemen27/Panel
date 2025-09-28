@@ -94,7 +94,7 @@ export abstract class BaseService {
       metadata
     };
 
-    logger[level](logData);
+    logger[level](message, 'system', { metadata: logData });
   }
 
   /**

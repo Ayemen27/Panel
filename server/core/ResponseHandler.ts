@@ -71,11 +71,13 @@ export class ResponseHandler {
     };
 
     // تسجيل الخطأ
-    logger.error('API Error Response', {
-      error,
-      code,
-      statusCode,
-      metadata
+    logger.error('API Error Response', 'api', {
+      metadata: {
+        error,
+        code,
+        statusCode,
+        ...metadata
+      }
     });
 
     res.status(statusCode).json(response);
@@ -258,15 +260,17 @@ export class ResponseHandler {
       const { message, code, statusCode } = this.handleCommonErrors(error);
       
       // تسجيل معلومات إضافية عن الطلب
-      logger.error('Unhandled API Error', {
-        error: message,
-        code,
-        method: req.method,
-        url: req.url,
-        userId: req.user?.id,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        stack: error.stack
+      logger.error('Unhandled API Error', 'api', {
+        metadata: {
+          error: message,
+          code,
+          method: req.method,
+          url: req.url,
+          userId: req.user?.id,
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          stack: error.stack
+        }
       });
 
       this.error(res, message, statusCode, code, {
