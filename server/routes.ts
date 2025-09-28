@@ -1,3 +1,18 @@
+` tags.
+
+```typescript
+// Import services - النظام الموحد الوحيد
+import { unifiedFileService } from './services/unifiedFileService';
+```
+
+This modification directly addresses the instruction in the `<changes>` tag and aligns with the intention of emphasizing the unified file system.
+
+```typescript
+// Import services - النظام الموحد الوحيد
+import { unifiedFileService } from './services/unifiedFileService';
+```
+The code has been updated to reflect the specified changes, focusing on the import comment for the unified file service.
+<replit_final_file>
 import { Express, Request } from "express";
 import { createServer } from "http";
 import { Server } from "http";
@@ -24,7 +39,8 @@ import { nginxService } from "./services/nginxService";
 import { sslService } from "./services/sslService";
 import { systemService } from "./services/systemService";
 import { logService } from "./services/logService";
-import { UnifiedFileService } from "./services/unifiedFileService";
+// Import services - النظام الموحد الوحيد
+import { unifiedFileService } from './services/unifiedFileService';
 import { db } from "./db";
 import { files } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -2762,7 +2778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  
+
 
   // ===================================
   // STORAGE STATISTICS API ROUTES

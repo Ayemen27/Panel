@@ -213,8 +213,6 @@ function Router() {
           <Suspense fallback={<PageLoader />}>
             <FileManager />
           </Suspense>
-        </Route>nager">
-          <FileManager />
         </Route>
         <Route path="/path-manager">
           <AdminOnly>
