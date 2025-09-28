@@ -51,6 +51,10 @@ import {
 import { db } from "./db";
 import { eq, desc, and, or, count, gte, like, ilike, isNull, isNotNull, lt, max, sql } from "drizzle-orm";
 import { logger } from "./utils/logger";
+import { UnifiedFileService } from "./services/unifiedFileService";
+
+// Create UnifiedFileService instance for file operations
+let unifiedFileService: UnifiedFileService;
 
 export interface IStorage {
   // User operations (for username/password auth)
@@ -241,6 +245,13 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  constructor() {
+    // Initialize UnifiedFileService with this storage instance
+    if (!unifiedFileService) {
+      unifiedFileService = new UnifiedFileService(this);
+    }
+  }
+
   // Helper function to check user file access permissions
   private async checkUserFileAccess(fileId: string, userId: string, requiredPermission: 'read' | 'write' | 'delete' | 'admin'): Promise<boolean> {
     // First check if user owns the file
@@ -1714,14 +1725,11 @@ export class DatabaseStorage implements IStorage {
 
     const [copy] = await db.insert(files).values(copyData).returning();
 
-    // Use FileManagerService to copy physical file
-    const { FileManagerService } = await import('./services/fileManagerService');
-    const fileManagerService = new FileManagerService(this);
-    const copyResult = await fileManagerService.copyFile(
+    // Use UnifiedFileService to copy physical file
+    const copyResult = await unifiedFileService.copyItem(
       sourceFile.path,
       fullDestinationPath,
-      userId,
-      { preserveMetadata: true }
+      userId
     );
 
     if (!copyResult.success) {

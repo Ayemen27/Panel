@@ -36,7 +36,7 @@ import { ENV_CONFIG } from "../shared/environment.js";
 const wsClients = new Set<WebSocket>();
 
 // Unified File Service instance - النظام الموحد الوحيد
-const unifiedFileService = new UnifiedFileService(storage);
+let unifiedFileService: UnifiedFileService;
 
 // Unified CORS configuration for both HTTP and WebSocket
 function setupCORS(app: Express) {
@@ -131,6 +131,11 @@ export function broadcast(message: any) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const server = createServer(app);
+
+  // Initialize UnifiedFileService after storage is ready
+  if (!unifiedFileService) {
+    unifiedFileService = new UnifiedFileService(storage);
+  }
 
   // Setup CORS first
   setupCORS(app);
@@ -2478,6 +2483,280 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to browse directory",
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // Read file content using UnifiedFileService
+  app.get('/api/real-files/content', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: filePath } = req.query;
+
+      if (!filePath || typeof filePath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'File path parameter is required',
+          error: 'File path parameter is required'
+        });
+      }
+
+      const result = await unifiedFileService.readFileContent(filePath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error reading file content:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to read file content",
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // Write file content using UnifiedFileService
+  app.post('/api/real-files/write', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: filePath, content } = req.body;
+
+      if (!filePath || typeof filePath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'File path is required',
+          error: 'File path is required'
+        });
+      }
+
+      if (content === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: 'Content is required',
+          error: 'Content is required'
+        });
+      }
+
+      const result = await unifiedFileService.writeFile(filePath, content, userId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error writing file content:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to write file content",
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // Create directory using UnifiedFileService
+  app.post('/api/real-files/mkdir', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: dirPath, recursive = false } = req.body;
+
+      if (!dirPath || typeof dirPath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Directory path is required',
+          error: 'Directory path is required'
+        });
+      }
+
+      const result = await unifiedFileService.createDirectory(dirPath, userId, { recursive });
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error creating directory:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create directory",
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // Delete file or directory using UnifiedFileService
+  app.delete('/api/real-files/delete', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: itemPath } = req.body;
+
+      if (!itemPath || typeof itemPath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Item path is required',
+          error: 'Item path is required'
+        });
+      }
+
+      const result = await unifiedFileService.deleteItem(itemPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete item",
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // Rename file or directory using UnifiedFileService
+  app.post('/api/real-files/rename', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { oldPath, newPath } = req.body;
+
+      if (!oldPath || !newPath || typeof oldPath !== 'string' || typeof newPath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Old path and new path are required',
+          error: 'Old path and new path are required'
+        });
+      }
+
+      const result = await unifiedFileService.renameItem(oldPath, newPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error renaming item:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to rename item",
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // Copy file or directory using UnifiedFileService
+  app.post('/api/real-files/copy', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { sourcePath, destinationPath } = req.body;
+
+      if (!sourcePath || !destinationPath || typeof sourcePath !== 'string' || typeof destinationPath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Source path and destination path are required',
+          error: 'Source path and destination path are required'
+        });
+      }
+
+      const result = await unifiedFileService.copyItem(sourcePath, destinationPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error copying item:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to copy item",
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // Get file/directory information using UnifiedFileService
+  app.get('/api/real-files/info', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: itemPath } = req.query;
+
+      if (!itemPath || typeof itemPath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Item path is required',
+          error: 'Item path is required'
+        });
+      }
+
+      const result = await unifiedFileService.getFileInfo(itemPath, userId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error getting file info:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get file info",
         error: "Internal server error"
       });
     }

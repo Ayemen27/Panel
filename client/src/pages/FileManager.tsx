@@ -168,83 +168,100 @@ function FileManagerCore() {
     error: realFilesError, 
     refetch: refetchRealFiles 
   } = useQuery<DirectoryListing>({
-    queryKey: ['/api/real-files/browse', currentPath],
+    queryKey: ['unified-files-browse', currentPath],
     queryFn: async () => {
-      debugLog('API Query Started', { currentPath });
+      debugLog('Unified API Query Started', { currentPath });
 
       try {
         const response = await apiRequest('GET', '/api/real-files/browse', {
           path: currentPath
         });
 
-        debugLog('API Response status', response.status);
+        debugLog('Unified API Response status', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
-          debugLog('API Error response', errorText);
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
+          debugLog('Unified API Error response', errorText);
+          
+          if (response.status === 400) {
+            throw new Error(`خطأ في المسار: ${errorText}`);
+          } else if (response.status === 403) {
+            throw new Error(`الوصول مرفوض: ليس لديك صلاحية للوصول لهذا المسار`);
+          } else if (response.status === 404) {
+            throw new Error(`المجلد غير موجود: ${currentPath}`);
+          } else {
+            throw new Error(`خطأ في الخادم: ${response.status} - ${errorText}`);
+          }
         }
 
         const result = await response.json();
-        debugLog('API Success response', result);
+        debugLog('Unified API Success response', result);
 
-        // Handle different response formats
-        let directoryData: DirectoryListing;
-
+        // Handle unified response format
         if (result.success === false) {
-          throw new Error(result.error || result.message || 'API returned failure status');
+          throw new Error(result.error || result.message || 'فشل في تحميل محتويات المجلد');
         }
 
-        if (result.success && result.data) {
-          directoryData = result.data;
-        } else if (result.path && result.items) {
-          directoryData = result;
-        } else if (result.data && result.data.path && result.data.items) {
-          directoryData = result.data;
-        } else {
-          debugLog('Unexpected response format', result);
-          throw new Error('Invalid directory data format received');
+        if (!result.success || !result.data) {
+          debugLog('Invalid unified response format', result);
+          throw new Error('تنسيق استجابة غير صحيح من الخادم');
         }
+
+        const directoryData: DirectoryListing = result.data;
 
         if (!directoryData.items || !Array.isArray(directoryData.items)) {
-          debugLog('Invalid items array', directoryData.items);
-          throw new Error('Directory items is not a valid array');
+          debugLog('Invalid items array in unified response', directoryData.items);
+          throw new Error('بيانات المجلد غير صحيحة');
         }
 
-        debugLog('Directory data processed successfully', {
+        debugLog('Unified directory data processed successfully', {
           path: directoryData.path,
           itemCount: directoryData.items.length,
-          totalSize: directoryData.totalSize
+          totalSize: directoryData.totalSize,
+          totalFiles: directoryData.totalFiles,
+          totalDirectories: directoryData.totalDirectories
         });
 
         return directoryData;
 
       } catch (error: any) {
-        debugLog('API Query Error', {
+        debugLog('Unified API Query Error', {
           error: error.message,
           stack: error.stack,
           currentPath
         });
 
-        throw new Error(error.message || 'Failed to load directory contents');
+        throw new Error(error.message || 'فشل في تحميل محتويات المجلد');
       }
     },
     enabled: !!currentPath && currentPath.length > 0,
     retry: (failureCount, error: Error) => {
-      debugLog('Query retry attempt', { failureCount, error: error.message });
+      debugLog('Unified query retry attempt', { failureCount, error: error.message });
 
-      if (error.message.includes('Path validation failed') || 
-          error.message.includes('Access denied') ||
-          error.message.includes('404') ||
-          error.message.includes('403')) {
+      // Don't retry for permanent errors
+      const permanentErrors = [
+        'خطأ في المسار',
+        'الوصول مرفوض',
+        'المجلد غير موجود',
+        'Path validation failed',
+        'Access denied',
+        'not found'
+      ];
+      
+      const isPermanentError = permanentErrors.some(errorType => 
+        error.message.toLowerCase().includes(errorType.toLowerCase())
+      );
+
+      if (isPermanentError) {
         debugLog('Not retrying due to permanent error', error.message);
         return false;
       }
+      
       return failureCount < 2;
     },
-    staleTime: 0,
-    gcTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
     refetchOnMount: true
   });
 
