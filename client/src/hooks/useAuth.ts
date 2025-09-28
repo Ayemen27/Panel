@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 
 interface User {
   id: string;
-  email: string;
+  email?: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   role?: 'admin' | 'user' | 'moderator' | 'viewer';
@@ -22,16 +23,18 @@ export const ROLE_HIERARCHY = {
 } as const;
 
 // Helper function to check for unauthorized errors
-function isUnauthorizedError(error: Error): boolean {
-  return error.message.includes('401') || 
-         error.message.includes('Unauthorized') ||
-         error.message.toLowerCase().includes('unauthorized');
+function isUnauthorizedError(error: any): boolean {
+  if (!error) return false;
+  const message = error.message || error.toString();
+  return message.includes('401') || 
+         message.includes('Unauthorized') ||
+         message.toLowerCase().includes('unauthorized');
 }
 
-// Real API request function
-async function apiRequest(url: string): Promise<any> {
+// Real API request function for user data
+async function fetchUserData(): Promise<User | null> {
   try {
-    const response = await fetch(url, {
+    const response = await fetch("/api/user", {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
@@ -40,24 +43,22 @@ async function apiRequest(url: string): Promise<any> {
 
     if (!response.ok) {
       if (response.status === 401) {
-        const error = new Error("401 Unauthorized");
-        (error as any).status = 401;
-        throw error;
+        // User not authenticated
+        return null;
       }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return await response.json();
+    const userData = await response.json();
+    return userData;
   } catch (error) {
-    console.error('API Request failed:', error);
-    throw error;
+    console.error('Failed to fetch user data:', error);
+    if (isUnauthorizedError(error)) {
+      return null; // User not authenticated
+    }
+    throw error; // Re-throw other errors
   }
 }
-
-// Dummy functions for token management (replace with actual implementation)
-const getToken = () => localStorage.getItem('authToken');
-const setToken = (token: string) => localStorage.setItem('authToken', token);
-const removeToken = () => localStorage.removeItem('authToken');
 
 const authLog = (action: string, data?: any) => {
   const timestamp = new Date().toISOString();
@@ -65,12 +66,35 @@ const authLog = (action: string, data?: any) => {
 };
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+
+  // Use React Query to manage user authentication state
+  const {
+    data: user,
+    isLoading,
+    error,
+    isError,
+    refetch
+  } = useQuery({
+    queryKey: ["/api/user"],
+    queryFn: fetchUserData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      // Don't retry on 401 (unauthorized) errors
+      if (isUnauthorizedError(error)) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+
+  // Determine authentication status
+  const isAuthenticated = user ? true : (isError && isUnauthorizedError(error)) ? false : undefined;
 
   // Console logging for debugging
-  console.log('useAuth - user:', user, 'isLoading:', isLoading, 'error:', error);
+  console.log('useAuth - user:', user, 'isLoading:', isLoading, 'error:', error, 'isAuthenticated:', isAuthenticated);
 
   // Detailed auth logging
   authLog('Auth State', {
@@ -79,207 +103,131 @@ export const useAuth = () => {
     username: user?.username,
     role: user?.role,
     isLoading,
-    error,
-    token: !!getToken()
+    isAuthenticated,
+    error: error?.message
   });
 
-  const queryClient = useQueryClient();
-
-  const login = async (username: string, password: string): Promise<void> => {
-    authLog('Login Started', {
-      username,
-      timestamp: new Date().toISOString()
-    });
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Assuming apiRequest can handle POST requests with body
-      const response = await fetch('/api/auth/login', {
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: async (credentials: { username: string; password: string }) => {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          errorData = { message: 'Unknown error' };
-        }
-        authLog('Login Failed', {
-          username,
-          status: response.status,
-          error: errorData.message,
-          response: errorData
-        });
-        throw new Error(errorData.message || 'فشل تسجيل الدخول');
-      }
-
-      const data = await response.json();
-      authLog('Login Success', {
-        username,
-        userId: data.user?.id,
-        role: data.user?.role,
-        hasToken: !!data.token
-      });
-
-      if (data.token) {
-        setToken(data.token);
-      }
-      
-      setUser(data.user || data); // Handle both formats: {user: userData} or userData directly
-      
-      // Update query cache immediately
-      queryClient.setQueryData(["/api/user"], data.user || data);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-    } catch (err: any) {
-      authLog('Login Error', {
-        username,
-        error: err.message,
-        stack: err.stack
-      });
-      setError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = () => {
-    authLog('Logout', {
-      userId: user?.id,
-      username: user?.username,
-      reason: 'user_initiated'
-    });
-
-    removeToken();
-    setUser(null);
-    setError(null);
-    queryClient.invalidateQueries({ queryKey: ["/api/user"] }); // Clear user data from cache
-  };
-
-  const validateToken = async () => {
-    const token = getToken();
-
-    authLog('Token Validation Started', {
-      hasToken: !!token,
-      tokenLength: token?.length
-    });
-
-    if (!token) {
-      authLog('Token Validation: No Token', {
-        action: 'skip_validation'
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/auth/validate', {
         credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        body: JSON.stringify(credentials),
       });
 
       if (!response.ok) {
-        authLog('Token Validation Failed', {
-          status: response.status,
-          statusText: response.statusText,
-          action: 'remove_token'
-        });
-        removeToken();
-        setUser(null);
-        setError('انتهت صلاحية الجلسة');
-        setIsLoading(false);
-        return;
+        const errorText = await response.text();
+        throw new Error(errorText || 'فشل تسجيل الدخول');
       }
 
-      const data = await response.json();
-      authLog('Token Validation Success', {
-        userId: data.user?.id,
-        username: data.user?.username,
-        role: data.user?.role
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      authLog('Login Success', {
+        userId: data.id,
+        username: data.username,
+        role: data.role
       });
-      setUser(data.user);
-    } catch (err: any) {
-      authLog('Token Validation Error', {
-        error: err.message,
-        stack: err.stack,
-        action: 'remove_token'
-      });
-      removeToken();
-      setUser(null);
-      setError('خطأ في التحقق من الجلسة');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    validateToken();
-  }, []); // Run validation on mount
+      // Update query cache immediately
+      queryClient.setQueryData(["/api/user"], data);
+
+      // Navigate to dashboard
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 100);
+    },
+    onError: (error: Error) => {
+      authLog('Login Error', {
+        error: error.message
+      });
+    },
+  });
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('فشل تسجيل الخروج');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      authLog('Logout Success', {
+        userId: user?.id,
+        username: user?.username
+      });
+
+      // Clear user data from cache
+      queryClient.setQueryData(["/api/user"], null);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+
+      // Navigate to home
+      navigate('/');
+    },
+    onError: (error: Error) => {
+      authLog('Logout Error', {
+        error: error.message
+      });
+
+      // Even if logout fails on server, clear local state
+      queryClient.setQueryData(["/api/user"], null);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      navigate('/');
+    },
+  });
 
   // Handle authentication state changes and navigation
-  const isAuthenticated = user ? true : (error && isUnauthorizedError(error as Error)) ? false : (!isLoading && !user && !error) ? false : undefined;
-
-  const [, navigate] = useLocation();
-
-  // Update isLoading based on queryClient state for auth query
-  // This is a bit of a workaround as useAuth hook doesn't directly expose useQuery's isLoading state
   useEffect(() => {
-    const authQueryState = queryClient.getQueryState(["/api/user"]);
-    if (authQueryState && authQueryState.status === 'pending') {
-      setIsLoading(true);
-    } else if (authQueryState && authQueryState.status === 'error') {
-      // If there's an error and it's an unauthorized error, set isAuthenticated to false
-      if (isUnauthorizedError(authQueryState.error as Error)) {
-        setError(authQueryState.error as any);
-        setIsLoading(false);
-      } else {
-        // Handle other types of errors
-        setError(authQueryState.error as any);
-        setIsLoading(false);
-      }
-    } else if (authQueryState && authQueryState.status === 'success') {
-      setUser(authQueryState.data as User);
-      setIsLoading(false);
-    }
-  }, [queryClient]);
-
-  // Effect for handling redirection based on authentication status
-  useEffect(() => {
-    if (isAuthenticated === undefined) return;
+    if (isAuthenticated === undefined) return; // Still loading
 
     const currentPath = window.location.pathname;
 
     if (isAuthenticated && user) {
-      authLog('Authentication Success', {
+      authLog('Authentication Success - Checking navigation', {
         userId: user.id,
         username: user.username,
         role: user.role,
         currentPath
       });
+
+      // Redirect to dashboard if on auth pages
       if (currentPath === '/' || currentPath === '/login' || currentPath === '/auth') {
         authLog('Redirecting to dashboard', { from: currentPath });
         navigate('/dashboard');
       }
     } else if (isAuthenticated === false) {
-      authLog('Authentication Failed', {
-        error,
+      authLog('Authentication Failed - Redirecting to home', {
+        error: error?.message,
         currentPath
       });
+
+      // Redirect to auth page if on protected routes
       if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/auth') {
         authLog('Redirecting to home/login', { from: currentPath });
         navigate('/');
       }
     }
   }, [isAuthenticated, user, error, navigate]);
+
+  // Wrapper functions for backward compatibility
+  const login = async (username: string, password: string): Promise<void> => {
+    return loginMutation.mutateAsync({ username, password });
+  };
+
+  const logout = () => {
+    logoutMutation.mutate();
+  };
 
   // Role checking helpers
   const hasRole = (requiredRole: UserRole): boolean => {
@@ -320,7 +268,8 @@ export const useAuth = () => {
     isLoading,
     login,
     logout,
-    error,
+    error: error?.message || null,
+    refetch,
     // Role helpers
     hasRole,
     hasAnyRole,
