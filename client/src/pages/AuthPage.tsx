@@ -74,7 +74,7 @@ export default function AuthPage() {
     };
 
     checkServerHealth();
-  }, []);
+  }, [toast]);
 
 
   // نموذج تسجيل الدخول
@@ -86,9 +86,13 @@ export default function AuthPage() {
     },
   });
 
-  const onLogin = (data: LoginData) => {
-    // استدعاء دالة login من useAuth hook
-    login(data.username, data.password);
+  const onLogin = async (data: LoginData) => {
+    try {
+      await login(data.username, data.password);
+    } catch (error) {
+      // الخطأ سيتم التعامل معه في useAuth hook
+      console.error('Login failed:', error);
+    }
   };
 
   // منع العرض إذا كان المستخدم يقوم بتسجيل الدخول أو بيانات المستخدم لا تزال قيد التحميل
