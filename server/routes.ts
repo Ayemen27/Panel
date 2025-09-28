@@ -24,6 +24,8 @@ import type { NginxService } from "./services/nginxService";
 import type { SslService } from "./services/sslService";
 import type { SystemService } from "./services/systemService";
 import type { LogService } from "./services/logService";
+import type { AuditService } from "./services/auditService";
+import type { ServiceContainer } from "./core/ServiceContainer";
 // Import services - النظام الموحد الوحيد
 // Unified file service handled by unifiedFileRoutes
 import { db } from "./db";
@@ -110,7 +112,7 @@ interface AuthenticatedRequest extends Request {
   body: any;
   params: any;
   query: any;
-  services: any; // ServiceContainer - available after serviceInjectionMiddleware
+  services: ServiceContainer; // ServiceContainer - available after serviceInjectionMiddleware
 }
 
 // Helper function to get user ID from custom auth
@@ -1383,7 +1385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comprehensive audit endpoint
   app.post('/api/system/audit/comprehensive', isAuthenticated, requireRole('admin'), async (req: AuthenticatedRequest, res) => {
     try {
-      const { auditService } = await import('./services/auditService');
+      // DI Phase 3: Use service container instead of direct import
+      const auditService = req.services.resolveByToken<AuditService>(ServiceTokens.AUDIT_SERVICE);
 
       // Run comprehensive audit
       const auditReport = await auditService.runCompleteAudit();
@@ -1872,10 +1875,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.listDirectory(dirPath, userId);
 
       if (!result.success) {
@@ -1914,10 +1915,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.readFileContent(filePath, userId);
 
       if (!result.success) {
@@ -1964,10 +1963,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.writeFile(filePath, content, userId);
 
       if (!result.success) {
@@ -2006,10 +2003,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.createDirectory(dirPath, userId, { recursive });
 
       if (!result.success) {
@@ -2048,10 +2043,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.deleteItem(itemPath, userId);
 
       if (!result.success) {
@@ -2090,10 +2083,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.renameItem(oldPath, newPath, userId);
 
       if (!result.success) {
@@ -2132,10 +2123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.copyItem(sourcePath, destinationPath, userId);
 
       if (!result.success) {
@@ -2174,10 +2163,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { UnifiedFileService } = await import('./services/unifiedFileService');
-      const unifiedFileService = new UnifiedFileService(storage);
-
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE);
       const result = await unifiedFileService.getFileInfo(itemPath, userId);
 
       if (!result.success) {
@@ -2207,13 +2194,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // STORAGE STATISTICS API ROUTES
   // ===================================
 
-  // Import StorageStatsService
-  const { StorageStatsService } = await import('./services/storageStatsService');
-  const storageStatsService = new StorageStatsService();
+  // Note: StorageStatsService will be resolved per-request via DI container
+  // No need to import and instantiate manually
 
   // Get storage statistics
   app.get('/api/storage/stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
+      // DI Phase 3: Use service container instead of direct import
+      const storageStatsService = req.services.resolveByToken(ServiceTokens.STORAGE_STATS_SERVICE);
       const stats = await storageStatsService.getStorageStats();
       res.json({ success: true, data: stats });
     } catch (error) {
@@ -2229,6 +2217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clear storage statistics cache (for testing/refresh)
   app.post('/api/storage/stats/refresh', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
+      // DI Phase 3: Use service container instead of direct import
+      const storageStatsService = req.services.resolveByToken(ServiceTokens.STORAGE_STATS_SERVICE);
       storageStatsService.clearCache();
       const stats = await storageStatsService.getStorageStats();
       res.json({
