@@ -82,10 +82,20 @@ function checkDuplicates(files) {
 
   Object.keys(fileMap).forEach(basename => {
     if (fileMap[basename].length > 1) {
-      report.duplicateFiles.push({
-        filename: basename,
-        locations: fileMap[basename]
+      // فلترة الملفات المكررة الحقيقية (تجاهل ملفات dist)
+      const realDuplicates = fileMap[basename].filter(f => {
+        const isDistFile = f.includes('/dist/');
+        const isSourceFile = !isDistFile;
+        return isSourceFile || fileMap[basename].filter(f2 => !f2.includes('/dist/')).length === 0;
       });
+      
+      if (realDuplicates.length > 1) {
+        report.duplicateFiles.push({
+          filename: basename,
+          locations: realDuplicates,
+          note: fileMap[basename].some(f => f.includes('/dist/')) ? 'يتضمن ملفات مبنية' : 'مكررات حقيقية'
+        });
+      }
     }
   });
 }
@@ -93,17 +103,43 @@ function checkDuplicates(files) {
 // دالة للتحقق من استخدام الملفات
 function checkFileUsage(filePath, allFiles) {
   const filename = path.basename(filePath, path.extname(filePath));
+  const extension = path.extname(filePath);
+  
+  // تجاهل ملفات معينة دائماً مستخدمة
+  const alwaysUsedPatterns = [
+    'index.', 'main.', 'App.', 'package.json', 'tsconfig',
+    'vite.config', 'tailwind.config', 'ecosystem.config',
+    '.env', 'drizzle.config', 'postcss.config'
+  ];
+  
+  if (alwaysUsedPatterns.some(pattern => path.basename(filePath).includes(pattern))) {
+    return;
+  }
+  
+  // تجاهل ملفات UI components (عادة مستخدمة)
+  if (filePath.includes('components/ui/') || filePath.includes('pages/')) {
+    return;
+  }
+  
+  // تجاهل ملفات الخدمات الموحدة (مستخدمة في النظام)
+  if (UNIFIED_SERVICES.some(service => filePath.endsWith(service))) {
+    return;
+  }
+  
   const isUsed = allFiles.some(file => {
     if (file === filePath) return false;
     try {
       const content = fs.readFileSync(file, 'utf-8');
-      return content.includes(filename) || content.includes(path.basename(filePath));
+      // البحث عن الاستيراد أو الاستخدام
+      return content.includes(filename) || 
+             content.includes(path.basename(filePath)) ||
+             content.includes(filename.replace(/([A-Z])/g, '-$1').toLowerCase());
     } catch (error) {
       return false;
     }
   });
   
-  if (!isUsed && !filePath.includes('index.') && !filePath.includes('main.')) {
+  if (!isUsed) {
     report.unusedFiles.push(filePath);
   }
 }
@@ -113,6 +149,26 @@ function checkUnificationStatus(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const filename = path.basename(filePath);
+    
+    // تجاهل ملفات معينة من فحص التوحيد
+    const skipUnificationCheck = [
+      'package.json', 'tsconfig.json', '.env', 'vite.config',
+      'tailwind.config', 'postcss.config', 'drizzle.config'
+    ];
+    
+    if (skipUnificationCheck.some(skip => filename.includes(skip))) {
+      return null;
+    }
+    
+    // فحص ملفات الخدمات فقط
+    const isServiceFile = filePath.includes('/services/') || 
+                         filename.endsWith('Service.ts') || 
+                         filename.endsWith('Service.js') ||
+                         filePath.includes('/core/');
+    
+    if (!isServiceFile) {
+      return null; // لا نفحص ملفات غير الخدمات
+    }
     
     const status = {
       file: filePath,
@@ -323,6 +379,31 @@ function saveHtmlReport() {
                 `).join('')}
             </tbody>
         </table>
+        
+        <h2>📁 تحليل الملفات المكررة</h2>
+        ${report.duplicateFiles.length > 0 ? `
+        <table>
+            <thead>
+                <tr><th>اسم الملف</th><th>المواقع</th><th>ملاحظة</th></tr>
+            </thead>
+            <tbody>
+                ${report.duplicateFiles.map(item => `
+                    <tr>
+                        <td>${item.filename}</td>
+                        <td>${item.locations.map(loc => path.relative('.', loc)).join('<br>')}</td>
+                        <td>${item.note || 'مكرر عادي'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        ` : '<p>✅ لا توجد ملفات مكررة</p>'}
+        
+        <h2>🗑️ الملفات غير المستخدمة</h2>
+        ${report.unusedFiles.length > 0 ? `
+        <ul>
+            ${report.unusedFiles.map(file => `<li>${path.relative('.', file)}</li>`).join('')}
+        </ul>
+        ` : '<p>✅ جميع الملفات مستخدمة</p>'}
 
         ${report.rateLimitingStatus.length > 0 ? `
         <h2>🛡️ حالة نظام Rate Limiting</h2>
