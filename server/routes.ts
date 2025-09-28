@@ -11,7 +11,8 @@ import {
   insertNginxConfigSchema,
   insertNotificationSchema,
   insertFrontendErrorSchema,
-  insertUserActivitySchema
+  insertUserActivitySchema,
+  insertAllowedPathSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { pm2Service } from "./services/pm2Service";
@@ -30,8 +31,9 @@ import { ENV_CONFIG } from "../shared/environment.js";
 import { rateLimiter } from './utils/rateLimiter';
 import path from 'path';
 import fs from 'fs/promises';
-import { getSystemInfo, getSystemResources } from './services/systemService';
+// تم إزالة الاستيراد المباشر - systemService مستورد بالفعل في السطر 20
 import unifiedFileRoutes from './routes/unifiedFileRoutes';
+import unifiedNotificationRoutes from './routes/UnifiedNotificationRoutes';
 
 // 🛡️ SECURITY: WebSocket clients store - simplified but secure
 const wsClients = new Set<WebSocket>();
@@ -1832,7 +1834,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.listDirectory(dirPath, userId);
 
@@ -1873,7 +1876,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.readFileContent(filePath, userId);
 
@@ -1922,7 +1926,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.writeFile(filePath, content, userId);
 
@@ -1963,7 +1968,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.createDirectory(dirPath, userId, { recursive });
 
@@ -2004,7 +2010,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.deleteItem(itemPath, userId);
 
@@ -2045,7 +2052,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.renameItem(oldPath, newPath, userId);
 
@@ -2086,7 +2094,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.copyItem(sourcePath, destinationPath, userId);
 
@@ -2127,7 +2136,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure UnifiedFileService is imported and initialized correctly before use
-      const { unifiedFileService } = await import('./services/unifiedFileService');
+      const { UnifiedFileService } = await import('./services/unifiedFileService');
+      const unifiedFileService = new UnifiedFileService(storage);
 
       const result = await unifiedFileService.getFileInfo(itemPath, userId);
 
@@ -2199,6 +2209,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register the unified file routes
   app.use('/api/unified-files', isAuthenticated, unifiedFileRoutes);
+
+  // Register the unified notification routes
+  app.use('/api/unified/notifications', isAuthenticated, unifiedNotificationRoutes);
 
   return server;
 }

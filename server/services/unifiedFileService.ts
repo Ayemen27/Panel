@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { existsSync, statSync, constants as fsConstants } from 'fs';
-import { IStorage } from '../storage';
+import { IStorage, storage } from '../storage';
 import { logger } from '../utils/logger';
 
 export interface UnifiedFileInfo {
@@ -877,3 +877,5 @@ export class UnifiedFileService {
     }
   }
 }
+
+// تصدير الكلاس للاستخدام في routes.ts بشكل مباشر
