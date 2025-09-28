@@ -7,8 +7,7 @@ import { Eye, EyeOff, LogIn, Shield, Lock, User, Building2 } from "lucide-react"
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
@@ -25,121 +24,12 @@ const loginSchema = z.object({
 
 type LoginData = z.infer<typeof loginSchema>;
 
-// Hook مخصص للمصادقة
-export function useAuth() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [, navigate] = useLocation();
-
-  // جلب بيانات المستخدم الحالي
-  const { data: user, isLoading: isLoadingUser, error: userError } = useQuery({
-    queryKey: ["/api/user"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/user");
-        if (!response.ok) {
-          if (response.status === 401) {
-            // إذا كان رمز الاستجابة 401، فهذا يعني أن المستخدم غير مصادق عليه
-            return null;
-          }
-          const errorText = await response.text();
-          throw new Error(errorText || "فشل في جلب بيانات المستخدم");
-        }
-        return await response.json();
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        return null; // التعامل مع الأخطاء الأخرى كفشل في جلب البيانات
-      }
-    },
-    staleTime: 1000 * 60 * 5, // 5 دقائق
-    retry: false, // لا تحاول إعادة جلب البيانات تلقائيًا عند فشل المصادقة
-  });
-
-  // دالة تسجيل الدخول
-  const { mutate: login, isPending: authLoading, error: loginError } = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      try {
-        const response = await fetch("/api/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Ensure cookies are sent
-          body: JSON.stringify(credentials),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "فشل في تسجيل الدخول");
-        }
-
-        // جلب بيانات المستخدم بعد تسجيل الدخول بنجاح
-        const userData = await response.json();
-        queryClient.setQueryData(["/api/user"], userData); // تحديث cache
-        return userData;
-      } catch (error) {
-        console.error('Login error:', error);
-        throw error;
-      }
-    },
-    onSuccess: (userData) => {
-      console.log('✅ Login successful, user data:', userData);
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: `أهلاً بك، ${userData.firstName || userData.username}!`,
-        variant: "default",
-      });
-
-      // التنقل سيتم إدارته تلقائياً من useAuth hook
-      console.log('🔄 Login successful - navigation will be handled by useAuth');
-    },
-    onError: (error: Error) => {
-      console.error('Login mutation error:', error);
-      toast({
-        title: "خطأ في تسجيل الدخول",
-        description: error.message || "فشل في تسجيل الدخول",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // دالة تسجيل الخروج
-  const logout = async () => {
-    try {
-      await fetch("/api/logout", { method: "POST" });
-      queryClient.removeQueries({ queryKey: ["/api/user"] }); // إزالة بيانات المستخدم من cache
-      toast({
-        title: "تم تسجيل الخروج",
-        description: "تم تسجيل خروجك بنجاح.",
-        variant: "default",
-      });
-      navigate("/auth"); // إعادة التوجيه إلى صفحة تسجيل الدخول
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        title: "خطأ في تسجيل الخروج",
-        description: "فشل في تسجيل الخروج.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  return {
-    user,
-    isLoadingUser,
-    userError,
-    login,
-    authLoading,
-    loginError,
-    logout,
-  };
-}
 
 
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const { login, authLoading, user, isLoadingUser } = useAuth(); // استخدام useAuth hook
+  const { login, user, isLoading } = useAuth(); // استخدام useAuth hook
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
@@ -162,16 +52,16 @@ export default function AuthPage() {
   });
 
   const onLogin = (data: LoginData) => {
-    login(data); // استدعاء دالة login من useAuth hook
+    login(data.username, data.password); // استدعاء دالة login من useAuth hook
   };
 
   // منع العرض إذا كان المستخدم يقوم بتسجيل الدخول أو بيانات المستخدم لا تزال قيد التحميل
-  if (authLoading || isLoadingUser) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
         <div className="text-white text-lg font-semibold flex items-center gap-3">
           <div className="w-6 h-6 animate-spin border-2 border-white border-t-transparent rounded-full"></div>
-          {authLoading ? "جاري تسجيل الدخول..." : "جاري التحقق من المستخدم..."}
+          {isLoading ? "جاري التحقق من المستخدم..." : "جاري تسجيل الدخول..."}
         </div>
       </div>
     );
@@ -217,7 +107,7 @@ export default function AuthPage() {
                     data-testid="input-username"
                     {...loginForm.register("username")}
                     placeholder="أدخل اسم المستخدم"
-                    disabled={authLoading}
+                    disabled={isLoading}
                     className="h-12 bg-white/60 dark:bg-slate-800/60 border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 text-right transition-all duration-300 rounded-xl shadow-sm group-hover:shadow-md focus:shadow-lg pl-4 pr-4"
                     dir="ltr"
                     autoComplete="username"
@@ -245,7 +135,7 @@ export default function AuthPage() {
                     type={showPassword ? "text" : "password"}
                     {...loginForm.register("password")}
                     placeholder="أدخل كلمة المرور"
-                    disabled={authLoading}
+                    disabled={isLoading}
                     className="h-12 bg-white/60 dark:bg-slate-800/60 border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 text-right transition-all duration-300 rounded-xl shadow-sm group-hover:shadow-md focus:shadow-lg pl-12 pr-4"
                     dir="ltr"
                   />
@@ -279,9 +169,9 @@ export default function AuthPage() {
                   type="submit"
                   data-testid="button-login"
                   className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
-                  disabled={authLoading}
+                  disabled={isLoading}
                 >
-                  {authLoading ? (
+                  {isLoading ? (
                     <div className="flex items-center gap-3">
                       <div className="w-5 h-5 animate-spin border-2 border-white border-t-transparent rounded-full" />
                       <span>جاري تسجيل الدخول...</span>
