@@ -91,8 +91,8 @@ export const useAuth = () => {
     },
   });
 
-  // Determine authentication status
-  const isAuthenticated = user ? true : (isError && isUnauthorizedError(error)) ? false : undefined;
+  // Determine authentication status - explicitly handle all cases
+  const isAuthenticated = !!user; // Simple boolean: user exists = authenticated
 
   // Console logging for debugging
   console.log('useAuth - user:', user, 'isLoading:', isLoading, 'error:', error, 'isAuthenticated:', isAuthenticated);
