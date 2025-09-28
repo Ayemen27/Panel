@@ -45,10 +45,8 @@ export class PM2Service {
     }
 
     try {
-      // Try multiple paths for PM2
-      const pm2Path = getPM2Path();
+      // Get correct PM2 command path
       const possiblePaths = [
-        pm2Path,
         'pm2',
         '/usr/local/bin/pm2',
         '/usr/bin/pm2',
@@ -486,10 +484,9 @@ export class PM2Service {
     }
 
     try {
-      const pm2Path = getPM2Path();
-      if (!pm2Path) throw new Error('PM2 path not found');
-
-      const { stdout } = await execAsync(`${pm2Path} jlist`);
+      // Use direct PM2 command instead of path
+      const pm2Command = 'pm2'; // Use system PM2
+      const { stdout } = await execAsync(`${pm2Command} jlist`);
 
       // Clean and validate JSON output - handle PM2 update messages
       let cleanOutput = stdout.trim();

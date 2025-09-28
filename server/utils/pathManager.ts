@@ -182,4 +182,25 @@ export const getUploadsPath = () => pathManager.getUploadsPath();
 export const getConfigPath = () => pathManager.getConfigPath();
 export const getSSLPath = () => pathManager.getSSLPath();
 export const getNginxPath = () => pathManager.getNginxPath();
-export const getPM2Path = () => pathManager.getPM2Path();
+export const getPM2Path = () => {
+  // إرجاع أمر PM2 الصحيح، وليس مسار مجلد
+  const possiblePaths = [
+    'pm2',
+    '/usr/local/bin/pm2',
+    '/usr/bin/pm2',
+    path.join(process.env.HOME || '', '.npm/bin/pm2'),
+    path.join(process.env.HOME || '', '.config/npm/node_global/bin/pm2'),
+    'npx pm2'
+  ];
+
+  for (const pm2Path of possiblePaths) {
+    try {
+      require('child_process').execSync(`${pm2Path} --version`, { stdio: 'pipe' });
+      return pm2Path;
+    } catch {
+      continue;
+    }
+  }
+  
+  return 'pm2'; // fallback
+};

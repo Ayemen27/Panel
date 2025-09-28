@@ -55,10 +55,10 @@ function detectServerEnvironment(): {
 } {
   const processEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
 
-  // اكتشاف Replit من متغيرات البيئة المختلفة - محسن
+  // اكتشاف Replit محسن وأكثر دقة
   const replitIndicators = [
     'REPL_ID',
-    'REPLIT_DB_URL',
+    'REPLIT_DB_URL', 
     'REPL_SLUG',
     'REPLIT_CLUSTER',
     'REPLIT_ENVIRONMENT',
@@ -66,10 +66,13 @@ function detectServerEnvironment(): {
     'REPLIT'
   ];
 
+  // فحص أكثر تفصيلاً لبيئة Replit
   const isReplitServer = replitIndicators.some(indicator => processEnv[indicator]) ||
                         processEnv.npm_config_user_config?.includes('/home/runner/') ||
                         processEnv.PWD?.startsWith('/home/runner/') ||
-                        processEnv.HOME === '/home/runner';
+                        processEnv.HOME === '/home/runner' ||
+                        processEnv.HOSTNAME?.length === 12 || // Replit hostname pattern
+                        (typeof process !== 'undefined' && process.cwd && process.cwd().includes('/home/runner/'));
 
   // اكتشاف إضافي من hostname - تحسين الدقة
   const hostname = processEnv.HOSTNAME || '';
@@ -532,6 +535,18 @@ export function getWebSocketUrl(token?: string): string {
       const fallbackUrl = protocol === 'wss:' ? `wss://${currentHost}/ws` : `ws://${currentHost}:5000/ws`;
       console.warn('🔄 Using emergency fallback URL:', fallbackUrl);
       return fallbackUrl;
+    }
+
+    // فرض إعادة تحميل إذا كان هناك خطأ في الاتصال
+    if (host.includes('replit.dev') || host.includes('repl.co')) {
+      // للتأكد من استخدام البروتوكول الصحيح في Replit
+      const replitUrl = `wss://${host}/ws`;
+      console.log('🔗 Using verified Replit WebSocket URL:', replitUrl);
+      
+      if (token) {
+        return `${replitUrl}?token=${encodeURIComponent(token)}`;
+      }
+      return replitUrl;
     }
 
     // تحديد نوع النطاق مع تحسينات

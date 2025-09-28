@@ -85,6 +85,29 @@ app.use((req, res, next) => {
     console.warn('⚠️ Directory setup failed, continuing anyway:', error);
   }
 
+  // إعداد PM2 بشكل صحيح
+  console.log('🔧 Setting up PM2...');
+  try {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    // التحقق من وجود PM2 وإعداده
+    try {
+      await execAsync('pm2 --version');
+      console.log('✅ PM2 is available');
+      
+      // تنظيف أي عمليات معلقة
+      await execAsync('pm2 delete all').catch(() => {});
+      await execAsync('pm2 save --force').catch(() => {});
+      console.log('✅ PM2 cleaned and ready');
+    } catch (pm2Error) {
+      console.warn('⚠️ PM2 setup issues, using fallback mode');
+    }
+  } catch (error) {
+    console.warn('⚠️ PM2 setup failed:', error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

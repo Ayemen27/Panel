@@ -148,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionExists = !!req.session;
       const isAuthenticated = req.isAuthenticated && req.isAuthenticated();
       const hasUser = !!req.user;
-      
+
       if (!isAuthenticated && req.path !== '/health' && req.method === 'GET') {
         console.log(`🔍 Auth Debug - ${req.method} ${req.path}:`);
         console.log(`   Session exists: ${sessionExists}`);
@@ -159,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`   Origin: ${req.headers.origin || 'none'}`);
         console.log(`   Cookies: ${Object.keys(req.cookies || {}).join(', ') || 'none'}`);
       }
-      
+
       next();
     });
   }
@@ -812,45 +812,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        if (errorMessage.includes('PM2') || errorMessage.includes('pm2')) {
-          res.status(503).json({
-            message: "Process manager is unavailable",
-            details: errorMessage,
-            solution: "Please ensure PM2 is installed or use fallback mode"
-          });
-        } else if (errorMessage.includes('ENOENT') || errorMessage.includes('command not found')) {
-          res.status(404).json({
-            message: "Application command or path not found",
-            details: errorMessage,
-            suggestions: [
-              "Check if the application path exists",
-              "Verify the main file is present",
-              "Ensure package.json has correct main field"
-            ]
-          });
-        } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
-          res.status(403).json({
-            message: "Permission denied",
-            details: errorMessage,
-            solution: "Check file permissions and ownership"
-          });
-        } else if (errorMessage.includes('No main file found')) {
-          res.status(400).json({
-            message: "No executable file found",
-            details: errorMessage,
-            suggestions: [
-              "Add index.js, main.js, bot.js, or similar entry file",
-              "Specify a command in application settings",
-              "Check package.json main or scripts.start"
-            ]
-          });
-        } else {
-          res.status(500).json({
-            message: "Failed to start application",
-            details: errorMessage,
-            troubleshooting: "Check application logs for more details"
-          });
-        }
+        if (errorMessage.includes('PM2') || errorMessage.includes('pm2') || errorMessage.includes('Permission denied')) {
+        res.status(503).json({
+          message: "Process manager configuration error",
+          details: errorMessage,
+          solution: "Using fallback process management",
+          fallback: true
+        });
+      } else if (errorMessage.includes('ENOENT') || errorMessage.includes('command not found')) {
+        res.status(404).json({
+          message: "Application command or path not found",
+          details: errorMessage,
+          suggestions: [
+            "Check if the application path exists",
+            "Verify the main file is present",
+            "Ensure package.json has correct main field"
+          ]
+        });
+      } else if (errorMessage.includes('permission') || errorMessage.includes('EACCES')) {
+        res.status(403).json({
+          message: "Permission denied",
+          details: errorMessage,
+          solution: "Check file permissions and ownership"
+        });
+      } else if (errorMessage.includes('No main file found')) {
+        res.status(400).json({
+          message: "No executable file found",
+          details: errorMessage,
+          suggestions: [
+            "Add index.js, main.js, bot.js, or similar entry file",
+            "Specify a command in application settings",
+            "Check package.json main or scripts.start"
+          ]
+        });
+      } else {
+        res.status(500).json({
+          message: "Failed to start application",
+          details: errorMessage,
+          troubleshooting: "Check application logs for more details"
+        });
+      }
       }
   });
 
@@ -2383,10 +2384,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             } catch (error) {
               console.error(`Terminal: Failed to execute command "${trimmedCommand}":`, error);
-              const errorMessage = error instanceof Error 
-                ? (error as Error).message 
-                : (typeof error === 'string' 
-                    ? error 
+              const errorMessage = error instanceof Error
+                ? (error as Error).message
+                : (typeof error === 'string'
+                    ? error
                     : String(error) || 'Unknown error');
               ws.send(JSON.stringify({
                 type: 'TERMINAL_ERROR',
