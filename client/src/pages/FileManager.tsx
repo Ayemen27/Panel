@@ -150,7 +150,7 @@ export default function FileManager() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 
   // Real Files State
-  const [currentPath, setCurrentPath] = useState<string>('/home/administrator/Panel');
+  const [currentPath, setCurrentPath] = useState<string>('/home/administrator');
 
   // Common State
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -184,7 +184,7 @@ export default function FileManager() {
   const dragCounter = useRef(0);
 
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
-    { id: null, name: 'الرئيسية', path: '/home/administrator' }
+    { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
   ]);
 
   // Initialize real files with default allowed path
@@ -233,26 +233,52 @@ export default function FileManager() {
         const result = await response.json();
         console.log('✅ API Success response:', result);
 
-        if (!result.success && !result.data) {
-          throw new Error(result.error || result.message || 'Failed to fetch directory contents');
+        // Handle different response formats more gracefully
+        let directoryData: DirectoryListing;
+
+        if (result.success === false) {
+          throw new Error(result.error || result.message || 'API returned failure status');
         }
 
-        // Handle both direct data and wrapped response formats
-        const directoryData = result.data || result;
-        
-        if (!directoryData || !directoryData.items) {
+        // Check if result has success property and data
+        if (result.success && result.data) {
+          directoryData = result.data;
+        }
+        // Check if result is direct directory data
+        else if (result.path && result.items) {
+          directoryData = result;
+        }
+        // Check if result.data exists without success flag
+        else if (result.data && result.data.path && result.data.items) {
+          directoryData = result.data;
+        }
+        else {
+          console.error('❌ Unexpected response format:', result);
           throw new Error('Invalid directory data format received');
         }
 
-        console.log(`📁 Found ${directoryData.items.length} items in directory`);
+        if (!directoryData.items || !Array.isArray(directoryData.items)) {
+          console.error('❌ Invalid items array:', directoryData.items);
+          throw new Error('Directory items is not a valid array');
+        }
+
+        console.log(`📁 Found ${directoryData.items.length} items in directory: ${directoryData.path}`);
+        console.log('📋 Items preview:', directoryData.items.slice(0, 3).map(item => item.name));
+        
         return directoryData;
 
       } catch (error: any) {
         console.error('❌ Directory fetch error:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          stack: error.stack,
+          currentPath,
+          fileSystemMode
+        });
         throw new Error(error.message || 'Failed to load directory contents');
       }
     },
-    enabled: fileSystemMode === 'real' && !!currentPath,
+    enabled: fileSystemMode === 'real' && !!currentPath && currentPath.length > 0,
     retry: (failureCount, error: Error) => {
       console.log(`🔄 Retry attempt ${failureCount} for error:`, error.message);
       
@@ -260,8 +286,9 @@ export default function FileManager() {
       if (error.message.includes('Path validation failed') || 
           error.message.includes('Access denied') ||
           error.message.includes('404') ||
-          error.message.includes('403')) {
-        console.log('🚫 Not retrying due to permanent error');
+          error.message.includes('403') ||
+          error.message.includes('Invalid directory data format')) {
+        console.log('🚫 Not retrying due to permanent error:', error.message);
         return false;
       }
       return failureCount < 2;
@@ -426,9 +453,19 @@ export default function FileManager() {
 
   // Get current files based on mode, tab, and sorting
   const currentFiles = useMemo(() => {
+    console.log('🔍 Computing currentFiles:', {
+      fileSystemMode,
+      searchQuery,
+      realFilesDataExists: !!realFilesData,
+      realFilesDataItems: realFilesData?.items?.length || 0,
+      realFilesDataPath: realFilesData?.path
+    });
+
     let files = fileSystemMode === 'database' 
       ? (searchQuery ? databaseSearchResults : databaseFiles)
       : (realFilesData?.items || []);
+
+    console.log('📁 Files before filtering:', files.length);
 
     // Apply tab-based filtering
     switch (activeTab) {
@@ -2086,6 +2123,11 @@ export default function FileManager() {
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
               <strong>خطأ في المسار:</strong> {pathError}
+              <div className="mt-2 text-xs text-gray-600">
+                <p>المسار الحالي: {currentPath}</p>
+                <p>نوع النظام: {fileSystemMode}</p>
+                <p>تحميل البيانات: {isRealFilesLoading ? 'جاري...' : 'منتهي'}</p>
+              </div>
               <div className="mt-2 flex gap-2">
                 <Button 
                   size="sm" 
@@ -2093,6 +2135,7 @@ export default function FileManager() {
                   onClick={() => {
                     setCurrentPath('/home/administrator');
                     setPathError(null);
+                    setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: '/home/administrator' }]);
                   }}
                   className="h-6 text-xs"
                 >
