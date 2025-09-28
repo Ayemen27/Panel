@@ -39,7 +39,7 @@ const LEGACY_FILES = ['old-', 'legacy-', 'backup-', 'temp-', 'test-'];
 
 // أنماط الاستيرادات القديمة
 const OLD_IMPORT_PATTERNS = [
-  /import.*from\s+['"]\.\.?\/(?!.*unified).*Service['"],
+  /import.*from\s+['"]\.\.?\/(?!.*unified).*Service['"]/,
   /require\(['"]\.\.?\/(?!.*unified).*Service['"]\)/,
   /import.*express.*Router/,
   /app\.use\(/
