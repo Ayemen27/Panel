@@ -1173,7 +1173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Maintain backward compatibility by returning the notifications array
       if (result.success) {
-        res.json(result.data.notifications);
+        res.json(result.data?.notifications ?? []);
       } else {
         throw new Error(result.error || 'Failed to fetch notifications');
       }
