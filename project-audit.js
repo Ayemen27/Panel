@@ -5,8 +5,12 @@
  * الهدف: التحقق من توحيد النظام، كشف الملفات القديمة، وإنشاء تقرير مفصل
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // مجلد المشروع الرئيسي
 const PROJECT_ROOT = path.resolve(__dirname);
