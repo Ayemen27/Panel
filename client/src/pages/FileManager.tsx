@@ -39,10 +39,15 @@ import {
   Trash2,
   AlertTriangle,
   FolderOpen,
+  Star,
+  Clock,
+  Menu,
+  Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocation } from "wouter";
 import React from "react";
 
 // Error Boundary Component
@@ -119,6 +124,8 @@ interface BreadcrumbItem {
   path: string;
 }
 
+type TabType = 'files' | 'favorites' | 'recent';
+
 // Simple debug logging (can be easily disabled)
 const debugLog = (message: string, data?: any) => {
   if (import.meta.env.DEV) {
@@ -129,6 +136,7 @@ const debugLog = (message: string, data?: any) => {
 // Main FileManager Component
 function FileManagerCore() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // State
   const [currentPath, setCurrentPath] = useState<string>('/home/administrator');
@@ -141,6 +149,7 @@ function FileManagerCore() {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [fileContent, setFileContent] = useState<string>('');
   const [contentError, setContentError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('files');
 
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
@@ -255,7 +264,8 @@ function FileManagerCore() {
       debugLog('Computing current files', {
         realFilesDataExists: !!realFilesData,
         itemsLength: realFilesData?.items?.length || 0,
-        searchQuery
+        searchQuery,
+        activeTab
       });
 
       if (!realFilesData || !realFilesData.items) {
@@ -265,20 +275,50 @@ function FileManagerCore() {
 
       let files = realFilesData.items;
 
+      // Apply tab filter first
+      if (activeTab === 'favorites') {
+        // Improved favorites filter with normalized extensions
+        const favoriteExtensions = new Set(['jpg', 'png', 'pdf', 'txt', 'doc', 'docx']);
+        const originalCount = files.length;
+        files = files.filter(file => {
+          if (file.type !== 'file') return false;
+          const ext = (file.extension || '').toLowerCase().replace(/^\./, '');
+          return favoriteExtensions.has(ext);
+        });
+        debugLog('Applied favorites filter', {
+          filteredCount: files.length,
+          originalCount
+        });
+      } else if (activeTab === 'recent') {
+        // Sort by modification date (most recent first) and take top 50 files only
+        const originalCount = files.length;
+        files = [...files]
+          .filter(file => file.type === 'file') // Only files for recent tab
+          .sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime())
+          .slice(0, 50);
+        debugLog('Applied recent filter', {
+          filteredCount: files.length,
+          originalCount
+        });
+      }
+      // For 'files' tab, show all files (no additional filter)
+
       // Apply search filter if needed
       if (searchQuery.trim()) {
+        const beforeSearchCount = files.length;
         files = files.filter(file => 
           file.name.toLowerCase().includes(searchQuery.toLowerCase())
         );
         debugLog('Applied search filter', {
           searchQuery,
           filteredCount: files.length,
-          originalCount: realFilesData.items.length
+          beforeSearchCount
         });
       }
 
       debugLog('Current files computed', {
         totalFiles: files.length,
+        activeTab,
         fileTypes: files.reduce((acc, file) => {
           acc[file.type] = (acc[file.type] || 0) + 1;
           return acc;
@@ -293,7 +333,7 @@ function FileManagerCore() {
       });
       return [];
     }
-  }, [realFilesData, searchQuery]);
+  }, [realFilesData, searchQuery, activeTab]);
 
   // Handlers
   const handleFolderClick = useCallback((item: RealFileItem) => {
@@ -473,6 +513,7 @@ function FileManagerCore() {
         {/* Header */}
         <div className="bg-gray-900 text-white p-4">
           <div className="flex items-center justify-between">
+            {/* Left Icons */}
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -482,32 +523,90 @@ function FileManagerCore() {
               >
                 <Search className="w-5 h-5" />
               </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-10 w-10 p-0 text-white hover:bg-white/20"
+                onClick={() => {}}
+              >
+                <Filter className="w-5 h-5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-10 w-10 p-0 text-white hover:bg-white/20"
+                onClick={() => {}}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
             </div>
 
-            <h1 className="text-xl font-semibold">مدير الملفات</h1>
+            {/* Title */}
+            <h1 className="text-xl font-semibold">مدير الملفات +</h1>
 
+            {/* Right Icons */}
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-10 w-10 p-0 text-white hover:bg-white/20"
-                onClick={handlePullToRefresh}
-                disabled={isRefreshing}
+                onClick={() => {
+                  setLocation('/');
+                }}
+                title="الانتقال للشاشة الرئيسية"
+                data-testid="button-home"
               >
-                <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
+                <Home className="w-5 h-5" />
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-10 w-10 p-0 text-white hover:bg-white/20"
-                onClick={() => {
-                  setCurrentPath('/home/administrator');
-                  setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: '/home/administrator' }]);
-                }}
+                onClick={() => {}}
               >
-                <Home className="w-5 h-5" />
+                <Menu className="w-5 h-5" />
               </Button>
             </div>
+          </div>
+
+          {/* Tabs - moved to header */}
+          <div className="flex items-center justify-center gap-8 mt-4 border-t border-white/20 pt-4">
+            <button
+              onClick={() => setActiveTab('files')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
+                activeTab === 'files' 
+                  ? "bg-white/20 text-white" 
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              )}
+            >
+              <Folder className="w-5 h-5" />
+              <span>الملفات</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('favorites')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
+                activeTab === 'favorites' 
+                  ? "bg-white/20 text-white" 
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              )}
+            >
+              <Star className="w-5 h-5" />
+              <span>النجمة</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('recent')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
+                activeTab === 'recent' 
+                  ? "bg-white/20 text-white" 
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              )}
+            >
+              <Clock className="w-5 h-5" />
+              <span>التاريخ</span>
+            </button>
           </div>
         </div>
 
