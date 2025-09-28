@@ -22,17 +22,17 @@ if (typeof window !== 'undefined') {
   if (!window.process) {
     window.process = {} as any;
   }
-  
+
   // Ensure process.env exists
   if (!window.process.env) {
     window.process.env = { NODE_ENV: 'development' };
   }
-  
+
   // Fix process.cwd to prevent errors
   if (!window.process.cwd || typeof window.process.cwd !== 'function') {
     window.process.cwd = () => '/';
   }
-  
+
   // Add other required process properties
   window.process.platform = 'browser';
   window.process.version = 'v18.0.0';
@@ -45,8 +45,8 @@ if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
   if (import.meta.hot) {
     import.meta.hot.on('vite:error', (payload) => {
       // تصفية أخطاء WebSocket المتعلقة بـ HMR
-      if (payload.err && payload.err.message && 
-          (payload.err.message.includes('WebSocket') || 
+      if (payload.err && payload.err.message &&
+          (payload.err.message.includes('WebSocket') ||
            payload.err.message.includes('localhost:undefined') ||
            payload.err.message.includes('process.cwd'))) {
         console.warn('⚠️ Vite HMR issue (safe to ignore in Replit):', payload.err.message);
@@ -60,8 +60,8 @@ if (typeof window !== 'undefined' && ENV_CONFIG.isReplit) {
   const WebSocketConstructor = class extends originalWebSocket {
     constructor(url: string | URL, protocols?: string | string[]) {
       // إصلاح URLs الخاطئة للـ HMR
-      if (typeof url === 'string' && 
-          (url.includes('localhost:undefined') || 
+      if (typeof url === 'string' &&
+          (url.includes('localhost:undefined') ||
            url.includes('//localhost:undefined') ||
            url.includes('ws://localhost:undefined'))) {
         // استخدام URL صحيح لـ HMR

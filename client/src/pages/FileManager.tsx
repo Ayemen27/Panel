@@ -143,8 +143,24 @@ type FileSystemMode = 'database' | 'real';
 export default function FileManager() {
   const { toast } = useToast();
 
+  // Add comprehensive logging
+  const log = (action: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    console.log(`🔍 [FileManager ${timestamp}] ${action}:`, data || '');
+  };
+
   // File System Mode State
   const [fileSystemMode, setFileSystemMode] = useState<FileSystemMode>('real');
+
+  // Log initial component mount
+  useEffect(() => {
+    log('FileManager Component Mounted', {
+      initialFileSystemMode: fileSystemMode,
+      currentPath: currentPath,
+      userAgent: navigator.userAgent,
+      location: window.location.href
+    });
+  }, []);
 
   // Database Files State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -189,12 +205,26 @@ export default function FileManager() {
 
   // Initialize real files with default allowed path
   useEffect(() => {
+    log('File System Mode Changed', {
+      oldMode: fileSystemMode,
+      newMode: fileSystemMode,
+      isReal: fileSystemMode === 'real'
+    });
+
     if (fileSystemMode === 'real') {
       // Use administrator home directory
       const initialPath = '/home/administrator';
+      log('Setting Initial Real Path', {
+        path: initialPath,
+        reason: 'Real file system mode activated'
+      });
       setCurrentPath(initialPath);
       setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: initialPath }]);
     } else {
+      log('Setting Initial Database Path', {
+        path: '/',
+        reason: 'Database file system mode activated'
+      });
       setBreadcrumbs([{ id: 'root', name: 'الرئيسية', path: '/' }]);
     }
   }, [fileSystemMode]);
@@ -209,6 +239,12 @@ export default function FileManager() {
   const { data: realFilesData, isLoading: isRealFilesLoading, error: realFilesError, refetch: refetchRealFiles } = useQuery<DirectoryListing>({
     queryKey: ['/api/real-files/browse', currentPath],
     queryFn: async () => {
+      log('API Query Started', {
+        endpoint: '/api/real-files/browse',
+        path: currentPath,
+        fileSystemMode: fileSystemMode,
+        timestamp: new Date().toISOString()
+      });
       console.log('🔍 Fetching directory contents for:', currentPath);
       
       try {
@@ -265,6 +301,19 @@ export default function FileManager() {
         console.log(`📁 Found ${directoryData.items.length} items in directory: ${directoryData.path}`);
         console.log('📋 Items preview:', directoryData.items.slice(0, 3).map(item => item.name));
         
+        log('API Query Success', {
+          endpoint: '/api/real-files/browse',
+          path: directoryData.path,
+          itemCount: directoryData.items.length,
+          totalSize: directoryData.totalSize,
+          items: directoryData.items.map(item => ({
+            name: item.name,
+            type: item.type,
+            size: item.size,
+            permissions: item.permissions
+          }))
+        });
+        
         return directoryData;
 
       } catch (error: any) {
@@ -275,6 +324,17 @@ export default function FileManager() {
           currentPath,
           fileSystemMode
         });
+        
+        log('API Query Error', {
+          endpoint: '/api/real-files/browse',
+          error: error.message,
+          stack: error.stack,
+          currentPath,
+          fileSystemMode,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        });
+        
         throw new Error(error.message || 'Failed to load directory contents');
       }
     },
@@ -347,7 +407,18 @@ export default function FileManager() {
 
   // File content reader function
   const readFileContent = useCallback(async (file: FileItem) => {
+    log('User Action: Read File Content', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileSystemMode,
+      filePath: (file as RealFileItem).absolutePath
+    });
+
     if (fileSystemMode !== 'real') {
+      log('File Read Error: Wrong File System Mode', {
+        currentMode: fileSystemMode,
+        requiredMode: 'real'
+      });
       toast({
         title: "غير مدعوم",
         description: "قراءة المحتوى متوفرة فقط للملفات الحقيقية",
@@ -360,6 +431,11 @@ export default function FileManager() {
 
     // Check if file is too large (>5MB)
     if (realFile.size > 5 * 1024 * 1024) {
+      log('File Read Error: File Too Large', {
+        fileName: realFile.name,
+        fileSize: realFile.size,
+        maxSize: 5 * 1024 * 1024
+      });
       toast({
         title: "ملف كبير جداً",
         description: "لا يمكن معاينة الملفات الأكبر من 5 ميجابايت",
@@ -368,6 +444,13 @@ export default function FileManager() {
       return;
     }
 
+    log('File Read: Starting', {
+      fileName: realFile.name,
+      filePath: realFile.absolutePath,
+      fileSize: realFile.size,
+      mimeType: realFile.mimeType
+    });
+
     setSelectedFile(file);
     setIsLoadingContent(true);
     setContentError(null);
@@ -375,9 +458,21 @@ export default function FileManager() {
     setIsFilePreviewOpen(true);
 
     try {
+      log('File Read: API Call Started', {
+        filePath: realFile.absolutePath
+      });
       const contentData = await readFileContentQuery.mutateAsync(realFile.absolutePath);
+      log('File Read: Success', {
+        contentLength: contentData.content?.length || 0,
+        hasContent: !!contentData.content
+      });
       setFileContent(contentData.content || '');
     } catch (error: any) {
+      log('File Read: Error', {
+        error: error.message,
+        filePath: realFile.absolutePath,
+        stack: error.stack
+      });
       setContentError(error.message || 'فشل في قراءة الملف');
       toast({
         title: "خطأ في القراءة",
@@ -386,6 +481,10 @@ export default function FileManager() {
       });
     } finally {
       setIsLoadingContent(false);
+      log('File Read: Completed', {
+        fileName: realFile.name,
+        success: !contentError
+      });
     }
   }, [fileSystemMode, readFileContentQuery, toast]);
 
@@ -453,6 +552,18 @@ export default function FileManager() {
 
   // Get current files based on mode, tab, and sorting
   const currentFiles = useMemo(() => {
+    log('Computing Current Files', {
+      fileSystemMode,
+      searchQuery,
+      activeTab,
+      sortBy,
+      sortOrder,
+      realFilesDataExists: !!realFilesData,
+      realFilesDataItems: realFilesData?.items?.length || 0,
+      realFilesDataPath: realFilesData?.path,
+      databaseFilesCount: databaseFiles?.length || 0,
+      databaseSearchResultsCount: databaseSearchResults?.length || 0
+    });
     console.log('🔍 Computing currentFiles:', {
       fileSystemMode,
       searchQuery,
@@ -872,8 +983,21 @@ export default function FileManager() {
 
   // Handlers
   const handleFolderClick = (item: FileItem) => {
+    log('User Action: Folder Click', {
+      fileSystemMode,
+      itemName: item.name,
+      itemType: getItemType(item),
+      currentPath: fileSystemMode === 'real' ? currentPath : currentFolderId,
+      newPath: fileSystemMode === 'database' ? (item as DatabaseFileItem).id : (item as RealFileItem).absolutePath
+    });
+
     if (fileSystemMode === 'database') {
       const dbItem = item as DatabaseFileItem;
+      log('Database Navigation', {
+        from: currentFolderId,
+        to: dbItem.id,
+        folderName: dbItem.name
+      });
       setCurrentFolderId(dbItem.id);
       setBreadcrumbs([...breadcrumbs, { 
         id: dbItem.id, 
@@ -883,6 +1007,12 @@ export default function FileManager() {
     } else {
       const realItem = item as RealFileItem;
       if (realItem.type === 'directory') {
+        log('Real File Navigation', {
+          from: currentPath,
+          to: realItem.absolutePath,
+          folderName: realItem.name,
+          permissions: realItem.permissions
+        });
         setCurrentPath(realItem.absolutePath);
         setBreadcrumbs([...breadcrumbs, { 
           id: `path-${realItem.absolutePath}-${Date.now()}`, 
@@ -895,19 +1025,43 @@ export default function FileManager() {
 
   const handleBreadcrumbClick = (index: number) => {
     const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
+    const targetBreadcrumb = newBreadcrumbs[newBreadcrumbs.length - 1];
+    
+    log('User Action: Breadcrumb Click', {
+      clickedIndex: index,
+      totalBreadcrumbs: breadcrumbs.length,
+      targetBreadcrumb: targetBreadcrumb,
+      isHome: index === 0,
+      fileSystemMode
+    });
+
     setBreadcrumbs(newBreadcrumbs);
 
     // If clicking on the first breadcrumb (home), return to main libraries
     if (index === 0) {
+      log('Navigation: Return to Home', {
+        from: fileSystemMode === 'real' ? currentPath : currentFolderId,
+        action: 'show_main_libraries'
+      });
       setShowMainLibraries(true);
       setStorageSection('main');
       return;
     }
 
     if (fileSystemMode === 'database') {
-      setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+      log('Database Breadcrumb Navigation', {
+        from: currentFolderId,
+        to: targetBreadcrumb.id,
+        targetName: targetBreadcrumb.name
+      });
+      setCurrentFolderId(targetBreadcrumb.id);
     } else {
-      setCurrentPath(newBreadcrumbs[newBreadcrumbs.length - 1].path);
+      log('Real File Breadcrumb Navigation', {
+        from: currentPath,
+        to: targetBreadcrumb.path,
+        targetName: targetBreadcrumb.name
+      });
+      setCurrentPath(targetBreadcrumb.path);
     }
   };
 
@@ -926,6 +1080,16 @@ export default function FileManager() {
 
   const handleFileSystemModeChange = (checked: boolean) => {
     const newMode = checked ? 'real' : 'database';
+    
+    log('User Action: File System Mode Change', {
+      from: fileSystemMode,
+      to: newMode,
+      checked,
+      currentPath: fileSystemMode === 'real' ? currentPath : currentFolderId,
+      selectedItemsCount: selectedItems.length,
+      searchQuery
+    });
+
     setFileSystemMode(newMode);
     setSelectedItems([]);
     setSearchQuery('');
@@ -934,6 +1098,16 @@ export default function FileManager() {
     setShowMainLibraries(true);
     setStorageSection('main');
     setBreadcrumbs([{ id: null, name: 'الرئيسية', path: '/' }]);
+
+    log('File System Mode Changed', {
+      newMode,
+      resetToMainLibraries: true,
+      clearedState: {
+        selectedItems: true,
+        searchQuery: true,
+        pathError: true
+      }
+    });
   };
 
   // Helper functions

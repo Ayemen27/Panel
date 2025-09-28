@@ -54,109 +54,239 @@ async function apiRequest(url: string): Promise<any> {
   }
 }
 
+// Dummy functions for token management (replace with actual implementation)
+const getToken = () => localStorage.getItem('authToken');
+const setToken = (token: string) => localStorage.setItem('authToken', token);
+const removeToken = () => localStorage.removeItem('authToken');
 
-export function useAuth() {
-  const { data: user, isLoading, error } = useQuery<User>({
-    queryKey: ["/api/user"],
-    queryFn: async (): Promise<User | null> => {
-      try {
-        const data = await apiRequest("/api/user");
-        console.log('✅ User authenticated:', data?.firstName || data?.username);
-        
-        // تأكد من أن البيانات تحتوي على token أو session
-        if (data && !data.token && !data.sessionId) {
-          console.warn('⚠️ User data missing token/session information');
-        }
-        
-        return data;
-      } catch (error) {
-        if (isUnauthorizedError(error as Error)) {
-          console.log('🚫 User not authenticated - showing auth page');
-          return null;
-        }
-        console.error('❌ Auth error:', error);
-        throw error;
-      }
-    },
-    staleTime: 1 * 60 * 1000, // 1 minute
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: true,
-    refetchInterval: 5 * 60 * 1000, // Re-check every 5 minutes
-    retry: (failureCount, error) => {
-      if (isUnauthorizedError(error as Error)) {
-        console.log('Auth failed - unauthorized error, not retrying');
-        return false; // Don't retry unauthorized errors
-      }
-      console.log('Auth retry attempt:', failureCount);
-      return failureCount < 2;
-    },
-  });
+const authLog = (action: string, data?: any) => {
+  const timestamp = new Date().toISOString();
+  console.log(`🔐 [Auth ${timestamp}] ${action}:`, data || '');
+};
 
+export const useAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Console logging for debugging
   console.log('useAuth - user:', user, 'isLoading:', isLoading, 'error:', error);
 
-  // Handle different authentication states
-  const isAuthenticated = user ? true : 
-    (error && isUnauthorizedError(error as Error)) ? false : 
-    (!isLoading && !user && !error) ? false : undefined;
+  // Detailed auth logging
+  authLog('Auth State', {
+    hasUser: !!user,
+    userId: user?.id,
+    username: user?.username,
+    role: user?.role,
+    isLoading,
+    error,
+    token: !!getToken()
+  });
 
-  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
+  const login = async (username: string, password: string): Promise<void> => {
+    authLog('Login Started', {
+      username,
+      timestamp: new Date().toISOString()
+    });
 
-  // تحديث isLoading
-  useEffect(() => {
-    // This useEffect is no longer directly tied to isAuthLoading from useQuery
-    // The isLoading from useQuery is now directly returned.
-    // If there's a need for a separate isLoading state managed by this hook,
-    // it would need to be re-introduced with its own useState and setters.
-  }, [isLoading]); // Dependency on isLoading from useQuery
+    setIsLoading(true);
+    setError(null);
 
-  // معالجة إعادة التوجيه بعد المصادقة الناجحة
-  useEffect(() => {
-    // Ensure we don't navigate if the authentication state is still undefined
-    if (isAuthenticated === undefined) {
-      return;
-    }
-
-    if (isAuthenticated && user) {
-      const currentPath = window.location.pathname;
-      console.log('Authenticated user detected, current path:', currentPath);
-
-      // إعادة التوجيه للـ dashboard إذا كان المستخدم في صفحة landing أو auth
-      if (currentPath === '/' || currentPath === '/login' || currentPath === '/auth') {
-        console.log('Redirecting to dashboard...');
-        navigate('/dashboard');
-      }
-    } else if (isAuthenticated === false) {
-      const currentPath = window.location.pathname;
-      // إعادة التوجيه لصفحة تسجيل الدخول فقط إذا كان في صفحة محمية
-      if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/auth') {
-        console.log('Unauthenticated user detected, redirecting to auth...');
-        navigate('/');
-      }
-    }
-  }, [isAuthenticated, user, navigate]); // Dependencies are isAuthenticated, user, and navigate
-
-  const logout = async () => {
     try {
-      await fetch("/api/logout", {
-        method: "POST",
-        credentials: "include",
+      // Assuming apiRequest can handle POST requests with body
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
       });
-      queryClient.setQueryData(["/api/user"], null);
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // في حالة الخطأ، نقوم بتنظيف البيانات محلياً والتوجيه للصفحة الرئيسية
-      queryClient.setQueryData(["/api/user"], null);
-      navigate('/');
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: 'Unknown error' };
+        }
+        authLog('Login Failed', {
+          username,
+          status: response.status,
+          error: errorData.message,
+          response: errorData
+        });
+        throw new Error(errorData.message || 'فشل تسجيل الدخول');
+      }
+
+      const data = await response.json();
+      authLog('Login Success', {
+        username,
+        userId: data.user?.id,
+        role: data.user?.role,
+        hasToken: !!data.token
+      });
+
+      setToken(data.token);
+      setUser(data.user);
+      // Invalidate and refetch user query to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    } catch (err: any) {
+      authLog('Login Error', {
+        username,
+        error: err.message,
+        stack: err.stack
+      });
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const logout = () => {
+    authLog('Logout', {
+      userId: user?.id,
+      username: user?.username,
+      reason: 'user_initiated'
+    });
+
+    removeToken();
+    setUser(null);
+    setError(null);
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] }); // Clear user data from cache
+  };
+
+  const validateToken = async () => {
+    const token = getToken();
+
+    authLog('Token Validation Started', {
+      hasToken: !!token,
+      tokenLength: token?.length
+    });
+
+    if (!token) {
+      authLog('Token Validation: No Token', {
+        action: 'skip_validation'
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/validate', {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        authLog('Token Validation Failed', {
+          status: response.status,
+          statusText: response.statusText,
+          action: 'remove_token'
+        });
+        removeToken();
+        setUser(null);
+        setError('انتهت صلاحية الجلسة');
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      authLog('Token Validation Success', {
+        userId: data.user?.id,
+        username: data.user?.username,
+        role: data.user?.role
+      });
+      setUser(data.user);
+    } catch (err: any) {
+      authLog('Token Validation Error', {
+        error: err.message,
+        stack: err.stack,
+        action: 'remove_token'
+      });
+      removeToken();
+      setUser(null);
+      setError('خطأ في التحقق من الجلسة');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    validateToken();
+  }, []); // Run validation on mount
+
+  // Handle authentication state changes and navigation
+  const isAuthenticated = user ? true : (error && isUnauthorizedError(error as Error)) ? false : (!isLoading && !user && !error) ? false : undefined;
+
+  const [, navigate] = useLocation();
+
+  // Update isLoading based on queryClient state for auth query
+  // This is a bit of a workaround as useAuth hook doesn't directly expose useQuery's isLoading state
+  useEffect(() => {
+    const authQueryState = queryClient.getQueryState(["/api/user"]);
+    if (authQueryState && authQueryState.status === 'pending') {
+      setIsLoading(true);
+    } else if (authQueryState && authQueryState.status === 'error') {
+      // If there's an error and it's an unauthorized error, set isAuthenticated to false
+      if (isUnauthorizedError(authQueryState.error as Error)) {
+        setError(authQueryState.error as any);
+        setIsLoading(false);
+      } else {
+        // Handle other types of errors
+        setError(authQueryState.error as any);
+        setIsLoading(false);
+      }
+    } else if (authQueryState && authQueryState.status === 'success') {
+      setUser(authQueryState.data as User);
+      setIsLoading(false);
+    }
+  }, [queryClient]);
+
+  // Effect for handling redirection based on authentication status
+  useEffect(() => {
+    if (isAuthenticated === undefined) return;
+
+    const currentPath = window.location.pathname;
+
+    if (isAuthenticated && user) {
+      authLog('Authentication Success', {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        currentPath
+      });
+      if (currentPath === '/' || currentPath === '/login' || currentPath === '/auth') {
+        authLog('Redirecting to dashboard', { from: currentPath });
+        navigate('/dashboard');
+      }
+    } else if (isAuthenticated === false) {
+      authLog('Authentication Failed', {
+        error,
+        currentPath
+      });
+      if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/auth') {
+        authLog('Redirecting to home/login', { from: currentPath });
+        navigate('/');
+      }
+    }
+  }, [isAuthenticated, user, error, navigate]);
+
   // Role checking helpers
   const hasRole = (requiredRole: UserRole): boolean => {
-    if (!user?.role) return false;
-    return ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY[requiredRole];
+    const userRole = user?.role;
+    if (!userRole) return false;
+    const roleHierarchy = {
+      admin: 4,
+      moderator: 3,
+      user: 2,
+      viewer: 1,
+    };
+    return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
   };
 
   const hasAnyRole = (requiredRoles: UserRole[]): boolean => {
@@ -183,6 +313,7 @@ export function useAuth() {
     user,
     isAuthenticated,
     isLoading,
+    login,
     logout,
     error,
     // Role helpers
@@ -193,4 +324,4 @@ export function useAuth() {
     isUser,
     isViewer,
   };
-}
+};

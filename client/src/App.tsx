@@ -10,7 +10,7 @@ import { ActivityProvider } from "@/contexts/ActivityContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { runWebSocketDiagnostics } from "@/utils/websocketDiagnostics";
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, lazy, Suspense, useState } from "react";
 import { errorLogger, updateAppState } from "@/lib/errorLogger";
 import NotFound from "@/pages/not-found";
 import MainLayout from "@/components/Layout/MainLayout";
@@ -82,7 +82,7 @@ function Router() {
     if (isAuthenticated && user?.token) {
       // تحديث token في WebSocket
       updateToken(user.token);
-      
+
       // تشغيل التشخيص
       runWebSocketDiagnostics(user.token).then(diagnostics => {
         console.log('🔍 WebSocket diagnostics completed:', diagnostics);
@@ -259,6 +259,54 @@ function App() {
 
     console.log('🔍 ErrorLogger system initialized in App.tsx');
   }, []);
+
+  const { user, isLoading } = useAuth();
+  const [isAuthenticating, setIsAuthenticating] = useState(true);
+
+  const appLog = (action: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    console.log(`📱 [App ${timestamp}] ${action}:`, data || '');
+  };
+
+  appLog('App Component Mounted', {
+    userAgent: navigator.userAgent,
+    location: window.location.href,
+    timestamp: new Date().toISOString()
+  });
+
+  console.log('🔍 ErrorLogger system initialized in App.tsx');
+
+  useEffect(() => {
+    appLog('Auth Check Started', {
+      hasUser: !!user,
+      isLoading,
+      isAuthenticating
+    });
+
+    // Simulate auth check delay
+    const timer = setTimeout(() => {
+      appLog('Auth Check Completed', {
+        hasUser: !!user,
+        isLoading
+      });
+      setIsAuthenticating(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Log auth state changes
+  useEffect(() => {
+    appLog('Auth State Changed', {
+      hasUser: !!user,
+      userId: user?.id,
+      username: user?.username,
+      role: user?.role,
+      isLoading,
+      isAuthenticating
+    });
+  }, [user, isLoading, isAuthenticating]);
+
 
   return (
     <QueryClientProvider client={queryClient}>
