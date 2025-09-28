@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير الفحص الشامل للمشروع</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-number { font-size: 2em; font-weight: bold; display: block; }
+        .status-good { color: #27ae60; font-weight: bold; }
+        .status-warning { color: #f39c12; font-weight: bold; }
+        .status-error { color: #e74c3c; font-weight: bold; }
+        .recommendation { background: #e8f6f3; border-right: 4px solid #27ae60; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        ul { list-style-type: none; padding-right: 0; }
+        li { padding: 5px 0; }
+        .check-pass::before { content: "✅ "; }
+        .check-fail::before { content: "❌ "; }
+        .check-warning::before { content: "⚠️ "; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 تقرير الفحص الشامل للمشروع</h1>
+        <p><strong>تاريخ التقرير:</strong> ٢٨‏/٩‏/٢٠٢٥، ١١:٥٦:١٨ م</p>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-number">13</span>
+                إجمالي الخدمات
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">12</span>
+                خدمات موحدة
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">1</span>
+                ملفات قديمة
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">0</span>
+                ملفات مكررة
+            </div>
+        </div>
+
+        <h2>📊 حالة توحيد الخدمات</h2>
+        <ul>
+            <li class="check-pass">خدمات تستخدم BaseService: 12</li>
+            <li class="check-warning">خدمات تحتاج تحديث: 1</li>
+            <li class="check-pass">خدمات تستخدم ServiceContainer: 9</li>
+        </ul>
+
+        <h2>🏥 حالة النظام</h2>
+        <ul>
+            <li class="check-fail">حالة البناء: فاشل</li>
+            <li class="check-pass">حالة الخادم: يعمل</li>
+        </ul>
+
+        
+        <div class="recommendation">
+            <h3>📝 التوصيات:</h3>
+            <ul>
+                <li>• إصلاح أخطاء البناء</li><li>• إصلاح أخطاء TypeScript</li><li>• تحديث 1 خدمة لاستخدام BaseService</li><li>• تنظيف 1 ملف/مجلد قديم</li>
+            </ul>
+        </div>
+        
+    </div>
+</body>
+</html>

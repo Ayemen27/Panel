@@ -1,0 +1,75 @@
+{
+  "unifiedServices": {
+    "total": 13,
+    "usingBaseService": [
+      "UnifiedNotificationService.ts",
+      "auditService.ts",
+      "backupService.ts",
+      "deploymentService.ts",
+      "logService.ts",
+      "monitoringService.ts",
+      "nginxService.ts",
+      "pm2Service.ts",
+      "sslService.ts",
+      "storageStatsService.ts",
+      "systemService.ts",
+      "unifiedFileService.ts"
+    ],
+    "notUsingBaseService": [
+      "smart-connection-manager.ts"
+    ],
+    "usingServiceContainer": [
+      "auditService.ts",
+      "backupService.ts",
+      "deploymentService.ts",
+      "logService.ts",
+      "monitoringService.ts",
+      "nginxService.ts",
+      "pm2Service.ts",
+      "sslService.ts",
+      "systemService.ts"
+    ],
+    "notUsingServiceContainer": [
+      "UnifiedNotificationService.ts",
+      "smart-connection-manager.ts",
+      "storageStatsService.ts",
+      "unifiedFileService.ts"
+    ]
+  },
+  "legacyFiles": {
+    "total": 1,
+    "files": [
+      "/home/runner/workspace/server/scripts/cleanup-legacy-files.ts"
+    ],
+    "directories": []
+  },
+  "duplicateFiles": {
+    "total": 0,
+    "duplicates": []
+  },
+  "routesIntegration": {
+    "total": 3,
+    "integrated": [
+      "server/routes.ts",
+      "server/routes/unifiedFileRoutes.ts",
+      "server/routes/UnifiedNotificationRoutes.ts"
+    ],
+    "needsIntegration": []
+  },
+  "unusedFiles": [
+    "client/src/components/Common/ErrorBoundaryButton.tsx",
+    "client/src/components/Common/LoadingSpinner.tsx",
+    "client/src/components/FileManager/FileManagerCore.tsx"
+  ],
+  "systemHealth": {
+    "buildStatus": "fail",
+    "lintStatus": "fail",
+    "serverStatus": "running"
+  },
+  "recommendations": [
+    "إصلاح أخطاء البناء",
+    "إصلاح أخطاء TypeScript",
+    "تحديث 1 خدمة لاستخدام BaseService",
+    "تنظيف 1 ملف/مجلد قديم"
+  ]
+}
