@@ -6,7 +6,7 @@
 import { IStorage } from '../storage';
 import { BaseService, ServiceContext } from './BaseService';
 import { Request, Response, NextFunction } from 'express';
-import { ServiceTokens, ServiceDependencies, ServicePriority, ServiceConfig } from './ServiceTokens';
+import { ServiceTokens, ServiceDependencies, ServicePriority, ServiceConfig, ServiceMetadata, ServiceFactory } from './ServiceTokens';
 
 // Import all service classes for factory helpers
 import { SystemService } from '../services/systemService';
@@ -28,9 +28,9 @@ export type ServiceConstructor<T extends BaseService> = new (
 ) => T;
 
 /**
- * Service Factory Type - يحدد كيفية إنشاء خدمة مع تبعياتها
+ * Service Constructor Factory Type - يحدد كيفية إنشاء خدمة مع تبعياتها
  */
-export type ServiceFactory<T extends BaseService> = {
+export type ServiceConstructorFactory<T extends BaseService> = {
   constructor: ServiceConstructor<T>;
   dependencies?: ServiceTokens[];
   priority?: number;
@@ -38,10 +38,18 @@ export type ServiceFactory<T extends BaseService> = {
 };
 
 /**
- * Service Registry - خريطة شاملة لجميع الخدمات المتاحة
+ * Service Registry Entry - المُدخل الكامل للخدمة في السجل
  */
-export type ServiceRegistry = {
-  [K in ServiceTokens]: ServiceFactory<BaseService>;
+export interface ServiceRegistryEntry {
+  metadata: ServiceMetadata;
+  factory: ServiceFactory;
+}
+
+/**
+ * Service Registry Map - خريطة شاملة لجميع الخدمات المتاحة
+ */
+export type ServiceRegistryMap = {
+  [K in ServiceTokens]: ServiceRegistryEntry;
 };
 
 /**
@@ -52,8 +60,285 @@ export class ServiceContainer {
   private services: Map<string, BaseService> = new Map();
   private storage: IStorage;
   private context: ServiceContext;
-  private serviceRegistry: Partial<ServiceRegistry> = {};
   private resolutionStack: Set<ServiceTokens> = new Set(); // لتجنب circular dependencies
+  
+  /**
+   * Canonical Service Registry - السجل الموحد لجميع الخدمات
+   * يحتوي على metadata كاملة لكل service token
+   */
+  private static readonly CANONICAL_REGISTRY: ServiceRegistryMap = {
+    [ServiceTokens.LOG_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.LOG_SERVICE,
+        constructor: LogService,
+        dependencies: [],
+        priority: 1,
+        singleton: false,
+        name: 'Log Service',
+        description: 'خدمة تسجيل الأحداث وإدارة السجلات للنظام',
+        category: 'core',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new LogService(storage, context),
+        metadata: {} as ServiceMetadata // Will be filled from metadata above
+      }
+    },
+    [ServiceTokens.AUDIT_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.AUDIT_SERVICE,
+        constructor: AuditService,
+        dependencies: [],
+        priority: 1,
+        singleton: false,
+        name: 'Audit Service',
+        description: 'خدمة التدقيق والفحص الشامل للتطبيق',
+        category: 'core',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new AuditService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.SYSTEM_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.SYSTEM_SERVICE,
+        constructor: SystemService,
+        dependencies: [ServiceTokens.LOG_SERVICE],
+        priority: 2,
+        singleton: false,
+        name: 'System Service',
+        description: 'خدمة معلومات النظام والموارد',
+        category: 'system',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new SystemService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.MONITORING_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.MONITORING_SERVICE,
+        constructor: MonitoringService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.SYSTEM_SERVICE],
+        priority: 3,
+        singleton: false,
+        name: 'Monitoring Service',
+        description: 'خدمة مراقبة الأداء والموارد',
+        category: 'system',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new MonitoringService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.NGINX_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.NGINX_SERVICE,
+        constructor: NginxService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.SYSTEM_SERVICE],
+        priority: 3,
+        singleton: false,
+        name: 'Nginx Service',
+        description: 'خدمة إدارة Nginx وإعداد الخوادم',
+        category: 'server',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new NginxService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.PM2_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.PM2_SERVICE,
+        constructor: PM2Service,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.SYSTEM_SERVICE],
+        priority: 3,
+        singleton: false,
+        name: 'PM2 Service',
+        description: 'خدمة إدارة العمليات باستخدام PM2',
+        category: 'server',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new PM2Service(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.SSL_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.SSL_SERVICE,
+        constructor: SslService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.SYSTEM_SERVICE, ServiceTokens.NGINX_SERVICE],
+        priority: 4,
+        singleton: false,
+        name: 'SSL Service',
+        description: 'خدمة إدارة شهادات SSL',
+        category: 'server',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new SslService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.UNIFIED_FILE_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.UNIFIED_FILE_SERVICE,
+        constructor: UnifiedFileService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.AUDIT_SERVICE],
+        priority: 2,
+        singleton: false,
+        name: 'Unified File Service',
+        description: 'خدمة إدارة الملفات الموحدة',
+        category: 'application',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new UnifiedFileService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.UNIFIED_NOTIFICATION_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.UNIFIED_NOTIFICATION_SERVICE,
+        constructor: UnifiedNotificationService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.UNIFIED_FILE_SERVICE],
+        priority: 3,
+        singleton: false,
+        name: 'Unified Notification Service',
+        description: 'خدمة الإشعارات الموحدة',
+        category: 'application',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new UnifiedNotificationService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.BACKUP_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.BACKUP_SERVICE,
+        constructor: BackupService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.UNIFIED_FILE_SERVICE, ServiceTokens.SYSTEM_SERVICE],
+        priority: 4,
+        singleton: false,
+        name: 'Backup Service',
+        description: 'خدمة النسخ الاحتياطي',
+        category: 'application',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new BackupService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.DEPLOYMENT_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.DEPLOYMENT_SERVICE,
+        constructor: DeploymentService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.PM2_SERVICE, ServiceTokens.NGINX_SERVICE],
+        priority: 4,
+        singleton: false,
+        name: 'Deployment Service',
+        description: 'خدمة النشر وإعداد البيئة',
+        category: 'application',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new DeploymentService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.STORAGE_STATS_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.STORAGE_STATS_SERVICE,
+        constructor: StorageStatsService,
+        dependencies: [ServiceTokens.LOG_SERVICE, ServiceTokens.SYSTEM_SERVICE],
+        priority: 3,
+        singleton: false,
+        name: 'Storage Stats Service',
+        description: 'خدمة إحصائيات التخزين',
+        category: 'system',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: (storage: IStorage, context?: ServiceContext) => new StorageStatsService(storage, context),
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.SMART_CONNECTION_MANAGER]: {
+      metadata: {
+        token: ServiceTokens.SMART_CONNECTION_MANAGER,
+        constructor: () => { throw new Error('SmartConnectionManager is singleton - use imported instance'); },
+        dependencies: [],
+        priority: 1,
+        singleton: true,
+        name: 'Smart Connection Manager',
+        description: 'مدير الاتصالات الذكي لقاعدة البيانات',
+        category: 'connection',
+        version: '1.0.0',
+        implemented: true
+      },
+      factory: {
+        create: () => { throw new Error('SmartConnectionManager is singleton - use imported instance'); },
+        metadata: {} as ServiceMetadata
+      }
+    },
+    // External Services (not yet implemented)
+    [ServiceTokens.EMAIL_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.EMAIL_SERVICE,
+        constructor: () => { throw new Error('EmailService not yet implemented'); },
+        dependencies: [ServiceTokens.LOG_SERVICE],
+        priority: 2,
+        singleton: false,
+        name: 'Email Service',
+        description: 'خدمة البريد الإلكتروني',
+        category: 'external',
+        version: '0.0.0',
+        implemented: false
+      },
+      factory: {
+        create: () => { throw new Error('EmailService not yet implemented'); },
+        metadata: {} as ServiceMetadata
+      }
+    },
+    [ServiceTokens.AUTH_SERVICE]: {
+      metadata: {
+        token: ServiceTokens.AUTH_SERVICE,
+        constructor: () => { throw new Error('AuthService not yet implemented'); },
+        dependencies: [ServiceTokens.LOG_SERVICE],
+        priority: 2,
+        singleton: false,
+        name: 'Auth Service',
+        description: 'خدمة المصادقة والترخيص',
+        category: 'external',
+        version: '0.0.0',
+        implemented: false
+      },
+      factory: {
+        create: () => { throw new Error('AuthService not yet implemented'); },
+        metadata: {} as ServiceMetadata
+      }
+    }
+  };
 
   constructor(storage: IStorage, context: ServiceContext = {}) {
     this.storage = storage;
@@ -179,61 +464,104 @@ export class ServiceContainer {
   resolveByToken<T extends BaseService>(token: ServiceTokens): T {
     const tokenName = token.toString();
     
-    // تحديد الفئة المناسبة بناءً على token
-    let ServiceClass: ServiceConstructor<BaseService>;
-    
-    switch (token) {
-      case ServiceTokens.SYSTEM_SERVICE:
-        ServiceClass = SystemService as any;
-        break;
-      case ServiceTokens.LOG_SERVICE:
-        ServiceClass = LogService as any;
-        break;
-      case ServiceTokens.AUDIT:
-      case ServiceTokens.AUDIT_SERVICE:
-        ServiceClass = AuditService as any;
-        break;
-      case ServiceTokens.BACKUP:
-      case ServiceTokens.BACKUP_SERVICE:
-        ServiceClass = BackupService as any;
-        break;
-      case ServiceTokens.DEPLOYMENT:
-      case ServiceTokens.DEPLOYMENT_SERVICE:
-        ServiceClass = DeploymentService as any;
-        break;
-      case ServiceTokens.UNIFIED_FILE_SERVICE:
-        ServiceClass = UnifiedFileService as any;
-        break;
-      case ServiceTokens.UNIFIED_NOTIFICATION_SERVICE:
-        ServiceClass = UnifiedNotificationService as any;
-        break;
-      case ServiceTokens.MONITORING_SERVICE:
-        ServiceClass = MonitoringService as any;
-        break;
-      case ServiceTokens.STORAGE_STATS_SERVICE:
-        ServiceClass = StorageStatsService as any;
-        break;
-      case ServiceTokens.NGINX_SERVICE:
-        ServiceClass = NginxService as any;
-        break;
-      case ServiceTokens.PM2_SERVICE:
-        ServiceClass = PM2Service as any;
-        break;
-      case ServiceTokens.SSL_SERVICE:
-        ServiceClass = SslService as any;
-        break;
-      default:
-        throw new Error(`خدمة غير مدعومة: ${token}`);
+    // الحصول على معلومات الخدمة من السجل الموحد
+    const registryEntry = ServiceContainer.CANONICAL_REGISTRY[token];
+    if (!registryEntry) {
+      throw new Error(`خدمة غير موجودة في السجل: ${token}`);
     }
     
-    return this.resolve(tokenName, ServiceClass) as T;
+    const metadata = registryEntry.metadata;
+    if (!metadata.implemented) {
+      throw new Error(`خدمة غير مُطبقة: ${token} - ${metadata.description}`);
+    }
+    
+    // التحقق من وجود الخدمة في الحاوي
+    if (this.has(tokenName)) {
+      return this.get<T>(tokenName);
+    }
+    
+    // التحقق من التبعيات أولاً
+    if (metadata.dependencies.length > 0) {
+      this.resolveDependencies(metadata.dependencies);
+    }
+    
+    // إنشاء الخدمة باستخدام factory
+    try {
+      const service = registryEntry.factory.create(this.storage, this.context);
+      
+      // تسجيل الخدمة في الحاوي
+      this.services.set(tokenName, service);
+      
+      return service as T;
+    } catch (error) {
+      throw new Error(`فشل في إنشاء خدمة ${token}: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+    }
+  }
+  
+  /**
+   * حل التبعيات للخدمة
+   */
+  private resolveDependencies(dependencies: ServiceTokens[]): void {
+    for (const dep of dependencies) {
+      if (this.resolutionStack.has(dep)) {
+        throw new Error(`اكتشاف تبعية دائرية: ${Array.from(this.resolutionStack).join(' -> ')} -> ${dep}`);
+      }
+      
+      this.resolutionStack.add(dep);
+      
+      try {
+        if (!this.has(dep.toString())) {
+          this.resolveByToken(dep);
+        }
+      } finally {
+        this.resolutionStack.delete(dep);
+      }
+    }
   }
 
   /**
-   * الحصول على service registry
+   * الحصول على service registry الكامل
    */
-  getServiceRegistry(): Partial<ServiceRegistry> {
-    return this.serviceRegistry;
+  static getCanonicalRegistry(): ServiceRegistryMap {
+    // Initialize factory metadata references
+    Object.values(ServiceContainer.CANONICAL_REGISTRY).forEach(entry => {
+      entry.factory.metadata = entry.metadata;
+    });
+    return ServiceContainer.CANONICAL_REGISTRY;
+  }
+  
+  /**
+   * الحصول على معلومات خدمة معينة
+   */
+  static getServiceMetadata(token: ServiceTokens): ServiceMetadata | null {
+    const entry = ServiceContainer.CANONICAL_REGISTRY[token];
+    return entry ? entry.metadata : null;
+  }
+  
+  /**
+   * التحقق من تطبيق خدمة معينة
+   */
+  static isServiceImplemented(token: ServiceTokens): boolean {
+    const metadata = ServiceContainer.getServiceMetadata(token);
+    return metadata ? metadata.implemented : false;
+  }
+  
+  /**
+   * الحصول على جميع الخدمات المطبقة
+   */
+  static getImplementedServices(): ServiceTokens[] {
+    return Object.values(ServiceTokens).filter(token => 
+      ServiceContainer.isServiceImplemented(token)
+    );
+  }
+  
+  /**
+   * الحصول على جميع الخدمات غير المطبقة
+   */
+  static getUnimplementedServices(): ServiceTokens[] {
+    return Object.values(ServiceTokens).filter(token => 
+      !ServiceContainer.isServiceImplemented(token)
+    );
   }
 
   /**
@@ -350,9 +678,9 @@ export const ServiceHelpers = {
   } {
     return {
       notificationService: container.getNotificationService(),
-      auditService: container.resolveByToken<AuditService>(ServiceTokens.AUDIT),
-      backupService: container.resolveByToken<BackupService>(ServiceTokens.BACKUP),
-      deploymentService: container.resolveByToken<DeploymentService>(ServiceTokens.DEPLOYMENT)
+      auditService: container.resolveByToken<AuditService>(ServiceTokens.AUDIT_SERVICE),
+      backupService: container.resolveByToken<BackupService>(ServiceTokens.BACKUP_SERVICE),
+      deploymentService: container.resolveByToken<DeploymentService>(ServiceTokens.DEPLOYMENT_SERVICE)
     };
   }
 };
@@ -381,7 +709,7 @@ export const ServiceContainerUtils = {
     errors: string[];
   } {
     const errors: string[] = [];
-    const registry = container.getServiceRegistry();
+    const registry = ServiceContainer.getCanonicalRegistry();
     
     for (const [token, factory] of Object.entries(registry)) {
       if (factory?.dependencies) {

@@ -6,7 +6,6 @@ export enum ServiceTokens {
   // Core System Services
   SYSTEM_SERVICE = 'SystemService',
   LOG_SERVICE = 'LogService',
-  AUDIT = 'AuditService',
   AUDIT_SERVICE = 'AuditService',
   MONITORING_SERVICE = 'MonitoringService',
   
@@ -18,9 +17,7 @@ export enum ServiceTokens {
   // Application Services
   UNIFIED_NOTIFICATION_SERVICE = 'UnifiedNotificationService',
   UNIFIED_FILE_SERVICE = 'UnifiedFileService',
-  BACKUP = 'BackupService',
   BACKUP_SERVICE = 'BackupService',
-  DEPLOYMENT = 'DeploymentService',
   DEPLOYMENT_SERVICE = 'DeploymentService',
   STORAGE_STATS_SERVICE = 'StorageStatsService',
   
@@ -95,7 +92,44 @@ export const ServicePriority: Record<ServiceTokens, number> = {
 };
 
 /**
- * Service Configuration Interface
+ * Service Metadata Interface - الواجهة الأساسية لبيانات الخدمة
+ * تحتوي على جميع المعلومات اللازمة لإدارة الخدمة في النظام
+ */
+export interface ServiceMetadata {
+  /** Service token identifier */
+  token: ServiceTokens;
+  /** Constructor function for the service */
+  constructor: new (storage: any, context?: any) => any;
+  /** List of dependency tokens this service requires */
+  dependencies: ServiceTokens[];
+  /** Registration priority (lower number = higher priority) */
+  priority: number;
+  /** Whether this service should be singleton per container */
+  singleton: boolean;
+  /** Human-readable name for the service */
+  name: string;
+  /** Description of what this service does */
+  description: string;
+  /** Category for grouping services */
+  category: 'core' | 'system' | 'server' | 'application' | 'connection' | 'external';
+  /** Version of the service implementation */
+  version: string;
+  /** Whether this service is currently implemented */
+  implemented: boolean;
+}
+
+/**
+ * Service Factory Interface - لتعريف مصنع الخدمة
+ */
+export interface ServiceFactory {
+  /** Creates a new instance of the service */
+  create: (storage: any, context?: any) => any;
+  /** Service metadata */
+  metadata: ServiceMetadata;
+}
+
+/**
+ * Service Configuration Interface - للتكوين المتقدم
  */
 export interface ServiceConfig {
   token: ServiceTokens;
