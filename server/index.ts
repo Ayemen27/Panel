@@ -50,7 +50,7 @@ app.use(express.json({
     try {
       JSON.parse(buf.toString());
     } catch (e) {
-      res.status(400).json({ 
+      (res as any).status(400).json({ 
         success: false, 
         error: 'Invalid JSON format',
         message: 'البيانات المرسلة غير صحيحة' 
