@@ -28,9 +28,9 @@ type LoginData = z.infer<typeof loginSchema>;
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient(); // Initialize useQueryClient
+  const queryClient = useQueryClient();
 
   // تأثير تحميل الصفحة
   useEffect(() => {
@@ -83,8 +83,12 @@ export default function AuthPage() {
         variant: "default",
       });
 
-      // إعادة توجيه إلى لوحة التحكم
-      navigate('/dashboard');
+      // إعادة توجيه إلى لوحة التحكم مع تأخير قصير
+      console.log('🔄 Navigating to dashboard...');
+      setTimeout(() => {
+        navigate('/dashboard');
+        console.log('✅ Navigation completed to:', window.location.pathname);
+      }, 100);
     },
     onError: (error: Error) => {
       console.error('Login mutation error:', error);

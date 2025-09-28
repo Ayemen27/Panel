@@ -132,116 +132,80 @@ function Router() {
   }
 
   // If user is authenticated, show protected routes
-  console.log('User authenticated, showing protected routes');
+  console.log('User authenticated, showing protected routes for:', user?.username);
 
 
   return (
-    <Switch>
-      {!isAuthenticated ? (
-        // المستخدم غير مسجل دخول - إظهار صفحة تسجيل الدخول فقط
-        <Route>
-          <AuthPage />
-        </Route>
-      ) : (
-        // المستخدم مسجل دخول - إظهار الصفحات المحمية
-        <>
+    <MainLayout>
+      <Switch>
           <Route path="/">
-            <MainLayout>
-              <Dashboard />
-            </MainLayout>
-          </Route>
-          <Route path="/dashboard">
-            <MainLayout>
-              <Dashboard />
-            </MainLayout>
-          </Route>
-          <Route path="/applications">
-            <MainLayout>
-              <Applications />
-            </MainLayout>
-          </Route>
+          <Dashboard />
+        </Route>
+        <Route path="/dashboard">
+          <Dashboard />
+        </Route>
+        <Route path="/applications">
+          <Applications />
+        </Route>
           <Route path="/applications/logs/:id">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <ApplicationLogs />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/domains">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Domains />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/nginx">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Nginx />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/ssl">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <SSL />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/processes">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Processes />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/logs">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Logs />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/audit">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <ComprehensiveAudit />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/terminal">
-            <MainLayout>
-              <AdminOnly>
-                <Suspense fallback={<PageLoader />}>
-                  <Terminal />
-                </Suspense>
-              </AdminOnly>
-            </MainLayout>
-          </Route>
-          <Route path="/health-check">
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <HealthCheck />
-              </Suspense>
-            </MainLayout>
-          </Route>
-          <Route path="/file-manager">
+          <Suspense fallback={<PageLoader />}>
+            <ApplicationLogs />
+          </Suspense>
+        </Route>
+        <Route path="/domains">
+          <Suspense fallback={<PageLoader />}>
+            <Domains />
+          </Suspense>
+        </Route>
+        <Route path="/nginx">
+          <Suspense fallback={<PageLoader />}>
+            <Nginx />
+          </Suspense>
+        </Route>
+        <Route path="/ssl">
+          <Suspense fallback={<PageLoader />}>
+            <SSL />
+          </Suspense>
+        </Route>
+        <Route path="/processes">
+          <Suspense fallback={<PageLoader />}>
+            <Processes />
+          </Suspense>
+        </Route>
+        <Route path="/logs">
+          <Suspense fallback={<PageLoader />}>
+            <Logs />
+          </Suspense>
+        </Route>
+        <Route path="/audit">
+          <Suspense fallback={<PageLoader />}>
+            <ComprehensiveAudit />
+          </Suspense>
+        </Route>
+        <Route path="/terminal">
+          <AdminOnly>
             <Suspense fallback={<PageLoader />}>
-              <FileManager />
+              <Terminal />
             </Suspense>
-          </Route>
-          <Route path="/path-manager">
-            <MainLayout>
-              <AdminOnly>
-                <Suspense fallback={<PageLoader />}>
-                  <PathManager />
-                </Suspense>
-              </AdminOnly>
-            </MainLayout>
-          </Route>
-        </>
-      )}
-    </Switch>
+          </AdminOnly>
+        </Route>
+        <Route path="/health-check">
+          <Suspense fallback={<PageLoader />}>
+            <HealthCheck />
+          </Suspense>
+        </Route>
+        <Route path="/file-manager">
+          <FileManager />
+        </Route>
+        <Route path="/path-manager">
+          <AdminOnly>
+            <Suspense fallback={<PageLoader />}>
+              <PathManager />
+            </Suspense>
+          </AdminOnly>
+        </Route>
+      </Switch>
+    </MainLayout>
   );
 }
 

@@ -128,9 +128,14 @@ export const useAuth = () => {
         hasToken: !!data.token
       });
 
-      setToken(data.token);
-      setUser(data.user);
-      // Invalidate and refetch user query to ensure consistency
+      if (data.token) {
+        setToken(data.token);
+      }
+      
+      setUser(data.user || data); // Handle both formats: {user: userData} or userData directly
+      
+      // Update query cache immediately
+      queryClient.setQueryData(["/api/user"], data.user || data);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     } catch (err: any) {
       authLog('Login Error', {
