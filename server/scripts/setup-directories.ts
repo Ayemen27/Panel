@@ -54,7 +54,8 @@ async function setupDirectories() {
   const isVPS = process.env.HOSTNAME?.includes('93.127.142.144') || 
                process.env.HOSTNAME?.includes('vps-fbaz') ||
                process.env.SERVER_TYPE === 'external' ||
-               process.env.PWD?.includes('/home/administrator/');
+               process.env.PWD?.includes('/home/administrator/Panel') ||
+               process.cwd().includes('/home/administrator/Panel');
   
   console.log(`🔍 Environment detected: ${isReplit ? 'Replit' : (isVPS ? 'VPS' : 'Local')}`);
   console.log(`📁 Current working directory: ${process.cwd()}`);

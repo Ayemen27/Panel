@@ -87,11 +87,12 @@ function detectServerEnvironment(): {
                           hostname.includes('vps-fbaz') ||
                           processEnv.EXTERNAL_SERVER === 'true' ||
                           processEnv.SERVER_TYPE === 'external' ||
-                          processEnv.PWD?.includes('/home/administrator/');
+                          processEnv.PWD?.includes('/home/administrator/Panel') ||
+                          process.cwd().includes('/home/administrator/Panel');
 
-  // إذا كان المسار الحالي يحتوي على /home/administrator/ فهو بالتأكيد ليس Replit
-  const isDefinitelyExternal = processEnv.PWD?.includes('/home/administrator/') ||
-                              process.cwd().includes('/home/administrator/');
+  // إذا كان المسار الحالي يحتوي على /home/administrator/Panel فهو بالتأكيد ليس Replit
+  const isDefinitelyExternal = processEnv.PWD?.includes('/home/administrator/Panel') ||
+                              process.cwd().includes('/home/administrator/Panel');
 
   const nodeEnv = processEnv.NODE_ENV || 'development';
   const isProduction = nodeEnv === 'production';
@@ -165,10 +166,17 @@ function getEnvironmentPaths(serverType: 'replit' | 'external' | 'local'): Envir
           const customRoot = typeof process !== 'undefined' && process.env.SERVER_ROOT;
           if (customRoot) return customRoot;
           
-          return typeof process !== 'undefined' &&
-                 process.cwd &&
-                 typeof process.cwd === 'function' &&
-                 typeof window === 'undefined' ? process.cwd() : '/home/administrator/Panel';
+          // التحقق إذا كان المسار الحالي هو مجلد Panel
+          const currentPath = typeof process !== 'undefined' &&
+                             process.cwd &&
+                             typeof process.cwd === 'function' &&
+                             typeof window === 'undefined' ? process.cwd() : '';
+          
+          if (currentPath.includes('/home/administrator/Panel')) {
+            return currentPath;
+          }
+          
+          return '/home/administrator/Panel';
         } catch {
           return '/home/administrator/Panel';
         }
