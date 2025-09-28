@@ -122,7 +122,7 @@ function detectServerEnvironment(): {
     console.log(`   HOME: ${processEnv.HOME || 'undefined'}`);
     console.log(`   HOSTNAME: ${hostname || 'undefined'}`);
     console.log(`   REPL_ID: ${processEnv.REPL_ID ? 'defined' : 'undefined'}`);
-    console.log(`   Is Replit (env): ${isReplitServer}`);
+    console.log(`   Is Replit (env): ${isReplitEnvironment}`);
     console.log(`   Is Replit (hostname): ${isReplitByHostname}`);
     console.log(`   Is External: ${isExternalServer}`);
     console.log(`   Server Type: ${serverType}`);
