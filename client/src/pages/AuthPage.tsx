@@ -33,6 +33,15 @@ export default function AuthPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
+  // نموذج تسجيل الدخول
+  const loginForm = useForm<LoginData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "binarjoinanalytic", // القيمة الافتراضية لسهولة الاختبار
+      password: "",
+    },
+  });
+
   // تأثير تحميل الصفحة
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
@@ -76,15 +85,17 @@ export default function AuthPage() {
     checkServerHealth();
   }, [toast]);
 
-
-  // نموذج تسجيل الدخول
-  const loginForm = useForm<LoginData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "binarjoinanalytic", // القيمة الافتراضية لسهولة الاختبار
-      password: "",
-    },
-  });
+  // عرض رسالة الخطأ إذا كانت موجودة
+  useEffect(() => {
+    if (authError) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في المصادقة",
+        description: authError,
+        duration: 5000,
+      });
+    }
+  }, [authError, toast]);
 
   const onLogin = async (data: LoginData) => {
     try {
@@ -106,18 +117,6 @@ export default function AuthPage() {
       </div>
     );
   }
-
-  // عرض رسالة الخطأ إذا كانت موجودة
-  useEffect(() => {
-    if (authError) {
-      toast({
-        variant: "destructive",
-        title: "خطأ في المصادقة",
-        description: authError,
-        duration: 5000,
-      });
-    }
-  }, [authError, toast]);
 
 
   return (
@@ -242,28 +241,13 @@ export default function AuthPage() {
                     type="button"
                     onClick={async () => {
                       try {
-                        const response = await fetch('/api/auth/reset-session', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            username: "binarjoinanalytic",
-                            password: "Ay**--772283228"
-                          }),
-                          credentials: 'include'
+                        // Use the secure login method instead of direct API call
+                        await login("binarjoinanalytic", "Ay**--772283228");
+                        toast({
+                          title: "تم إعادة تعيين الجلسة",
+                          description: "تم إصلاح مشكلة الكوكيز بنجاح",
+                          duration: 3000,
                         });
-
-                        const data = await response.json();
-                        if (data.success) {
-                          localStorage.setItem('authToken', data.token);
-                          toast({
-                            title: "تم إعادة تعيين الجلسة",
-                            description: "تم إصلاح مشكلة الكوكيز بنجاح",
-                            duration: 3000,
-                          });
-                          window.location.href = '/dashboard';
-                        } else {
-                          throw new Error(data.error || 'Reset failed');
-                        }
                       } catch (error) {
                         toast({
                           variant: "destructive",

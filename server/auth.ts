@@ -412,7 +412,7 @@ export function setupAuth(app: Express) {
     });
 
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    res.json(sanitizeUser(req.user));
   });
 }
 

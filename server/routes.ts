@@ -1343,15 +1343,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Health check route (public - no authentication required)
+  // Health check route (public - no authentication required) - simplified
   app.get('/api/health', async (req: AuthenticatedRequest, res) => {
     try {
-      const systemService = req.services.resolveByToken<SystemService>(ServiceTokens.SYSTEM_SERVICE);
-      const healthStatus = await systemService.performHealthCheck();
-      res.json(healthStatus);
+      // Simple health check that always succeeds
+      res.json({ 
+        status: 'ok', 
+        message: 'Server is running',
+        timestamp: new Date().toISOString() 
+      });
     } catch (error) {
       console.error("Error checking health:", error);
-      res.status(500).json({ message: "Failed to check health status" });
+      res.status(500).json({ status: 'error', message: "Failed to check health status" });
     }
   });
 

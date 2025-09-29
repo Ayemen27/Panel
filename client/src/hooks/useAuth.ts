@@ -75,111 +75,23 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // تحسين تحميل بيانات المستخدم مع دعم متعدد المصادر
+  // تحسين تحميل بيانات المستخدم مع دعم متعدد المصادر - مبسط
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // 🔧 KIWI COMPATIBILITY: تجربة مصادر متعددة للمصادقة
-        let userData = null;
-
-        // الطريقة الأولى: الكوكيز العادية
-        try {
-          userData = await fetchUserData();
-          if (userData) {
-            console.log('✅ Authenticated via standard cookies');
-          }
-        } catch (err) {
-          console.log('⚠️ Standard cookie auth failed, trying alternatives...');
-        }
-
-        // الطريقة الثانية: التوكن من localStorage
-        if (!userData) {
-          const token = localStorage.getItem('authToken');
-          if (token) {
-            console.log('🔐 Attempting authentication with stored token...');
-            try {
-              const response = await fetch('/api/user', {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-                credentials: 'include'
-              });
-
-              if (response.ok) {
-                userData = await response.json();
-                userData.token = token;
-                console.log('✅ Authenticated with localStorage token');
-              } else if (response.status === 401) {
-                console.log('❌ Stored token is invalid, removing...');
-                localStorage.removeItem('authToken');
-              }
-            } catch (tokenErr) {
-              console.log('Token auth failed:', tokenErr);
-              localStorage.removeItem('authToken');
-            }
-          }
-        }
-
-        // 🔧 KIWI FALLBACK: الطريقة الثالثة - كوكيز التوكن الاحتياطية
-        if (!userData) {
-          // تحقق من وجود كوكيز احتياطية في المتصفح
-          const cookieToken = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('authToken='))
-            ?.split('=')[1];
-
-          const cookieUserId = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('userId='))
-            ?.split('=')[1];
-
-          if (cookieToken) {
-            console.log('🔐 Attempting authentication with cookie token...');
-            try {
-              const response = await fetch('/api/user', {
-                headers: {
-                  'Authorization': `Bearer ${cookieToken}`,
-                  'Content-Type': 'application/json',
-                },
-                credentials: 'include'
-              });
-
-              if (response.ok) {
-                userData = await response.json();
-                userData.token = cookieToken;
-                // حفظ التوكن في localStorage أيضاً
-                localStorage.setItem('authToken', cookieToken);
-                console.log('✅ Authenticated with cookie token');
-              }
-            } catch (cookieErr) {
-              console.log('Cookie token auth failed:', cookieErr);
-            }
-          }
-
-          // إذا كان لدينا معرف مستخدم على الأقل
-          if (!userData && cookieUserId) {
-            console.log('🔐 Found userId in cookies, creating minimal user object');
-            userData = {
-              id: cookieUserId,
-              username: 'unknown',
-              role: 'user'
-            };
-          }
-        }
-
+        // محاولة تحميل بيانات المستخدم من الكوكيز أولاً
+        const userData = await fetchUserData();
         if (userData) {
           setUser(userData);
           authLog('User Loaded Successfully', {
             userId: userData.id,
             username: userData.username,
-            role: userData.role,
-            authMethod: userData.token ? 'token' : 'session'
+            role: userData.role
           });
         } else {
-          authLog('No User Found - All auth methods failed');
+          authLog('No User Found');
         }
       } catch (err: any) {
         console.error('Failed to load user:', err);
@@ -193,49 +105,30 @@ export const useAuth = () => {
     fetchUser();
   }, []); // Empty dependency array ensures this runs only once on mount
 
-  // Use React Query for managing API calls and caching, but manage auth state manually
+  // Minimal query setup for refetching when needed
   const { refetch } = useQuery({
     queryKey: ["/api/user"],
-    queryFn: fetchUserData, // This will still be used for cookie-based auth
-    enabled: false, // Disable automatic fetching, we handle it manually
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: (failureCount, error) => {
-      if (isUnauthorizedError(error)) {
-        return false;
-      }
-      return failureCount < 2;
-    },
+    queryFn: fetchUserData,
+    enabled: false, // Disable automatic fetching
+    retry: false,
   });
 
   // Determine authentication status
   const isAuthenticated = !!user;
 
-  // Console logging for debugging
-  console.log('useAuth - user:', user, 'isLoading:', isLoading, 'error:', error, 'isAuthenticated:', isAuthenticated);
-
-  // Detailed auth logging
-  authLog('Auth State', {
-    hasUser: !!user,
-    userId: user?.id,
-    username: user?.username,
-    role: user?.role,
-    isLoading,
-    isAuthenticated,
-    error: error
-  });
+  // Simple debug logging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('useAuth - user:', user, 'isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
+  }
 
   // Login mutation
   // Assuming apiRequest is a globally available or imported function for making API calls
   // If not, you'll need to define or import it. For this example, let's mock it.
   const apiRequest = async (method: string, url: string, body?: any): Promise<Response> => {
-    const token = localStorage.getItem('authToken');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    // Security: Only use httpOnly cookies - no localStorage token for security
 
     // If making a request that relies on cookies, ensure 'credentials' is set appropriately
     // For login, we might send credentials and expect a cookie OR a token back.
@@ -243,15 +136,11 @@ export const useAuth = () => {
     const fetchOptions: RequestInit = {
       method,
       headers,
+      credentials: 'include', // Include cookies for authentication
     };
     if (body) {
       fetchOptions.body = JSON.stringify(body);
     }
-    // For login, we might rely on cookies if the backend sets them, or expect a token.
-    // If the backend *only* sets cookies, `credentials: 'include'` is needed.
-    // If it returns a token in the body, we don't strictly need `credentials: 'include'` here.
-    // Let's assume it returns a token in the body. If it relies on cookies, `credentials: 'include'` should be added.
-    // fetchOptions.credentials = 'include'; // Uncomment if backend relies on cookies for login response
 
     return fetch(url, fetchOptions);
   };
@@ -262,7 +151,7 @@ export const useAuth = () => {
       setIsLoading(true);
       setError(null);
 
-      const response = await apiRequest('POST', '/api/auth/login', {
+      const response = await apiRequest('POST', '/api/login', {
         username,
         password
       });
@@ -270,30 +159,11 @@ export const useAuth = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Save token to localStorage for browsers that don't support cookies well
-          if (data.token) {
-            localStorage.setItem('authToken', data.token);
-            console.log('🔐 Token saved for fallback authentication');
-          }
+          // Security: Only use httpOnly cookies - no localStorage token storage
 
-          // Update local user state and potentially refetch with cookies if the server also sets them
-          setUser(data); // Assuming login response includes user data
-          authLog('Login Success', {
-            userId: data.id,
-            username: data.username,
-            role: data.role
-          });
-
-          // Try to refetch using cookies as well, in case the server set them
-          try {
-            const cookieUserData = await fetchUserData();
-            if (cookieUserData) {
-              setUser(cookieUserData); // Prefer cookie data if available
-              authLog('User data updated via cookies after login');
-            }
-          } catch (refetchError) {
-            console.warn('Could not refetch user data via cookies after login:', refetchError);
-          }
+          // Update local user state
+          setUser(data.user || data); // Set user data from response
+          authLog('Login Success', { userId: data.user?.id || data.id });
 
           setTimeout(() => {
             navigate('/dashboard');
@@ -341,14 +211,12 @@ export const useAuth = () => {
   const logout = async (): Promise<void> => {
     try {
       // Attempt to logout via API (this might clear server-side sessions/tokens)
-      await apiRequest('POST', '/api/auth/logout');
+      await apiRequest('POST', '/api/logout');
     } catch (error) {
       console.error('Logout API error:', error);
       // Continue with local cleanup even if API logout fails
     } finally {
-      // Clear token from localStorage
-      localStorage.removeItem('authToken');
-      console.log('🔐 Token removed on logout');
+      // Security: Only httpOnly cookies used - no localStorage cleanup needed
 
       // Clear local user state and React Query cache
       setUser(null);
@@ -361,45 +229,25 @@ export const useAuth = () => {
     }
   };
 
-  // Handle authentication state changes and navigation
+  // Handle authentication state changes and navigation - simplified
   useEffect(() => {
     if (isLoading) return; // Still loading initial state
 
     const currentPath = window.location.pathname;
 
     if (isAuthenticated && user) {
-      authLog('User authenticated - checking for navigation', {
-        userId: user.id,
-        username: user.username,
-        role: user.role,
-        currentPath
-      });
-
-      // Only redirect if we're on auth-related pages
+      // Redirect authenticated users away from auth pages
       if (currentPath === '/' || currentPath === '/auth' || currentPath === '/login') {
-        authLog('Redirecting authenticated user to dashboard', { from: currentPath });
-        setTimeout(() => {
-          navigate('/dashboard');
-          console.log('✅ Navigation executed to dashboard from:', currentPath);
-        }, 100);
+        setTimeout(() => navigate('/dashboard'), 100);
       }
-    } else if (!isAuthenticated && !isLoading) { // Explicitly check !isLoading to ensure we've finished loading
-      authLog('User not authenticated - checking for navigation', {
-        error: error,
-        currentPath
-      });
-
-      // Only redirect if we're on protected routes
+    } else if (!isAuthenticated) {
+      // Redirect unauthenticated users to auth page
       const isProtectedRoute = !['/auth', '/login', '/'].includes(currentPath);
       if (isProtectedRoute) {
-        authLog('Redirecting unauthenticated user to auth page', { from: currentPath });
-        setTimeout(() => {
-          navigate('/auth');
-          console.log('✅ Navigation executed to auth from:', currentPath);
-        }, 100);
+        setTimeout(() => navigate('/auth'), 100);
       }
     }
-  }, [isAuthenticated, isLoading, user, error, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Role checking helpers
   const hasRole = (requiredRole: UserRole): boolean => {
