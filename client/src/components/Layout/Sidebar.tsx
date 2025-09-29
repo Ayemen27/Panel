@@ -43,7 +43,7 @@ const navigationItems = [
 
 export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
 
   const sidebarClasses = cn(
@@ -149,7 +149,7 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => window.location.href = '/api/logout'}
+              onClick={logout}
               data-testid="button-logout"
             >
               <LogOut className="text-muted-foreground h-4 w-4" />

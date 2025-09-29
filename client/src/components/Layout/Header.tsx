@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Bell, Settings, Menu, X, Check, Clock, AlertTriangle, Info } from "lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -184,6 +185,7 @@ function NotificationsPopover() {
 
 // مكونات الإعدادات
 function SettingsDropdown() {
+  const { logout } = useAuth();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'ar');
   const [autoRefresh, setAutoRefresh] = useState(localStorage.getItem('autoRefresh') !== 'false');
@@ -207,7 +209,7 @@ function SettingsDropdown() {
   };
 
   const handleLogout = () => {
-    window.location.href = '/api/logout';
+    logout();
   };
 
   const handleExportLogs = async () => {
