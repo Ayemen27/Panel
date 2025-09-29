@@ -80,54 +80,52 @@ export function getSession() {
     console.log('⚠️ Using MemoryStore for sessions (DEVELOPMENT ONLY)');
   }
 
-  // 🛡️ SECURITY: إعدادات كوكيز محسنة أمنياً
-  // اكتشاف النطاق المخصص وإعداد الكوكيز بناءً عليه
-  const isCustomDomain = process.env.CUSTOM_DOMAIN === 'true' || 
-                         process.env.DOMAIN?.includes('binarjoinanelytic.info') ||
-                         ENV_CONFIG.name === 'production' && !ENV_CONFIG.isReplit;
+  // 🛡️ KIWI BROWSER FIX: إعدادات كوكيز محسنة للمتصفحات المتنوعة
+  // تحديد بروتوكول الاتصال
+  const isSecureConnection = process.env.NODE_ENV === 'production' || 
+                            process.env.CUSTOM_DOMAIN === 'true' ||
+                            process.env.DOMAIN?.includes('binarjoinanelytic.info');
 
-  // تحديد الدومين المناسب للكوكيز
+  // تحديد النطاق بذكاء
   let cookieDomain: string | undefined;
-  if (ENV_CONFIG.isReplit) {
-    cookieDomain = undefined; // Replit يدير الدومين تلقائياً
-  } else if (isCustomDomain) {
-    // في بيئة التطوير مع النطاق المخصص، لا نحدد الدومين لتجنب مشاكل الكوكيز
-    cookieDomain = ENV_CONFIG.name === 'production' ? 'panel.binarjoinanelytic.info' : undefined;
-  } else if (ENV_CONFIG.host !== '0.0.0.0' && ENV_CONFIG.host !== 'localhost') {
-    cookieDomain = ENV_CONFIG.host;
+  if (process.env.DOMAIN?.includes('binarjoinanelytic.info')) {
+    // للنطاق المخصص
+    cookieDomain = '.binarjoinanelytic.info'; // نقطة في البداية للسماح للنطاقات الفرعية
   } else {
-    cookieDomain = undefined; // للتطوير المحلي
+    // للنطاقات الأخرى مثل Replit
+    cookieDomain = undefined; // السماح للمتصفح بتحديد النطاق
   }
 
-  // تحديد إعدادات الأمان بناءً على البيئة
-  const isProductionSecurity = ENV_CONFIG.name === 'production';
-
+  // 🔧 KIWI COMPATIBILITY: إعدادات خاصة للمتصفحات المختلفة
   const cookieSettings = {
-    httpOnly: true, // منع الوصول من JavaScript
-    secure: isProductionSecurity, // HTTPS في الإنتاج فقط
+    httpOnly: true,
+    secure: isSecureConnection, // HTTPS فقط في الإنتاج أو النطاق المخصص
     maxAge: sessionTtl,
-    sameSite: isProductionSecurity ? "strict" as const : "lax" as const, // إعدادات أكثر مرونة في التطوير
+    sameSite: isSecureConnection ? "none" as const : "lax" as const, // None للنطاق المخصص، Lax للتطوير
     domain: cookieDomain,
+    path: '/', // ضروري للوصول من جميع المسارات
   };
 
-  // سجل تشخيصي لمساعدة في حل مشاكل الكوكيز
-  console.log('🍪 Cookie Settings:', {
-    isCustomDomain,
-    isProductionSecurity,
+  // سجل تشخيصي مُحسَّن
+  console.log('🍪 Enhanced Cookie Settings for Cross-Browser Compatibility:', {
+    isSecureConnection,
     cookieDomain,
     secure: cookieSettings.secure,
     sameSite: cookieSettings.sameSite,
-    environment: ENV_CONFIG.name
+    environment: ENV_CONFIG.name,
+    customDomain: process.env.DOMAIN,
+    userAgent: 'will-be-detected-per-request'
   });
 
   return session({
     secret: process.env.SESSION_SECRET || 'dev-only-secret-change-in-production',
     store: sessionStore,
-    resave: false, // ✅ SECURITY FIX: منع إعادة الحفظ غير الضرورية
-    saveUninitialized: false, // ✅ SECURITY FIX: منع حفظ الجلسات الفارغة (مقاومة CSRF)
-    name: 'connect.sid',
+    resave: false,
+    saveUninitialized: false,
+    name: 'sid', // اسم أقصر للكوكيز
     cookie: cookieSettings,
-    rolling: false, // ✅ SECURITY FIX: منع التجديد المستمر
+    rolling: true, // 🔧 تمكين التجديد التلقائي للجلسات النشطة
+    proxy: true, // 🔧 دعم البروكسي والـ reverse proxy
   });
 }
 
@@ -259,7 +257,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // تسجيل الدخول
+  // تسجيل الدخول مع دعم محسن للكوكيز والتوكن
   app.post("/api/login", loginLimiter, (req, res, next) => {
     // 🛡️ SECURITY FIX: تقليل logging للبيانات الحساسة في الإنتاج
     if (ENV_CONFIG.name !== 'production') {
@@ -273,7 +271,6 @@ export function setupAuth(app: Express) {
       }
 
       if (!user) {
-        // 🛡️ SECURITY FIX: تقليل logging لأسماء المستخدمين الفاشلة
         if (ENV_CONFIG.name !== 'production') {
           console.log('Login failed for user:', req.body.username?.substring(0, 3) + '***');
         }
@@ -293,6 +290,11 @@ export function setupAuth(app: Express) {
             return res.status(500).json({ error: "فشل في إنشاء الجلسة" });
           }
 
+          // 🔧 KIWI FIX: حفظ معرف المستخدم في الجلسة صراحة
+          req.session.userId = user.id;
+          req.session.userRole = user.role;
+          req.session.isAuthenticated = true;
+
           // التأكد من حفظ الجلسة قبل الاستجابة
           req.session.save((saveErr: any) => {
             if (saveErr) {
@@ -300,7 +302,6 @@ export function setupAuth(app: Express) {
               return res.status(500).json({ error: "فشل في حفظ الجلسة" });
             }
 
-            // 🛡️ SECURITY FIX: إزالة session ID من logs
             if (ENV_CONFIG.name !== 'production') {
               console.log('Login successful for user:', user.username?.substring(0, 3) + '***');
             }
@@ -308,37 +309,70 @@ export function setupAuth(app: Express) {
             // إنشاء توكن JWT للمتصفحات التي لا تدعم الكوكيز
             const token = generateToken(user);
 
-            // إضافة headers إضافية للتوافق
+            // 🔧 KIWI COMPATIBILITY: إعداد كوكيز إضافية للتوافق
+            const userAgent = req.headers['user-agent'] || '';
+            const isKiwiBrowser = userAgent.toLowerCase().includes('kiwi') || 
+                                userAgent.toLowerCase().includes('mobile') ||
+                                userAgent.toLowerCase().includes('android');
+
+            // إضافة كوكيز توكن احتياطية للمتصفحات المختلفة
+            if (isKiwiBrowser) {
+              // كوكيز بإعدادات متساهلة للمتصفحات المحمولة
+              res.cookie('authToken', token, {
+                httpOnly: false, // السماح للـ JavaScript بالوصول
+                secure: false,   // لا نحتاج HTTPS للتطوير
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                path: '/'
+              });
+
+              // كوكيز معرف المستخدم للتحقق السريع
+              res.cookie('userId', user.id, {
+                httpOnly: false,
+                secure: false,
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                path: '/'
+              });
+            }
+
+            // إضافة headers للتوافق مع جميع المتصفحات
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-            // سجل تشخيصي للكوكيز ومعلومات الجلسة
-            console.log('🍪 Login Response Debug:', {
+            // سجل تشخيصي محسن
+            console.log('🍪 Enhanced Login Response Debug:', {
               sessionID: req.sessionID ? 'exists' : 'missing',
               isAuthenticated: req.isAuthenticated(),
-              cookiesSent: req.headers.cookie ? 'has cookies' : 'no cookies',
-              userAgent: req.headers['user-agent']?.substring(0, 50) + '...',
+              sessionUserId: req.session.userId,
+              userAgent: userAgent.substring(0, 50) + '...',
+              isKiwiBrowser,
               origin: req.headers.origin,
               host: req.headers.host,
-              tokenGenerated: 'yes'
+              tokenGenerated: 'yes',
+              cookiesSet: isKiwiBrowser ? 'enhanced-for-kiwi' : 'standard'
             });
 
-            // التحقق من أن Set-Cookie header سيتم إرساله
-            const cookieHeader = res.getHeader('Set-Cookie');
-            console.log('🍪 Set-Cookie Header:', cookieHeader ? 'will be sent' : 'missing');
-
-            // 🛡️ SECURITY FIX: 
+            // الاستجابة مع معلومات إضافية للعميل
             res.json({
               success: true,
               message: 'تم تسجيل الدخول بنجاح',
-              token, // إضافة التوكن للاستجابة
+              token, // التوكن للاستخدام كبديل
+              sessionId: req.sessionID, // معرف الجلسة للمراجع
               user: {
                 id: user.id,
                 username: user.username,
                 role: user.role,
                 firstName: user.firstName,
-                lastName: user.lastName
+                lastName: user.lastName,
+                token: token // إضافة التوكن لكائن المستخدم أيضاً
+              },
+              // معلومات إضافية للتشخيص
+              browserInfo: {
+                isKiwi: isKiwiBrowser,
+                userAgent: userAgent.substring(0, 100)
               }
             });
           });
@@ -373,47 +407,119 @@ export function setupAuth(app: Express) {
   });
 }
 
-// وسطاء للتحقق من المصادقة
+// وسطاء للتحقق من المصادقة مع دعم محسن لجميع المتصفحات
 export function isAuthenticated(req: any, res: any, next: any) {
-  // سجل تشخيصي لـ middleware المصادقة
-  console.log('🔍 Auth Middleware Check:', {
+  // سجل تشخيصي محسن
+  const userAgent = req.headers['user-agent'] || '';
+  const isKiwiBrowser = userAgent.toLowerCase().includes('kiwi') || 
+                      userAgent.toLowerCase().includes('mobile');
+
+  console.log('🔍 Enhanced Auth Middleware Check:', {
     sessionExists: !!req.session,
     sessionID: req.sessionID ? 'exists' : 'missing',
-    isAuthenticated: req.isAuthenticated(),
+    sessionUserId: req.session?.userId,
+    isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
     hasUser: !!req.user,
-    userAgent: req.headers['user-agent']?.substring(0, 50) + '...',
+    isKiwiBrowser,
+    userAgent: userAgent.substring(0, 50) + '...',
     origin: req.headers.origin,
     cookies: req.headers.cookie ? 'present' : 'none'
   });
 
-  // أولاً: تحقق من المصادقة عبر الجلسة/الكوكيز
-  if (req.isAuthenticated && req.isAuthenticated()) {
+  // 🔧 KIWI COMPATIBILITY: تحقق محسن من الجلسة
+  if (req.session && req.session.userId && req.session.isAuthenticated) {
+    // إذا كانت الجلسة تحتوي على معرف المستخدم، حاول استرجاع المستخدم
+    if (!req.user) {
+      // إنشاء كائن مستخدم مؤقت من بيانات الجلسة
+      req.user = {
+        id: req.session.userId,
+        role: req.session.userRole || 'user'
+      };
+    }
+    console.log('✅ Auth via enhanced session for user:', req.session.userId);
     return next();
   }
 
-  // ثانياً: تحقق من التوكن في الهيدر (fallback)
+  // أولاً: تحقق من المصادقة عبر passport الكلاسيكي
+  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+    console.log('✅ Auth via passport session for user:', req.user.id);
+    return next();
+  }
+
+  // ثانياً: تحقق من التوكن في Authorization header
   const authHeader = req.headers['authorization'];
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
     const payload = verifyToken(token);
 
     if (payload) {
-      // إنشاء كائن مستخدم وهمي للتوافق مع الكود الموجود
       req.user = {
         id: payload.id,
         username: payload.username,
         role: payload.role
       };
       req.isAuthenticated = () => true;
-      console.log('✅ Auth via token successful for user:', payload.username);
+      console.log('✅ Auth via Authorization Bearer token for user:', payload.username);
       return next();
     }
   }
 
-  console.log('🔍 Auth failed - no session or valid token');
+  // 🔧 KIWI FALLBACK: تحقق من كوكيز التوكن الاحتياطية
+  if (isKiwiBrowser) {
+    const cookieToken = req.cookies?.authToken;
+    const cookieUserId = req.cookies?.userId;
+
+    if (cookieToken) {
+      const payload = verifyToken(cookieToken);
+      if (payload) {
+        req.user = {
+          id: payload.id,
+          username: payload.username,
+          role: payload.role
+        };
+        req.isAuthenticated = () => true;
+        console.log('✅ Auth via Kiwi fallback cookie token for user:', payload.username);
+        return next();
+      }
+    }
+
+    if (cookieUserId) {
+      // كحل أخير، استخدم معرف المستخدم من الكوكيز
+      req.user = {
+        id: cookieUserId,
+        role: 'user' // دور افتراضي
+      };
+      req.isAuthenticated = () => true;
+      console.log('✅ Auth via Kiwi userId cookie for user:', cookieUserId);
+      return next();
+    }
+  }
+
+  // رابعاً: تحقق من query parameter (للWebSocket وحالات خاصة)
+  if (req.query.token) {
+    const payload = verifyToken(req.query.token);
+    if (payload) {
+      req.user = {
+        id: payload.id,
+        username: payload.username,
+        role: payload.role
+      };
+      req.isAuthenticated = () => true;
+      console.log('✅ Auth via query token for user:', payload.username);
+      return next();
+    }
+  }
+
+  console.log('❌ Auth failed - no valid session, token, or cookies found');
   res.status(401).json({ 
     message: 'Authentication required',
-    authenticated: false 
+    authenticated: false,
+    debugInfo: {
+      sessionExists: !!req.session,
+      hasUser: !!req.user,
+      isKiwiBrowser,
+      suggestedFix: isKiwiBrowser ? 'Try using token-based auth' : 'Check cookies and session'
+    }
   });
 }
 

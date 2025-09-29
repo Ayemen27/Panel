@@ -91,22 +91,36 @@ export function useWebSocket(token?: string) {
     setConnectionState('connecting');
     setIsConnected(false); // Ensure this is false while connecting
 
-    const currentToken = tokenRef.current;
+    // 🔧 KIWI COMPATIBILITY: جرب مصادر متعددة للتوكن
+    let currentToken = tokenRef.current;
+    
+    // إذا لم يكن لدينا توكن، جرب localStorage
     if (!currentToken || currentToken.length === 0) {
-      console.log('⚠️ No token available, cannot initiate WebSocket connection.');
-      setConnectionState('closed'); // Explicitly set to closed if no token
-      setLastMessage({
-        type: 'AUTH_REQUIRED',
-        message: 'Authentication token is required to connect to WebSocket.',
-        timestamp: Date.now()
-      });
-      return;
+      currentToken = localStorage.getItem('authToken');
+    }
+
+    // إذا لم نجد في localStorage، جرب الكوكيز
+    if (!currentToken || currentToken.length === 0) {
+      const cookieToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('authToken='))
+        ?.split('=')[1];
+      if (cookieToken) {
+        currentToken = cookieToken;
+        // حفظه في localStorage للمرات القادمة
+        localStorage.setItem('authToken', cookieToken);
+      }
+    }
+
+    // 🔧 KIWI FALLBACK: حتى بدون توكن، جرب الاتصال
+    if (!currentToken || currentToken.length === 0) {
+      console.log('⚠️ No token found, attempting connection without token...');
+      // لا نُرجع مبكراً، ندع WebSocket يحاول الاتصال
     }
 
     try {
       const wsUrl = getWebSocketUrl();
-      const token = localStorage.getItem('authToken');
-      const wsUrlWithToken = token ? `${wsUrl}?token=${token}` : wsUrl;
+      const wsUrlWithToken = currentToken ? `${wsUrl}?token=${currentToken}` : wsUrl;
 
       const diagnostics = {
         url: wsUrlWithToken,

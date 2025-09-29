@@ -216,17 +216,15 @@ export default function AuthPage() {
                 )}
               </div>
 
-              {/* Test Login Button - Only in development */}
+              {/* Emergency Session Reset Button - Only in development */}
               {import.meta.env.DEV && (
-                <div className="pb-2">
+                <div className="pb-2 space-y-2">
                   <Button
                     type="button"
                     data-testid="button-test-login"
                     onClick={() => {
-                      // تعبئة الحقول تلقائياً بالبيانات الموجودة بالفعل في الـ form
                       loginForm.setValue("username", "binarjoinanalytic");
                       loginForm.setValue("password", "Ay**--772283228");
-                      // تسجيل الدخول مباشرة
                       setTimeout(() => {
                         onLogin({
                           username: "binarjoinanalytic", 
@@ -238,6 +236,47 @@ export default function AuthPage() {
                     disabled={isLoading}
                   >
                     🧪 اختبار تسجيل الدخول
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/auth/reset-session', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            username: "binarjoinanalytic",
+                            password: "Ay**--772283228"
+                          }),
+                          credentials: 'include'
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                          localStorage.setItem('authToken', data.token);
+                          toast({
+                            title: "تم إعادة تعيين الجلسة",
+                            description: "تم إصلاح مشكلة الكوكيز بنجاح",
+                            duration: 3000,
+                          });
+                          window.location.href = '/dashboard';
+                        } else {
+                          throw new Error(data.error || 'Reset failed');
+                        }
+                      } catch (error) {
+                        toast({
+                          variant: "destructive",
+                          title: "فشل إعادة التعيين",
+                          description: "لم يتم إصلاح المشكلة",
+                          duration: 5000,
+                        });
+                      }
+                    }}
+                    className="w-full h-10 font-medium rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition-colors duration-300"
+                    disabled={isLoading}
+                  >
+                    🔧 إصلاح مشكلة الكوكيز
                   </Button>
                 </div>
               )}

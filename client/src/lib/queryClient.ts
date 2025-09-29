@@ -110,14 +110,23 @@ export const queryClient = new QueryClient({
 
         console.log('Fetching:', path);
 
+        // 🔧 KIWI COMPATIBILITY: إعداد headers محسن للتوافق
+        const token = localStorage.getItem('authToken');
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        };
+
+        // إضافة التوكن إذا كان متوفراً
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         try {
           const res = await fetch(path, {
             signal,
             credentials: 'include', // ✅ ضروري لإرسال cookies/session
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers,
           });
 
           console.log('Response status for', path, ':', res.status);
@@ -125,6 +134,13 @@ export const queryClient = new QueryClient({
           if (!res.ok) {
             if (res.status === 401) {
               console.log('Unauthorized response for:', path);
+              
+              // 🔧 KIWI FIX: إذا فشلت المصادقة، تحقق من التوكن
+              if (token) {
+                console.log('Token exists but auth failed, token may be expired');
+                localStorage.removeItem('authToken');
+              }
+              
               throw new Error('401: Unauthorized');
             }
 
@@ -133,7 +149,6 @@ export const queryClient = new QueryClient({
               const errorData = await res.json();
               errorMessage = errorData.message || errorMessage;
             } catch {
-              // If JSON parsing fails, use the status text
               errorMessage = res.statusText || errorMessage;
             }
 
@@ -145,9 +160,41 @@ export const queryClient = new QueryClient({
           console.log('Success response for', path, ':', data);
           return data;
         } catch (error) {
-          // Network errors or other fetch errors
           if (error instanceof Error && error.name === 'AbortError') {
-            throw error; // Re-throw abort errors
+            throw error;
+          }
+
+          // 🔧 KIWI FALLBACK: إذا فشل الطلب، جرب مرة أخرى بالتوكن من الكوكيز
+          if (error instanceof Error && error.message.includes('401') && !token) {
+            console.log('Trying fallback auth with cookie token...');
+            
+            const cookieToken = document.cookie
+              .split('; ')
+              .find(row => row.startsWith('authToken='))
+              ?.split('=')[1];
+
+            if (cookieToken) {
+              try {
+                const retryRes = await fetch(path, {
+                  signal,
+                  credentials: 'include',
+                  headers: {
+                    ...headers,
+                    'Authorization': `Bearer ${cookieToken}`
+                  },
+                });
+
+                if (retryRes.ok) {
+                  const retryData = await retryRes.json();
+                  // حفظ التوكن في localStorage للمرات القادمة
+                  localStorage.setItem('authToken', cookieToken);
+                  console.log('✅ Fallback auth succeeded');
+                  return retryData;
+                }
+              } catch (retryError) {
+                console.log('Fallback auth also failed:', retryError);
+              }
+            }
           }
 
           console.error(`Query error for ${path}:`, error);

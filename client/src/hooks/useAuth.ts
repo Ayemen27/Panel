@@ -75,50 +75,111 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch user data on initial load
+  // تحسين تحميل بيانات المستخدم مع دعم متعدد المصادر
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Try fetching with cookies first
-        let userData = await fetchUserData();
+        // 🔧 KIWI COMPATIBILITY: تجربة مصادر متعددة للمصادقة
+        let userData = null;
 
-        // If no user data from cookies, try fetching with token from localStorage
+        // الطريقة الأولى: الكوكيز العادية
+        try {
+          userData = await fetchUserData();
+          if (userData) {
+            console.log('✅ Authenticated via standard cookies');
+          }
+        } catch (err) {
+          console.log('⚠️ Standard cookie auth failed, trying alternatives...');
+        }
+
+        // الطريقة الثانية: التوكن من localStorage
         if (!userData) {
           const token = localStorage.getItem('authToken');
           if (token) {
-            console.log('🔐 Attempting to authenticate with token...');
-            const response = await fetch('/api/auth/me', { // Assuming an endpoint to verify token
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
+            console.log('🔐 Attempting authentication with stored token...');
+            try {
+              const response = await fetch('/api/user', {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+              });
 
-            if (response.ok) {
-              userData = await response.json();
-              // Ensure token is also part of the user object if needed for WebSocket etc.
-              userData.token = token;
-              console.log('✅ Authenticated with token.');
-            } else if (response.status === 401) {
-              console.log('❌ Invalid token.');
-              localStorage.removeItem('authToken'); // Clear invalid token
-            } else {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+              if (response.ok) {
+                userData = await response.json();
+                userData.token = token;
+                console.log('✅ Authenticated with localStorage token');
+              } else if (response.status === 401) {
+                console.log('❌ Stored token is invalid, removing...');
+                localStorage.removeItem('authToken');
+              }
+            } catch (tokenErr) {
+              console.log('Token auth failed:', tokenErr);
+              localStorage.removeItem('authToken');
             }
+          }
+        }
+
+        // 🔧 KIWI FALLBACK: الطريقة الثالثة - كوكيز التوكن الاحتياطية
+        if (!userData) {
+          // تحقق من وجود كوكيز احتياطية في المتصفح
+          const cookieToken = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('authToken='))
+            ?.split('=')[1];
+
+          const cookieUserId = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('userId='))
+            ?.split('=')[1];
+
+          if (cookieToken) {
+            console.log('🔐 Attempting authentication with cookie token...');
+            try {
+              const response = await fetch('/api/user', {
+                headers: {
+                  'Authorization': `Bearer ${cookieToken}`,
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+              });
+
+              if (response.ok) {
+                userData = await response.json();
+                userData.token = cookieToken;
+                // حفظ التوكن في localStorage أيضاً
+                localStorage.setItem('authToken', cookieToken);
+                console.log('✅ Authenticated with cookie token');
+              }
+            } catch (cookieErr) {
+              console.log('Cookie token auth failed:', cookieErr);
+            }
+          }
+
+          // إذا كان لدينا معرف مستخدم على الأقل
+          if (!userData && cookieUserId) {
+            console.log('🔐 Found userId in cookies, creating minimal user object');
+            userData = {
+              id: cookieUserId,
+              username: 'unknown',
+              role: 'user'
+            };
           }
         }
 
         if (userData) {
           setUser(userData);
-          authLog('User Loaded', {
+          authLog('User Loaded Successfully', {
             userId: userData.id,
             username: userData.username,
-            role: userData.role
+            role: userData.role,
+            authMethod: userData.token ? 'token' : 'session'
           });
         } else {
-          authLog('No User Found');
+          authLog('No User Found - All auth methods failed');
         }
       } catch (err: any) {
         console.error('Failed to load user:', err);

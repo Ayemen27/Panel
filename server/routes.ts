@@ -2082,6 +2082,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!result.success) {
         return res.status(400).json({
           success: false,
+
+  // Emergency session reset endpoint for troubleshooting
+  app.post('/api/auth/reset-session', async (req: AuthenticatedRequest, res) => {
+    try {
+      // 🚨 EMERGENCY SESSION RESET for cookie issues
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password required' });
+      }
+
+      // Verify credentials
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Check password (you'll need to import the comparePasswords function)
+      const { comparePasswords } = await import('./auth.js');
+      const isValidPassword = await comparePasswords(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Force destroy existing session
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error('Session destruction error:', err);
+          }
+        });
+      }
+
+      // Clear all cookies
+      res.clearCookie('sid');
+      res.clearCookie('connect.sid');
+      res.clearCookie('authToken');
+      res.clearCookie('userId');
+
+      // Generate new token
+      const { generateToken } = await import('./auth.js');
+      const token = generateToken(user);
+
+      // Set new cookies with enhanced compatibility
+      res.cookie('authToken', token, {
+        httpOnly: false,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/'
+      });
+
+      res.cookie('userId', user.id, {
+        httpOnly: false,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/'
+      });
+
+      console.log('🚨 Emergency session reset completed for user:', user.username);
+
+      res.json({
+        success: true,
+        message: 'Session reset successful',
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          token: token
+        }
+      });
+    } catch (error) {
+      console.error('Emergency session reset error:', error);
+      res.status(500).json({ error: 'Session reset failed' });
+    }
+  });
+
+
           message: result.message,
           error: result.error
         });
