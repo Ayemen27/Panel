@@ -114,7 +114,6 @@ export default function FileManager() {
   // حالات وضع الاختيار المتعدد
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
 
   // حالات النوافذ المنبثقة
   const [createFileDialog, setCreateFileDialog] = useState(false);
@@ -793,7 +792,8 @@ export default function FileManager() {
 
   const FileItem = ({ item }: { item: UnifiedFileInfo }) => {
     const isSelected = selectedItems.has(item.absolutePath);
-    const [longPressStarted, setLongPressStarted] = useState(false);
+    const [isLongPressing, setIsLongPressing] = useState(false);
+    const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
 
     // النقر الواحد - فتح الملف/المجلد
     const handleSingleClick = () => {
@@ -813,12 +813,13 @@ export default function FileManager() {
       }
     };
 
-    // النقر المطول - دخول وضع التحديد
-    const handleLongPressStart = (e: React.TouchEvent<HTMLElement> | React.MouseEvent) => {
+    // بداية الضغط - للنقر المطول
+    const handlePressStart = (e: React.TouchEvent | React.MouseEvent) => {
       e.preventDefault();
-      setLongPressStarted(true);
+      setIsLongPressing(false);
       
       const timer = setTimeout(() => {
+        setIsLongPressing(true);
         if (!selectionMode) {
           enterSelectionMode(item);
           // إضافة اهتزاز خفيف للإشارة لدخول وضع التحديد
@@ -826,32 +827,35 @@ export default function FileManager() {
             navigator.vibrate(50);
           }
         }
-        setLongPressStarted(false);
-      }, 500);
+      }, 500); // 500ms للنقر المطول
       
-      setLongPressTimer(timer);
+      setPressTimer(timer);
     };
 
-    const handleLongPressEnd = () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
+    // إنهاء الضغط
+    const handlePressEnd = () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        setPressTimer(null);
       }
       
-      // إذا لم يكن النقر مطولاً، نفذ النقر العادي
-      if (longPressStarted) {
-        setLongPressStarted(false);
+      // إذا لم يكن نقراً مطولاً، نفذ النقر العادي
+      if (!isLongPressing) {
         setTimeout(() => {
-          if (!selectionMode) {
-            handleSingleClick();
-          }
-        }, 50);
+          handleSingleClick();
+        }, 10);
       }
+      
+      setIsLongPressing(false);
     };
 
-    const handleClick = (e: React.MouseEvent) => {
+    // النقر بالماوس - للنقر العادي فقط
+    const handleMouseClick = (e: React.MouseEvent) => {
       e.preventDefault();
-      if (!longPressStarted) {
+      e.stopPropagation();
+      
+      // تجاهل النقر إذا كان هناك ضغط مطول
+      if (!isLongPressing && !pressTimer) {
         handleSingleClick();
       }
     };
@@ -863,14 +867,11 @@ export default function FileManager() {
             "p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 group relative",
             isSelected && "ring-2 ring-blue-500 bg-blue-50",
             selectionMode && "hover:bg-blue-50",
-            longPressStarted && "scale-95 transition-transform duration-150"
+            isLongPressing && "scale-95 transition-transform duration-150"
           )}
-          onClick={handleClick}
-          onTouchStart={handleLongPressStart}
-          onTouchEnd={handleLongPressEnd}
-          onMouseDown={handleLongPressStart}
-          onMouseUp={handleLongPressEnd}
-          onMouseLeave={handleLongPressEnd}
+          onClick={handleMouseClick}
+          onTouchStart={handlePressStart}
+          onTouchEnd={handlePressEnd}
           onContextMenu={(e) => {
             e.preventDefault();
             if (!selectionMode) {
@@ -946,14 +947,11 @@ export default function FileManager() {
           "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm group relative",
           isSelected && "bg-blue-50 ring-1 ring-blue-500",
           selectionMode && "hover:bg-blue-50",
-          longPressStarted && "bg-gray-100 transition-colors duration-150"
+          isLongPressing && "bg-gray-100 transition-colors duration-150"
         )}
-        onClick={handleClick}
-        onTouchStart={handleLongPressStart}
-        onTouchEnd={handleLongPressEnd}
-        onMouseDown={handleLongPressStart}
-        onMouseUp={handleLongPressEnd}
-        onMouseLeave={handleLongPressEnd}
+        onClick={handleMouseClick}
+        onTouchStart={handlePressStart}
+        onTouchEnd={handlePressEnd}
         onContextMenu={(e) => {
           e.preventDefault();
           if (!selectionMode) {
