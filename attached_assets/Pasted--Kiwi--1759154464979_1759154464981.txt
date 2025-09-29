@@ -1,0 +1,306 @@
+دعنا نغوص بعمق في المشكلة، الأسباب التقنية وراءها، ولماذا تظهر فقط في بعض المتصفحات مثل Kiwi وليس في كروم، وأخيرًا طريقة الحل الشاملة التي تضمن العمل عبر جميع المتصفحات (سطح المكتب والهواتف). سأشرح المفاهيم أولا، ثم أمثلة أخيرة، ثم استراتيجية التنفيذ.
+
+
+---
+
+1. المفاهيم الأساسية — ما هي خصائص الكوكيز التي تؤثر في المصادقة؟
+
+لكي تفهم لماذا بعض المتصفحات لا ترسل الكوكيز بينما متصفحات أخرى ترسلها، يجب أن نفهم هذه الخصائص المهمة عند ضبط الكوكيز:
+
+الخاصية	الوصف	التأثير على الإرسال / المصادقة
+
+Secure	إذا كانت الكوكيز تحتوي على Secure، فإنها تُرسل فقط عبر اتصالات HTTPS وليس HTTP.	إذا الموقع يعمل عبر HTTP أو المتصفح يرفض Secure في حالة غير آمنة، فإن الكوكيز لن تُرسل.
+HttpOnly	تمنع جافاسكريبت من الوصول إلى الكوكيز (أمان من XSS).	لا تؤثر على الإرسال، لكنها مفيدة لحماية الكوكيز.
+SameSite	تتحكم في الظروف التي يُسمح فيها بإرسال الكوكيز في طلبات “عبر المواقع” (cross-site requests). القيم الشائعة: Strict, Lax, None.	إذا الكوكيز ضبطت SameSite=Lax أو Strict، قد تُحظر في بعض الطلبات العابرة للمواقع أو من داخل إذاريم أو WebSocket.
+Domain / Path / Expires / Max-Age	تحدد النطاقات التي يمكن أن تُرسل إليها الكوكيز، والمسار، ومدة الصلاحية.	إذا الدومين أو المسار غير متطابق أو الكوكيز منتهية الصلاحية، لن تُرسل أو تُرفض.
+
+
+
+---
+
+1.1 كيف يعمل SameSite
+
+SameSite=Strict: الكوكيز تُرسل فقط عندما الطلب يأتي من نفس الموقع (أو نفس النطاق) تمامًا — لا تُرسل في أي سيناريو “عبر المواقع”.
+
+SameSite=Lax: خيار وسط — يُرسل الكوكيز في بعض الطلبات العليا مثل عند التنقل بالطريقة “GET” من موقع خارجي، لكن لا يُرسل الكوكيز في طلبات POST أو طلبات AJAX عبر المواقع غالباً.
+
+SameSite=None: تعني أنه لا توجد قيود على إرسال الكوكيز عبر المواقع، لكن الحديث الحديث في المتصفحات يُلزم أن تكون الكوكيز معلمة بـ Secure أيضًا (أي تُرسل فقط فوق HTTPS) إذا استخدمت None. 
+
+
+> ملاحظة: إذا لم تُحدد SameSite، فبعض المتصفحات (مثل كروم الحديثة) ستعتبر القيمة الافتراضية Lax تلقائيًا. 
+
+
+
+
+---
+
+1.2 التغيرات الحديثة في المتصفحات
+
+بدءًا من Chrome 80، الكوكيز التي تُستخدم في سياقات cross-site (عبر المواقع) يجب أن تُضبط SameSite=None مع Secure، وإلا فإن المتصفح سيمنعها أو يتجاهلها. 
+
+بعض المتصفحات القديمة أو المتصفحات المدمجة (embedded browsers, WebViews) أو المتصفحات المخصصة قد لا تدعم SameSite=None أو قد تفسرها بشكل غير صحيح. 
+
+مثلاً، في Safari هناك إعداد “Prevent cross-site tracking” (منع التتبع عبر المواقع) يُفعل افتراضيًا، وقد يمنع الكوكيز cross-site حتى لو كانت SameSite=None; Secure. 
+
+بعض إصدارات متصفحات مبنية على Chromium — مثل Kiwi — قد لا تتبع آخر سياسات الكوكيز أو تفسير SameSite=None بالشكل المطلوب، وقد ترفض إرسال الكوكيز في سيناريوهات معينة.
+
+
+
+---
+
+2. لماذا تظهر المشكلة في Kiwi فقط ولا تظهر في Chrome؟
+
+بناءً على ما فهمناه من السجلات التي أرسلتها:
+
+في متصفح Kiwi، الكوكيز لا تُرسل (Cookies: none، origin: none) أثناء الطلبات حتى بعد إنشاء الجلسة.
+
+بينما في Chrome، الكوكيز تُرسل بشكل طبيعي، مما يسمح بأن isAuthenticated = true.
+
+
+والسبب المحتمل:
+
+1. Kiwi لا تدعم أو ترفض SameSite=None أو لا ترسل الكوكيز في سيناريوهات cross-site
+ربما متصفح Kiwi يضع سياسات صارمة أو تفسير غير قياسي لخاصية SameSite.
+
+
+2. التوكن أو الجلسة تعتمد على الكوكيز التي لم تصل من Kiwi
+السيرفر يعتمد أن الـ session ID يُخزَّن في الكوكيز ويُرسل في كل طلب لاحق. إذا المتصفح لا يرسلها، فالمستخدم يظهر دائمًا كغير مصادق عليه.
+
+
+3. اعتمادك على الكوكيز بدلاً من توكن في الهيدر
+إذا الكوكيز لا تشتغل في متصفح معين، فليس لديك آلية بديلة لإرسال التوكن (مثلاً في رأس Authorization).
+
+
+4. اختلاف في سلوك WebSocket / Origin في Kiwi
+في السجلات، بعض محاولات اتصال WebSocket كانت بـ Has Token: false أو origin: undefined، مما قد يشير إلى أن Kiwi لا ترسل نفس الرؤوس (headers) أو تتصرف بطريقة مختلفة.
+
+
+
+
+---
+
+3. طريقة الحل الشاملة (لجميع المتصفحات: سطح المكتب والهواتف)
+
+لكي تضمن أن عمل المصادقة والكوكيز يعمل عبر جميع المتصفحات، يمكنك اتباع الاستراتيجية التالية:
+
+3.1 ضبط الكوكيز بطريقة صحيحة على السيرفر
+
+عند إصدار الكوكيز (مثلاً بعد تسجيل الدخول)، استخدم رأس Set-Cookie بهذا الشكل (كمثال):
+
+Set-Cookie: sessionId=abcdef123456; 
+            Path=/; 
+            HttpOnly; 
+            Secure; 
+            SameSite=None; 
+            Domain=yourdomain.com; 
+            Max-Age=...
+
+تأكد أن Secure يُضمن، لأن المتصفحات الحديثة سترفض SameSite=None بدون Secure. 
+
+تأكد أن الطلب يتم عبر HTTPS، لا تعمل عبر HTTP في الإنتاج — لأن Secure لن تُرسل عبر HTTP.
+
+تأكد أن Domain و Path تغطي المسارات التي تحتاج الوصول (مثلاً Domain=.yourdomain.com إذا تستخدم subdomains).
+
+(اختياري) تأكد أن الكوكيز ليست محمية بحيث المتصفح يرفضها إذا غيرت خصائصها.
+
+
+3.2 تفعيل CORS مع الإرسال عبر الكوكيز
+
+من جانب السيرفر (مثلاً في Express):
+
+app.use(cors({
+  origin: 'https://panel.yourdomain.com',  // أو اسم الدومين الذي تتوقع منه الطلبات
+  credentials: true
+}));
+
+وبعدها عندما تستخدم fetch أو axios في الجهة الأمامية:
+
+fetch('/api/unified-files/browse', {
+  method: 'GET',
+  credentials: 'include'  // مهم جدًا لكي تُرسل الكوكيز في الطلبات cross-origin
+});
+
+أو في Axios:
+
+axios.get('/api/unified-files/browse', {
+  withCredentials: true
+});
+
+إذا لم تفعل credentials: include أو withCredentials: true، الكوكيز لن تُرسل في الطلبات cross-site أو في AJAX. هذا الأمر معروف ومذكور في الوثائق:
+
+> “When a Fetch API or XMLHttpRequest API request uses CORS, browsers will ignore Set-Cookie headers present in the server’s response unless the request includes credentials.” 
+
+
+
+3.3 استخدام وسيلة بديلة (Fallback) — التوكن في الهيدر
+
+لأجل المتصفحات التي لا تدعم الكوكيز أو تتصرف بشكل غير متوقع (مثل بعض إصدارات Kiwi أو متصفحات WebView)، من الأفضل أن يكون لديك بديل:
+
+بعد تسجيل الدخول وتجهيز الجلسة، قم بإرسال توكِن (JWT أو أي توكن مصادق) إلى العميل (مثلاً في استجابة JSON).
+
+العميل (JS) يخزنه في localStorage أو sessionStorage أو في متغير داخلي.
+
+عند إرسال أي طلبات مستقبلية (REST API أو WebSocket handshake)، أرسل هذا التوكن في رأس Authorization:
+
+fetch('/api/endpoint', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  },
+  credentials: 'include'  // أو حسب الحاجة
+});
+
+في السيرفر، تحقق أولاً التوكن من الهيدر وإذا صالِح، قم بتخويل الطلب حتى لو الكوكيز لم تُرسل.
+
+
+بهذه الطريقة، حتى إذا الكوكيز لم تُرسل في بعض المتصفحات، لديك آلية تحسين (fallback) تعمل.
+
+3.4 التحقق من التوافق مع المتصفحات القديمة / المدمجة
+
+بعض المتصفحات لا تدعم SameSite=None أو تفسرها بشكل خاطئ. لذا:
+
+يمكنك استخدام تحليل User-Agent أو feature detection لمعرفة المتصفح. إذا المتصفح معروف بعدم دعمه SameSite=None، يمكنك ضبط الكوكيز بـ SameSite=Lax كبديل (مع الانتباه بأن بعض الطلبات cross-site ستفشل).
+
+أو استخدام طرق بديلة للمصادقة (التوكن في الهيدر كما في النقطة السابقة).
+
+تجنب الاعتماد الكلي على الكوكيز فقط في حالات حساسة.
+
+
+3.5 مثال كامل عملي للمصادقة بـ Node.js / Express
+
+إليك مخطط مبسط:
+
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
+
+const app = express();
+
+app.use(cors({
+  origin: 'https://panel.yourdomain.com',
+  credentials: true
+}));
+app.use(cookieParser());
+app.use(express.json());
+
+// عند تسجيل الدخول:
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  // تحقق من البيانات...
+  const user = { id: 123, name: 'Alice' };  // مثال
+
+  // أنشئ توكن:
+  const token = jwt.sign({ userId: user.id }, 'secretKey', { expiresIn: '1h' });
+
+  // أنشئ الجلسة – هذا اختياري إذا تعتمد على session:
+  req.session.userId = user.id;
+
+  // أرسل الكوكيز:
+  res.cookie('sessionId', req.session.id, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+    path: '/',
+    domain: 'yourdomain.com'
+  });
+
+  // أرسل التوكن في الاستجابة أيضًا (لفallback):
+  res.json({
+    success: true,
+    token
+  });
+});
+
+// ميدلوير لحماية المسارات:
+function authMiddleware(req, res, next) {
+  // أولاً التحقق من الجلسة:
+  if (req.session && req.session.userId) {
+    return next();
+  }
+
+  // إذا لم تكن الجلسة موجودة، جرب التوكن من الهيدر:
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    try {
+      const payload = jwt.verify(token, 'secretKey');
+      // ضع المستخدم في req:
+      req.userId = payload.userId;
+      return next();
+    } catch (err) {
+      // التوكن غير صالح
+    }
+  }
+
+  // إن لم تحقق أي طريقة، ارفض الطلب:
+  return res.status(401).json({ error: 'Unauthorized' });
+}
+
+// مثال لمسار محمي:
+app.get('/api/unified-files/browse', authMiddleware, (req, res) => {
+  // تنفيذ المنطق
+  res.json({ files: [ /* … */ ] });
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+
+وفي العميل (JavaScript في المتصفح):
+
+async function login(username, password) {
+  const resp = await fetch('https://panel.yourdomain.com/api/login', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await resp.json();
+  if (data.success) {
+    window.myAuthToken = data.token;  // خزّن التوكن مؤقتًا
+  }
+}
+
+async function browseFiles() {
+  const resp = await fetch('https://panel.yourdomain.com/api/unified-files/browse', {
+    method: 'GET',
+    credentials: 'include',  // لإرسال الكوكيز إذا كانت متوفرة
+    headers: {
+      'Authorization': `Bearer ${window.myAuthToken || ''}`
+    }
+  });
+  if (resp.status === 401) {
+    // غير مصدق → تعامل مع الخطأ
+  }
+  const data = await resp.json();
+  return data.files;
+}
+
+بهذه الطريقة أنت تجمع بين:
+
+الدعم الأساسي عبر الكوكيز (إذا المتصفح يسمح).
+
+الدعم الاحتياطي (fallback) عبر التوكن في الهيدر إذا الكوكيز لم تُرسل.
+
+
+
+---
+
+✅ ملخّص
+
+المشكلة تنشأ بسبب كيفية تعامل بعض المتصفحات (مثل Kiwi) مع الكوكيز، خصوصًا مع سياسات SameSite و Secure.
+
+Chrome ومتصفحات حديثة تلتزم بسياسات الكوكيز الحديثة، وإذا تم ضبط الكوكيز بشكل صحيح (SameSite=None + Secure) فستُرسل بنجاح.
+
+المتصفحات التي لا تدعم هذه السياسات أو تفسرها بشكل صارم قد لا ترسل الكوكيز.
+
+الحل الشامل هو:
+ 1. ضبط الكوكيز بشكل صحيح على السيرفر (SameSite=None; Secure)
+ 2. تمكين إرسال الكوكيز في الطلبات باستخدام credentials: include / withCredentials: true
+ 3. استخدام توكن في الهيدر كبديل إذا الكوكيز لا تُرسل
+ 4. التعامل مع المتصفحات القديمة أو المدمجة باستخدام تحليل الـ User-Agent أو fallback
+
+
+إذا تحب، أقدر أرسل لك كود جاهز متكامل (Back + Front) يعمل على جميع المتصفحات (Kiwi، Chrome، Safari، إلخ) بدون مشاكل، وتقدر تدمجه في مشروعك. هل تحب أن أرسله لك؟
+
