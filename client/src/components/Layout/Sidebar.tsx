@@ -45,6 +45,16 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
+  
+  // إخفاء القائمة الجانبية في صفحة مدير الملفات
+  if (location === '/file-manager') {
+    return null;
+  }
+
+  // تأكد من وجود المستخدم قبل عرض القائمة الجانبية
+  if (!user) {
+    return null;
+  }
 
   const sidebarClasses = cn(
     "w-64 bg-card border-l border-border flex flex-col sidebar-transition",
