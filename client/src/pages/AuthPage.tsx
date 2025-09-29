@@ -221,31 +221,61 @@ export default function AuthPage() {
                 <Button
                   type="submit"
                   data-testid="button-login"
-                  className={`w-full h-12 font-semibold rounded-xl shadow-lg transition-all duration-300 transform ${
+                  className={`w-full h-12 font-semibold rounded-xl transition-all duration-500 ease-out transform-gpu ${
                     isLoading 
-                      ? 'bg-gradient-to-r from-blue-400 to-indigo-400 cursor-not-allowed scale-[0.98] shadow-md' 
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]'
-                  } text-white`}
+                      ? 'bg-gradient-to-r from-blue-400/90 to-indigo-400/90 cursor-not-allowed scale-[0.96] shadow-md opacity-95' 
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-2xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:-translate-y-0.5'
+                  } text-white relative overflow-hidden group`}
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="relative">
-                        <div className="w-5 h-5 border-2 border-white/30 rounded-full"></div>
-                        <div className="absolute top-0 left-0 w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  {/* خلفية متحركة للتحميل */}
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 animate-pulse"></div>
+                  )}
+                  
+                  {/* محتوى الزر */}
+                  <div className="relative z-10">
+                    {isLoading ? (
+                      <div className="flex items-center justify-center gap-4">
+                        {/* مؤشر التحميل المزدوج */}
+                        <div className="relative">
+                          {/* الحلقة الخارجية */}
+                          <div className="w-6 h-6 border-2 border-white/20 rounded-full"></div>
+                          {/* الحلقة الدوارة */}
+                          <div className="absolute top-0 left-0 w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          {/* النقطة المركزية */}
+                          <div className="absolute top-1/2 left-1/2 w-1 h-1 bg-white/60 rounded-full transform -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+                        </div>
+                        
+                        {/* النص مع تأثير النبضة */}
+                        <div className="flex flex-col items-center">
+                          <span className="animate-pulse text-sm font-medium">جاري تسجيل الدخول</span>
+                          
+                          {/* النقاط المتحركة */}
+                          <div className="flex gap-1 mt-1">
+                            <div className="w-1.5 h-1.5 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1s' }}></div>
+                            <div className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1s' }}></div>
+                            <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1s' }}></div>
+                          </div>
+                        </div>
+                        
+                        {/* شريط التقدم المتحرك */}
+                        <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full animate-pulse"></div>
                       </div>
-                      <span className="animate-pulse">جاري تسجيل الدخول...</span>
-                      <div className="flex gap-1">
-                        <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-3 transition-all duration-300 group-hover:gap-4">
+                        <LogIn className="w-5 h-5 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110" />
+                        <span className="transition-all duration-300 group-hover:tracking-wide">تسجيل الدخول</span>
+                        
+                        {/* تأثير الضوء عند المرور */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-all duration-700 ease-out"></div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-3 transition-all duration-200 group">
-                      <LogIn className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
-                      <span>تسجيل الدخول</span>
-                    </div>
+                    )}
+                  </div>
+                  
+                  {/* حدود متوهجة عند المرور */}
+                  {!isLoading && (
+                    <div className="absolute inset-0 rounded-xl border border-transparent group-hover:border-white/20 transition-all duration-300"></div>
                   )}
                 </Button>
               </div>
