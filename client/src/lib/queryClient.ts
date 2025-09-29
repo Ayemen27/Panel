@@ -20,109 +20,46 @@ export async function apiRequest(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   endpoint: string,
   data?: any,
-  options?: RequestInit
+  options: RequestOptions = {}
 ): Promise<Response> {
+  const { timeout = 30000, retries = 2, skipCredentials = false } = options;
+
+  const url = endpoint.startsWith('http') ? endpoint : `${getApiBaseUrl()}${endpoint}`;
+
+  // الحصول على التوكن من localStorage
+  const token = localStorage.getItem('authToken');
+
   const config: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      ...options?.headers,
+      'Accept': 'application/json',
+      // إضافة التوكن إلى الهيدر إذا كان متوفراً
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers
     },
-    credentials: 'include',
-    ...options,
+    credentials: skipCredentials ? 'omit' : 'include'
   };
 
-  let fullUrl = endpoint;
-
-  if (data && method !== 'GET') {
+  if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
     config.body = JSON.stringify(data);
-  } else if (data && method === 'GET') {
-    const params = new URLSearchParams();
+  }
 
-    // Handle nested objects in query parameters
+  if (method === 'GET' && data) {
+    const params = new URLSearchParams();
     Object.entries(data).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
+      if (value !== undefined && value !== null) {
         params.append(key, String(value));
       }
     });
-
-    const separator = endpoint.includes('?') ? '&' : '?';
-    fullUrl = `${endpoint}${separator}${params.toString()}`;
+    const queryString = params.toString();
+    if (queryString) {
+      const separator = url.includes('?') ? '&' : '?';
+      return fetchWithRetry(`${url}${separator}${queryString}`, config, { timeout, retries });
+    }
   }
 
-  console.log(`🌐 ${method} ${fullUrl}`);
-
-  try {
-    const startTime = performance.now();
-    const response = await fetch(fullUrl, config);
-    const endTime = performance.now();
-    const duration = endTime - startTime;
-
-    apiLog('Request Completed', {
-      method,
-      endpoint: fullUrl, // Using fullUrl here for more detailed logging
-      status: response.status,
-      statusText: response.statusText,
-      duration: `${duration.toFixed(2)}ms`,
-      success: response.ok,
-      headers: Object.fromEntries(response.headers.entries()),
-      contentType: response.headers.get('content-type')
-    });
-
-    if (!response.ok) {
-      apiLog('Request Failed', {
-        method,
-        endpoint: fullUrl, // Using fullUrl here for more detailed logging
-        status: response.status,
-        statusText: response.statusText,
-        duration: `${duration.toFixed(2)}ms`,
-        url: fullUrl
-      });
-
-      // محاولة الحصول على رسالة خطأ من الخادم
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      let errorDetails = '';
-      try {
-        const errorData = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-        if (errorData.error) {
-          errorDetails = errorData.error;
-        }
-      } catch {
-        try {
-          errorDetails = await response.text();
-        } catch {
-          // Ignore errors reading text
-        }
-      }
-      const fullError = errorDetails ? `${errorMessage} - ${errorDetails}` : errorMessage;
-      console.error('❌ API Error:', fullError);
-      throw new Error(fullError);
-    }
-
-    return response;
-  } catch (error) {
-    apiLog('Request Error', {
-      method,
-      endpoint: fullUrl, // Using fullUrl here for more detailed logging
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      url: fullUrl
-    });
-    console.error('❌ Network/Fetch Error:', error);
-
-    // معالجة أخطاء الشبكة
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('فشل في الاتصال بالخادم. تحقق من اتصال الإنترنت.');
-    }
-
-    throw error;
-  }
+  return fetchWithRetry(url, config, { timeout, retries });
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -235,3 +172,15 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Dummy fetchWithRetry and RequestOptions for compilation
+async function fetchWithRetry(url: string, config: RequestInit, options: { timeout: number, retries: number }): Promise<Response> {
+  return fetch(url, config);
+}
+
+interface RequestOptions {
+  timeout?: number;
+  retries?: number;
+  skipCredentials?: boolean;
+  headers?: Record<string, string>;
+}

@@ -104,10 +104,12 @@ export function useWebSocket(token?: string) {
     }
 
     try {
-      const wsUrl = getWebSocketUrl(currentToken);
+      const wsUrl = getWebSocketUrl();
+      const token = localStorage.getItem('authToken');
+      const wsUrlWithToken = token ? `${wsUrl}?token=${token}` : wsUrl;
 
       const diagnostics = {
-        url: wsUrl,
+        url: wsUrlWithToken,
         hasToken: !!currentToken,
         environment: ENV_CONFIG.name,
         timestamp: new Date().toISOString(),
@@ -116,14 +118,14 @@ export function useWebSocket(token?: string) {
       setConnectionDiagnostics(diagnostics);
       console.log('🔍 WebSocket connection diagnostics:', diagnostics);
 
-      if (!wsUrl ||
-          wsUrl.includes('undefined') ||
-          wsUrl.includes('NaN') ||
-          wsUrl.includes('null') ||
-          wsUrl === 'wss:///ws' ||
-          wsUrl === 'ws:///ws' ||
-          wsUrl.length < 10) {
-        console.error('❌ Invalid WebSocket URL detected:', wsUrl);
+      if (!wsUrlWithToken ||
+          wsUrlWithToken.includes('undefined') ||
+          wsUrlWithToken.includes('NaN') ||
+          wsUrlWithToken.includes('null') ||
+          wsUrlWithToken === 'wss:///ws' ||
+          wsUrlWithToken === 'ws:///ws' ||
+          wsUrlWithToken.length < 10) {
+        console.error('❌ Invalid WebSocket URL detected:', wsUrlWithToken);
         console.error('❌ Environment config:', ENV_CONFIG);
         console.error('❌ Current location:', typeof window !== 'undefined' ? window.location : 'server');
 
@@ -145,13 +147,13 @@ export function useWebSocket(token?: string) {
           return;
         }
       } else {
-        console.log('🔌 Connecting to WebSocket:', wsUrl.replace(/token=[^&]+/, 'token=***'));
-        wsRef.current = new WebSocket(wsUrl);
+        console.log('🔌 Connecting to WebSocket:', wsUrlWithToken.replace(/token=[^&]+/, 'token=***'));
+        wsRef.current = new WebSocket(wsUrlWithToken);
       }
 
       wsRef.current.onopen = () => {
         console.log('✅ WebSocket connected successfully');
-        console.log('🔗 Connection URL:', wsUrl.replace(/token=[^&]+/, 'token=***'));
+        console.log('🔗 Connection URL:', wsUrlWithToken.replace(/token=[^&]+/, 'token=***'));
         console.log('🌐 Domain:', typeof window !== 'undefined' ? window.location.hostname : 'server');
 
         if (isMountedRef.current) {

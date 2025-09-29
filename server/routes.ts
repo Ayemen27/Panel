@@ -1594,6 +1594,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     console.log('Client connected from:', clientIP);
 
+    // التحقق من التوكن إذا كان متوفراً
+    let authenticatedUser = null;
+    if (token) {
+      try {
+        const { verifyToken } = await import('./auth.js');
+        const payload = verifyToken(token);
+        if (payload) {
+          authenticatedUser = payload;
+          console.log('✅ WebSocket authenticated via token for user:', payload.username);
+        }
+      } catch (error) {
+        console.warn('❌ WebSocket token verification failed:', error);
+      }
+    }
+
     console.log('✅ WebSocket client connected:');
     console.log('   Host:', host);
     console.log('   Origin:', origin);

@@ -11,6 +11,7 @@ import { z } from "zod";
 import connectPg from "connect-pg-simple";
 import MemoryStore from "memorystore";
 import rateLimit from "express-rate-limit";
+import jwt from 'jsonwebtoken';
 
 declare global {
   namespace Express {
@@ -84,7 +85,7 @@ export function getSession() {
   const isCustomDomain = process.env.CUSTOM_DOMAIN === 'true' || 
                          process.env.DOMAIN?.includes('binarjoinanelytic.info') ||
                          ENV_CONFIG.name === 'production' && !ENV_CONFIG.isReplit;
-  
+
   // تحديد الدومين المناسب للكوكيز
   let cookieDomain: string | undefined;
   if (ENV_CONFIG.isReplit) {
@@ -100,7 +101,7 @@ export function getSession() {
 
   // تحديد إعدادات الأمان بناءً على البيئة
   const isProductionSecurity = ENV_CONFIG.name === 'production';
-  
+
   const cookieSettings = {
     httpOnly: true, // منع الوصول من JavaScript
     secure: isProductionSecurity, // HTTPS في الإنتاج فقط
@@ -108,7 +109,7 @@ export function getSession() {
     sameSite: isProductionSecurity ? "strict" as const : "lax" as const, // إعدادات أكثر مرونة في التطوير
     domain: cookieDomain,
   };
-  
+
   // سجل تشخيصي لمساعدة في حل مشاكل الكوكيز
   console.log('🍪 Cookie Settings:', {
     isCustomDomain,
@@ -120,7 +121,7 @@ export function getSession() {
   });
 
   return session({
-    secret: process.env.SESSION_SECRET || 'dev-only-secret-change-immediately',
+    secret: process.env.SESSION_SECRET || 'dev-only-secret-change-in-production',
     store: sessionStore,
     resave: false, // ✅ SECURITY FIX: منع إعادة الحفظ غير الضرورية
     saveUninitialized: false, // ✅ SECURITY FIX: منع حفظ الجلسات الفارغة (مقاومة CSRF)
@@ -151,6 +152,30 @@ const loginLimiter = rateLimit({
   // 🛡️ SECURITY FIX: Remove custom keyGenerator to use default IPv6-safe one
   // Default generator handles IPv6 properly
 });
+
+const SESSION_SECRET = process.env.SESSION_SECRET || 'fallback-dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || SESSION_SECRET;
+
+// دوال إنشاء والتحقق من التوكن
+export function generateToken(user: any): string {
+  return jwt.sign(
+    { 
+      id: user.id, 
+      username: user.username, 
+      role: user.role 
+    }, 
+    JWT_SECRET, 
+    { expiresIn: '24h' }
+  );
+}
+
+export function verifyToken(token: string): any {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+}
 
 export function setupAuth(app: Express) {
   // يجب أن يكون express-session قبل passport.session
@@ -185,15 +210,15 @@ export function setupAuth(app: Express) {
         userID: id ? 'provided' : 'missing',
         timestamp: new Date().toISOString()
       });
-      
+
       const user = await storage.getUser(id);
-      
+
       console.log('👤 User Retrieved:', {
         userFound: !!user,
         userID: user?.id ? 'exists' : 'missing',
         username: user?.username ? user.username.substring(0, 3) + '***' : 'missing'
       });
-      
+
       done(null, user);
     } catch (error) {
       console.error('❌ Passport Deserialize Error:', error);
@@ -280,6 +305,9 @@ export function setupAuth(app: Express) {
               console.log('Login successful for user:', user.username?.substring(0, 3) + '***');
             }
 
+            // إنشاء توكن JWT للمتصفحات التي لا تدعم الكوكيز
+            const token = generateToken(user);
+
             // إضافة headers إضافية للتوافق
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.setHeader('Pragma', 'no-cache');
@@ -292,19 +320,27 @@ export function setupAuth(app: Express) {
               cookiesSent: req.headers.cookie ? 'has cookies' : 'no cookies',
               userAgent: req.headers['user-agent']?.substring(0, 50) + '...',
               origin: req.headers.origin,
-              host: req.headers.host
+              host: req.headers.host,
+              tokenGenerated: 'yes'
             });
 
             // التحقق من أن Set-Cookie header سيتم إرساله
             const cookieHeader = res.getHeader('Set-Cookie');
             console.log('🍪 Set-Cookie Header:', cookieHeader ? 'will be sent' : 'missing');
 
-            // 🛡️ SECURITY FIX: استخدام sanitizeUser مع إضافة token للاستجابة
-            const userWithToken = {
-              ...sanitizeUser(user),
-              token: req.sessionID // استخدام session ID كـ token
-            };
-            res.status(200).json(userWithToken);
+            // 🛡️ SECURITY FIX: 
+            res.json({
+              success: true,
+              message: 'تم تسجيل الدخول بنجاح',
+              token, // إضافة التوكن للاستجابة
+              user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                firstName: user.firstName,
+                lastName: user.lastName
+              }
+            });
           });
         });
       });
@@ -331,7 +367,7 @@ export function setupAuth(app: Express) {
       origin: req.headers.origin,
       cookies: req.headers.cookie ? 'present' : 'none'
     });
-    
+
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
@@ -349,11 +385,36 @@ export function isAuthenticated(req: any, res: any, next: any) {
     origin: req.headers.origin,
     cookies: req.headers.cookie ? 'present' : 'none'
   });
-  
-  if (req.isAuthenticated()) {
+
+  // أولاً: تحقق من المصادقة عبر الجلسة/الكوكيز
+  if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
   }
-  res.sendStatus(401);
+
+  // ثانياً: تحقق من التوكن في الهيدر (fallback)
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const payload = verifyToken(token);
+
+    if (payload) {
+      // إنشاء كائن مستخدم وهمي للتوافق مع الكود الموجود
+      req.user = {
+        id: payload.id,
+        username: payload.username,
+        role: payload.role
+      };
+      req.isAuthenticated = () => true;
+      console.log('✅ Auth via token successful for user:', payload.username);
+      return next();
+    }
+  }
+
+  console.log('🔍 Auth failed - no session or valid token');
+  res.status(401).json({ 
+    message: 'Authentication required',
+    authenticated: false 
+  });
 }
 
 export function requireRole(role: 'admin' | 'moderator' | 'user' | 'viewer') {
