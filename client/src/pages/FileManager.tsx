@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -60,6 +59,8 @@ import {
   FilePlus,
   Eye,
   Archive,
+  FileText,
+  Clock,
 } from "lucide-react";
 import { FileIconComponent } from "@/components/FileManager/FileIcon";
 import { FileManagerSidebar } from "@/components/FileManager/FileManagerSidebar";
@@ -111,19 +112,19 @@ export default function FileManager() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [showHidden, setShowHidden] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  
+
   // حالات وضع الاختيار المتعدد
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
-  
+
   // حالات النوافذ المنبثقة
   const [createFileDialog, setCreateFileDialog] = useState(false);
   const [createFolderDialog, setCreateFolderDialog] = useState(false);
   const [sortFilterDialog, setSortFilterDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
-  
+
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([
     'كشف ايا',
     'خيار',
@@ -154,7 +155,7 @@ export default function FileManager() {
       }
 
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || 'فشل في تحميل محتويات المجلد');
       }
@@ -244,7 +245,7 @@ export default function FileManager() {
 
   const toggleItemSelection = useCallback((item: UnifiedFileInfo) => {
     if (!selectionMode) return;
-    
+
     setSelectedItems(prev => {
       const newSet = new Set(prev);
       if (newSet.has(item.absolutePath)) {
@@ -269,7 +270,7 @@ export default function FileManager() {
       toggleItemSelection(item);
       return;
     }
-    
+
     if (item.type === 'directory') {
       setCurrentPath(item.absolutePath);
       setBreadcrumbs(prev => [...prev, { 
@@ -295,7 +296,7 @@ export default function FileManager() {
     const newBreadcrumbs: BreadcrumbItem[] = [
       { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
     ];
-    
+
     let currentBuildPath = '/home/administrator';
     for (let i = 3; i < pathParts.length; i++) { // تخطي home/administrator
       currentBuildPath += '/' + pathParts[i];
@@ -305,7 +306,7 @@ export default function FileManager() {
         path: currentBuildPath
       });
     }
-    
+
     setBreadcrumbs(newBreadcrumbs);
     setSidebarOpen(false);
     exitSelectionMode();
@@ -348,7 +349,7 @@ export default function FileManager() {
   // عمليات الملفات
   const createNewFile = async () => {
     if (!newFileName.trim()) return;
-    
+
     try {
       const fullPath = `${currentPath}/${newFileName.trim()}`.replace(/\/+/g, '/');
 
@@ -382,7 +383,7 @@ export default function FileManager() {
 
   const createNewFolder = async () => {
     if (!newFolderName.trim()) return;
-    
+
     try {
       const fullPath = `${currentPath}/${newFolderName.trim()}`.replace(/\/+/g, '/');
 
@@ -415,7 +416,7 @@ export default function FileManager() {
 
   const deleteSelectedItems = async () => {
     if (selectedItems.size === 0) return;
-    
+
     try {
       const itemsToDelete = Array.from(selectedItems);
       const confirmed = confirm(`هل أنت متأكد من حذف ${itemsToDelete.length} عنصر؟`);
@@ -538,7 +539,7 @@ export default function FileManager() {
             {selectedItems.size} محدد
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -648,7 +649,7 @@ export default function FileManager() {
         toggleItemSelection(item);
         return;
       }
-      
+
       if (item.type === 'directory') {
         handleFolderClick(item);
       } else {
@@ -661,7 +662,7 @@ export default function FileManager() {
 
     const handleLongPress = (e: React.TouchStart | React.MouseEvent) => {
       if (selectionMode) return;
-      
+
       if ('touches' in e) {
         const timer = setTimeout(() => {
           enterSelectionMode(item);
@@ -714,7 +715,7 @@ export default function FileManager() {
               )}
             </div>
           )}
-          
+
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               <FileIconComponent 
@@ -790,7 +791,7 @@ export default function FileManager() {
             )}
           </div>
         )}
-        
+
         <FileIconComponent 
           type={item.type}
           extension={item.extension}
@@ -804,7 +805,7 @@ export default function FileManager() {
             <span>{formatDate(item.modified)}</span>
           </div>
         </div>
-        
+
         {!selectionMode && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -830,6 +831,138 @@ export default function FileManager() {
           </DropdownMenu>
         )}
       </div>
+    );
+  };
+
+  // File Manager Sidebar
+  const FileManagerSidebar = () => {
+    if (!sidebarOpen) return null;
+
+    const quickPaths = [
+      { name: 'الرئيسية', path: '/home/administrator', icon: Home },
+      { name: 'المستندات', path: '/home/administrator/Documents', icon: FileText },
+      { name: 'الصور', path: '/home/administrator/Pictures', icon: FileIcon },
+      { name: 'التحميلات', path: '/home/administrator/Downloads', icon: Folder },
+      { name: 'سطح المكتب', path: '/home/administrator/Desktop', icon: Folder },
+      { name: 'الجذر', path: '/', icon: HardDrive },
+    ];
+
+    const navigateToPath = (path: string, name: string) => {
+      setCurrentPath(path);
+      setBreadcrumbs([{ id: 'root', name, path }]);
+      setSidebarOpen(false); // إغلاق القائمة الجانبية
+      exitSelectionMode();
+    };
+
+    const handleOverlayClick = () => {
+      setSidebarOpen(false);
+    };
+
+    const handleSidebarClick = (e: React.MouseEvent) => {
+      e.stopPropagation(); // منع إغلاق القائمة عند النقر داخل القائمة
+    };
+
+    return (
+      <>
+        {/* Mobile overlay */}
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={handleOverlayClick}
+        />
+
+        {/* Sidebar */}
+        <div 
+          className="fixed inset-y-0 right-0 w-80 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform"
+          onClick={handleSidebarClick}
+        >
+          {/* Header */}
+          <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">تنقل سريع</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(false)}
+              className="h-8 w-8 p-0 text-white hover:bg-white/20"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Quick Paths */}
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-gray-600 mb-3">المسارات المفضلة</h3>
+            <div className="space-y-1">
+              {quickPaths.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentPath === item.path;
+
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => navigateToPath(item.path, item.name)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-right transition-colors",
+                      isActive 
+                        ? "bg-blue-50 text-blue-600 font-medium" 
+                        : "hover:bg-gray-100 text-gray-700"
+                    )}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex-1">{item.name}</span>
+                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Storage Info */}
+          <div className="p-4 border-t border-gray-200">
+            <h3 className="text-sm font-medium text-gray-600 mb-3">معلومات التخزين</h3>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">المساحة المستخدمة</span>
+                <span className="text-sm font-medium">2.1 GB / 10 GB</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '21%' }}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Locations */}
+          <div className="p-4 border-t border-gray-200">
+            <h3 className="text-sm font-medium text-gray-600 mb-3">المواقع الحديثة</h3>
+            <div className="space-y-1">
+              {breadcrumbs.slice(-3).map((crumb, index) => (
+                <button
+                  key={crumb.id}
+                  onClick={() => navigateToPath(crumb.path, crumb.name)}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-right hover:bg-gray-100 text-gray-600"
+                >
+                  <Clock className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1 truncate">{crumb.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="p-4 border-t border-gray-200">
+            <Button
+              onClick={() => {
+                setLocation('/');
+                setSidebarOpen(false); // إغلاق القائمة عند العودة للوحة التحكم
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              العودة للوحة التحكم
+            </Button>
+          </div>
+        </div>
+      </>
     );
   };
 
@@ -875,7 +1008,7 @@ export default function FileManager() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex-1 bg-gray-800 overflow-y-auto">
             {searchSuggestions.length > 0 && (
               <div className="p-4">
@@ -939,7 +1072,7 @@ export default function FileManager() {
                  activeTab === 'favorites' ? 'المفضلة' : 'الحديثة'}
               </h1>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {/* Search Button */}
               <Button
@@ -1215,7 +1348,7 @@ export default function FileManager() {
                 </div>
               ))}
             </div>
-            
+
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between">
                 <span>غير ذلك</span>
