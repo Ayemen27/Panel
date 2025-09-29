@@ -1162,6 +1162,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // DI Phase 3: Use service container instead of direct storage access
       const notificationService = req.services.resolveByToken<UnifiedNotificationService>(ServiceTokens.UNIFIED_NOTIFICATION_SERVICE);
       
+      // تحديث السياق بمعلومات المستخدم الحالي
+      notificationService.setContext({
+        user: req.user,
+        sessionId: req.sessionID,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
       const limit = parseInt(req.query.limit as string) || 50;
       const page = parseInt(req.query.page as string) || 1;
       
@@ -1188,6 +1196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // DI Phase 3: Use service container instead of direct storage access
       const notificationService = req.services.resolveByToken<UnifiedNotificationService>(ServiceTokens.UNIFIED_NOTIFICATION_SERVICE);
       
+      // تحديث السياق بمعلومات المستخدم الحالي
+      notificationService.setContext({
+        user: req.user,
+        sessionId: req.sessionID,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
       const { id } = req.params;
       const result = await notificationService.markAsRead(id);
       
@@ -1206,6 +1222,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // DI Phase 3: Use service container instead of direct storage access  
       const notificationService = req.services.resolveByToken<UnifiedNotificationService>(ServiceTokens.UNIFIED_NOTIFICATION_SERVICE);
+      
+      // تحديث السياق بمعلومات المستخدم الحالي
+      notificationService.setContext({
+        user: req.user,
+        sessionId: req.sessionID,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
       
       const { id } = req.params;
       const result = await notificationService.resolveNotification(id);
