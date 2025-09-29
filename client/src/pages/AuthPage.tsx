@@ -221,62 +221,78 @@ export default function AuthPage() {
                 <Button
                   type="submit"
                   data-testid="button-login"
-                  className={`w-full h-12 font-semibold rounded-xl transition-all duration-500 ease-out transform-gpu ${
-                    isLoading 
-                      ? 'bg-gradient-to-r from-blue-400/90 to-indigo-400/90 cursor-not-allowed scale-[0.96] shadow-md opacity-95' 
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-2xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:-translate-y-0.5'
-                  } text-white relative overflow-hidden group`}
+                  className={`w-full h-12 font-semibold rounded-xl login-button-enhanced relative overflow-hidden group ${
+                    isLoading ? 'cursor-not-allowed' : 'cursor-pointer'
+                  } text-white`}
                   disabled={isLoading}
                 >
+                  {/* تأثير الشيمر للخلفية */}
+                  {!isLoading && (
+                    <div className="button-shimmer"></div>
+                  )}
+                  
                   {/* خلفية متحركة للتحميل */}
                   {isLoading && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 animate-pulse"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-indigo-500/30">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+                    </div>
                   )}
                   
                   {/* محتوى الزر */}
-                  <div className="relative z-10">
+                  <div className="relative z-20">
                     {isLoading ? (
                       <div className="flex items-center justify-center gap-4">
-                        {/* مؤشر التحميل المزدوج */}
+                        {/* مؤشر التحميل المحسّن */}
                         <div className="relative">
-                          {/* الحلقة الخارجية */}
-                          <div className="w-6 h-6 border-2 border-white/20 rounded-full"></div>
-                          {/* الحلقة الدوارة */}
-                          <div className="absolute top-0 left-0 w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          {/* النقطة المركزية */}
-                          <div className="absolute top-1/2 left-1/2 w-1 h-1 bg-white/60 rounded-full transform -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+                          {/* الحلقة الخارجية الثابتة */}
+                          <div className="w-6 h-6 border-2 border-white/30 rounded-full"></div>
+                          
+                          {/* الحلقة الدوارة الرئيسية */}
+                          <div className="absolute top-0 left-0 w-6 h-6 border-2 border-white border-t-transparent border-r-transparent rounded-full loading-spinner"></div>
+                          
+                          {/* الحلقة الدوارة الثانوية */}
+                          <div className="absolute top-1 left-1 w-4 h-4 border border-white/60 border-b-transparent border-l-transparent rounded-full loading-spinner" style={{ animationDuration: '0.75s', animationDirection: 'reverse' }}></div>
+                          
+                          {/* النقطة المركزية النابضة */}
+                          <div className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2 animate-ping"></div>
                         </div>
                         
-                        {/* النص مع تأثير النبضة */}
+                        {/* النص مع تأثير النبضة المحسن */}
                         <div className="flex flex-col items-center">
-                          <span className="animate-pulse text-sm font-medium">جاري تسجيل الدخول</span>
+                          <span className="text-sm font-medium animate-pulse">جاري تسجيل الدخول</span>
                           
-                          {/* النقاط المتحركة */}
-                          <div className="flex gap-1 mt-1">
-                            <div className="w-1.5 h-1.5 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1s' }}></div>
-                            <div className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1s' }}></div>
-                            <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1s' }}></div>
+                          {/* النقاط المتحركة المحسّنة */}
+                          <div className="flex gap-1.5 mt-2">
+                            <div className="w-2 h-2 bg-white/90 rounded-full loading-dots"></div>
+                            <div className="w-2 h-2 bg-white/80 rounded-full loading-dots"></div>
+                            <div className="w-2 h-2 bg-white/70 rounded-full loading-dots"></div>
                           </div>
                         </div>
                         
-                        {/* شريط التقدم المتحرك */}
-                        <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full animate-pulse"></div>
+                        {/* شريط التقدم المتحرك المحسن */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-pulse rounded-b-xl"></div>
+                        
+                        {/* تأثير الوهج النابض */}
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/20 to-indigo-400/20 animate-pulse"></div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-3 transition-all duration-300 group-hover:gap-4">
-                        <LogIn className="w-5 h-5 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110" />
-                        <span className="transition-all duration-300 group-hover:tracking-wide">تسجيل الدخول</span>
+                        <LogIn className="w-5 h-5 login-icon-hover transition-all duration-300 group-hover:scale-110" />
+                        <span className="transition-all duration-300 group-hover:tracking-wider font-medium">تسجيل الدخول</span>
                         
-                        {/* تأثير الضوء عند المرور */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-all duration-700 ease-out"></div>
+                        {/* تأثير الضوء المتحرك عند المرور */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-0 group-hover:opacity-100 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-all duration-1000 ease-out rounded-xl"></div>
                       </div>
                     )}
                   </div>
                   
                   {/* حدود متوهجة عند المرور */}
                   {!isLoading && (
-                    <div className="absolute inset-0 rounded-xl border border-transparent group-hover:border-white/20 transition-all duration-300"></div>
+                    <div className="absolute inset-0 rounded-xl border border-transparent group-hover:border-white/30 transition-all duration-500 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"></div>
                   )}
+                  
+                  {/* تأثير الضغط */}
+                  <div className="absolute inset-0 rounded-xl bg-black/10 opacity-0 group-active:opacity-100 transition-opacity duration-150"></div>
                 </Button>
               </div>
 

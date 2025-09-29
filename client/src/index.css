@@ -235,7 +235,7 @@
     transform: scale(1);
   }
   50% {
-    transform: scale(0.98);
+    transform: scale(0.96);
   }
   100% {
     transform: scale(1);
@@ -248,39 +248,107 @@
     transform: scale(1);
   }
   50% {
-    opacity: 0.7;
-    transform: scale(1.02);
+    opacity: 0.8;
+    transform: scale(1.05);
   }
 }
 
 @keyframes dotBounce {
   0%, 20%, 50%, 80%, 100% {
     transform: translateY(0);
-    opacity: 0.4;
+    opacity: 0.5;
   }
   40% {
-    transform: translateY(-8px);
+    transform: translateY(-10px);
     opacity: 1;
   }
   60% {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
     opacity: 0.8;
   }
 }
 
-/* تحسينات إضافية للزر */
-.login-button-enhanced {
-  background: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(239, 84%, 67%) 50%, hsl(217, 91%, 60%) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
+@keyframes spinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.login-button-enhanced:hover {
-  background-position: 100% 0;
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+@keyframes backgroundShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes iconHover {
+  0%, 100% {
+    transform: translateX(0) scale(1);
+  }
+  50% {
+    transform: translateX(3px) scale(1.1);
+  }
+}
+
+/* تحسينات زر تسجيل الدخول */
+.login-button-enhanced {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, 
+    hsl(217, 91%, 60%) 0%, 
+    hsl(239, 84%, 67%) 50%, 
+    hsl(217, 91%, 55%) 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-button-enhanced:not(:disabled):hover {
+  background: linear-gradient(135deg, 
+    hsl(217, 91%, 65%) 0%, 
+    hsl(239, 84%, 72%) 50%, 
+    hsl(217, 91%, 60%) 100%);
   box-shadow: 
-    0 10px 25px rgba(59, 130, 246, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 15px 35px rgba(59, 130, 246, 0.4),
+    0 5px 15px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  animation: glowPulse 2s infinite;
+}
+
+.login-button-enhanced:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 
+    0 5px 15px rgba(59, 130, 246, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-button-enhanced:disabled {
+  background: linear-gradient(135deg, 
+    hsl(217, 50%, 50%) 0%, 
+    hsl(239, 50%, 55%) 50%, 
+    hsl(217, 50%, 45%) 100%);
+  transform: scale(0.96);
+  box-shadow: 
+    0 5px 15px rgba(59, 130, 246, 0.2),
+    inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: loadingPulse 2s ease-in-out infinite;
+}
+
+.loading-spinner {
+  animation: spinnerRotate 1s linear infinite;
 }
 
 .loading-dots {
@@ -290,3 +358,27 @@
 .loading-dots:nth-child(1) { animation-delay: -0.32s; }
 .loading-dots:nth-child(2) { animation-delay: -0.16s; }
 .loading-dots:nth-child(3) { animation-delay: 0s; }
+
+.button-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: backgroundShimmer 3s ease-in-out infinite;
+}
+
+.login-icon-hover {
+  transition: all 0.3s ease;
+}
+
+.login-icon-hover:hover {
+  animation: iconHover 0.6s ease-in-out;
+}
