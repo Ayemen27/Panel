@@ -42,6 +42,7 @@ import {
   Menu,
   MoreVertical,
 } from "lucide-react";
+import { FileIconComponent } from "@/components/FileManager/FileIcon";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -232,8 +233,6 @@ export default function FileManager() {
   };
 
   const FileItem = ({ item }: { item: UnifiedFileInfo }) => {
-    const Icon = item.type === 'directory' ? Folder : FileIcon;
-
     const handleClick = () => {
       if (item.type === 'directory') {
         handleFolderClick(item);
@@ -247,15 +246,20 @@ export default function FileManager() {
 
     if (viewMode === 'grid') {
       return (
-        <Card className="p-3 cursor-pointer transition-all hover:shadow-md" onClick={handleClick}>
-          <div className="flex flex-col items-center gap-2">
-            <Icon className="w-8 h-8 text-muted-foreground" />
+        <Card className="p-3 cursor-pointer transition-all hover:shadow-md hover:scale-105" onClick={handleClick}>
+          <div className="flex flex-col items-center gap-3">
+            <FileIconComponent 
+              type={item.type}
+              extension={item.extension}
+              name={item.name}
+              className="w-10 h-10"
+            />
             <div className="text-center w-full">
               <p className="font-medium text-xs truncate max-w-[100px] mx-auto" title={item.name}>
                 {item.name}
               </p>
-              <div className="flex flex-col gap-1 mt-1">
-                <Badge variant="outline" className="text-xs mx-auto px-1 py-0">
+              <div className="flex flex-col gap-1 mt-2">
+                <Badge variant="outline" className="text-xs mx-auto px-2 py-1">
                   {item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}
                 </Badge>
                 <p className="text-xs text-muted-foreground">
@@ -269,8 +273,13 @@ export default function FileManager() {
     }
 
     return (
-      <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50" onClick={handleClick}>
-        <Icon className="w-5 h-5 flex-shrink-0" />
+      <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm" onClick={handleClick}>
+        <FileIconComponent 
+          type={item.type}
+          extension={item.extension}
+          name={item.name}
+          className="w-6 h-6 flex-shrink-0"
+        />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{item.name}</p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

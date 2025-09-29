@@ -4,6 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* استيراد أنماط الأيقونات المخصصة */
+@import './assets/icons/icons.css';
+
 :root {
   --radius: 0.75rem;
   --font-sans: "Inter", system-ui, sans-serif;

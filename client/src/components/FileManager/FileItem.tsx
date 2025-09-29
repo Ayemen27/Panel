@@ -4,14 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
-  Folder, 
-  File as FileIcon, 
   MoreVertical,
   Edit,
   Copy,
   Trash2,
   Eye
 } from "lucide-react";
+import { FileIconComponent } from "./FileIcon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,19 +81,22 @@ export function FileItem({
     }
   };
 
-  const Icon = item.type === 'directory' ? Folder : FileIcon;
-
   if (viewMode === 'grid') {
     return (
       <Card
         className={cn(
-          "p-4 cursor-pointer transition-all hover:shadow-md relative",
+          "p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 relative",
           isSelected && "ring-2 ring-blue-500 bg-blue-50"
         )}
         onClick={onClick}
       >
         <div className="flex flex-col items-center gap-3">
-          <Icon className="w-8 h-8 text-muted-foreground" />
+          <FileIconComponent 
+            type={item.type}
+            extension={item.extension}
+            name={item.name}
+            className="w-10 h-10"
+          />
           <div className="text-center w-full">
             <p className="font-medium text-sm truncate max-w-[120px] mx-auto" title={item.name}>
               {item.name}
@@ -163,12 +165,17 @@ export function FileItem({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50",
+        "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm",
         isSelected && "bg-blue-50 ring-1 ring-blue-500"
       )}
       onClick={onClick}
     >
-      <Icon className="w-4 h-4 flex-shrink-0" />
+      <FileIconComponent 
+        type={item.type}
+        extension={item.extension}
+        name={item.name}
+        className="w-5 h-5 flex-shrink-0"
+      />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{item.name}</p>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
