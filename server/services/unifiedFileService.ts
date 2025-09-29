@@ -844,8 +844,11 @@ export class UnifiedFileService extends BaseService {
    */
   async deleteItem(filePath: string, userId: string): Promise<FileOperationResult> {
     try {
+      logger.info(`[UnifiedFileService] Starting delete operation for: ${filePath}`);
+
       const pathValidation = await this.validatePath(filePath);
       if (!pathValidation.isValid) {
+        logger.warn(`[UnifiedFileService] Path validation failed: ${pathValidation.error}`);
         return {
           success: false,
           message: 'فشل في التحقق من المسار',
@@ -854,8 +857,10 @@ export class UnifiedFileService extends BaseService {
       }
 
       const normalizedPath = pathValidation.normalizedPath;
+      logger.info(`[UnifiedFileService] Normalized path: ${normalizedPath}`);
 
       if (!existsSync(normalizedPath)) {
+        logger.warn(`[UnifiedFileService] File does not exist: ${normalizedPath}`);
         return {
           success: false,
           message: 'الملف أو المجلد غير موجود',
@@ -867,9 +872,12 @@ export class UnifiedFileService extends BaseService {
       const isDirectory = stats.isDirectory();
       const itemName = path.basename(normalizedPath);
 
+      logger.info(`[UnifiedFileService] Item info - Name: ${itemName}, Type: ${isDirectory ? 'directory' : 'file'}, Size: ${stats.size}`);
+
       const parentDir = path.dirname(normalizedPath);
       const hasWritePermission = await this.checkPermissions(parentDir, 'write');
       if (!hasWritePermission) {
+        logger.warn(`[UnifiedFileService] No write permission for parent directory: ${parentDir}`);
         return {
           success: false,
           message: 'الوصول مرفوض',
@@ -877,13 +885,23 @@ export class UnifiedFileService extends BaseService {
         };
       }
 
+      // تنفيذ عملية الحذف
       if (isDirectory) {
-        await fs.rmdir(normalizedPath, { recursive: true });
+        logger.info(`[UnifiedFileService] Deleting directory: ${normalizedPath}`);
+        await fs.rm(normalizedPath, { recursive: true, force: true });
       } else {
+        logger.info(`[UnifiedFileService] Deleting file: ${normalizedPath}`);
         await fs.unlink(normalizedPath);
       }
 
+      // التحقق من نجاح الحذف
+      if (existsSync(normalizedPath)) {
+        throw new Error('فشل في حذف العنصر - العنصر ما زال موجوداً');
+      }
+
       await this.createAuditLog('delete', userId, normalizedPath, `حذف ${isDirectory ? 'مجلد' : 'ملف'}: ${itemName}`);
+
+      logger.info(`[UnifiedFileService] Delete operation completed successfully`);
 
       return {
         success: true,
@@ -897,7 +915,7 @@ export class UnifiedFileService extends BaseService {
       };
 
     } catch (error) {
-      logger.error(`Error deleting item ${filePath}: ${error}`);
+      logger.error(`[UnifiedFileService] Error deleting item ${filePath}: ${error}`);
       return {
         success: false,
         message: 'فشل في حذف العنصر',

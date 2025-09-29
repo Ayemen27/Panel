@@ -263,14 +263,21 @@ router.delete('/delete', isAuthenticated, async (req: AuthenticatedRequest, res:
       ServiceTokens.UNIFIED_FILE_SERVICE
     );
 
-    const { path } = req.body;
+    // تجربة الحصول على المسار من query parameters أو body
+    const path = req.query.path as string || req.body.path;
     const userId = req.user?.id;
 
     if (!path) {
       return ResponseHandler.error(res, 'مسار الملف مطلوب', 400, 'MISSING_REQUIRED_FIELD');
     }
 
+    logger.info(`[UnifiedFiles] Deleting item: ${path} for user: ${userId}`);
+
     const result = await unifiedFileService.deleteItem(path, userId);
+
+    if (!result.success) {
+      logger.error(`[UnifiedFiles] Delete failed: ${result.error}`);
+    }
 
     ResponseHandler.fromServiceResult(
       res,
@@ -279,6 +286,7 @@ router.delete('/delete', isAuthenticated, async (req: AuthenticatedRequest, res:
     );
 
   } catch (error) {
+    logger.error(`[UnifiedFiles] Delete error: ${error}`);
     const message = error instanceof Error ? error.message : 'خطأ غير معروف';
     ResponseHandler.error(res, message, 500, 'INTERNAL_ERROR');
   }

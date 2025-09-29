@@ -420,26 +420,54 @@ export default function FileManager() {
       const confirmed = confirm(`هل أنت متأكد من حذف ${itemsToDelete.length} عنصر؟`);
       if (!confirmed) return;
 
-      for (const itemPath of itemsToDelete) {
-        const response = await apiRequest('DELETE', '/api/unified-files/delete', {
-          path: itemPath
-        });
+      let deleteCount = 0;
+      let errors = [];
 
-        if (!response.ok) {
-          throw new Error(`فشل في حذف ${itemPath}`);
+      for (const itemPath of itemsToDelete) {
+        try {
+          const response = await apiRequest('DELETE', '/api/unified-files/delete', {
+            path: itemPath
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              deleteCount++;
+            } else {
+              errors.push(`${itemPath}: ${result.error}`);
+            }
+          } else {
+            const errorData = await response.json();
+            errors.push(`${itemPath}: ${errorData.error || 'فشل في الحذف'}`);
+          }
+        } catch (error) {
+          errors.push(`${itemPath}: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
         }
       }
 
-      toast({
-        title: 'تم الحذف',
-        description: `تم حذف ${itemsToDelete.length} عنصر بنجاح`,
-      });
+      if (deleteCount > 0) {
+        toast({
+          title: 'تم الحذف',
+          description: `تم حذف ${deleteCount} عنصر بنجاح`,
+        });
+      }
+
+      if (errors.length > 0) {
+        console.error('Delete errors:', errors);
+        toast({
+          title: 'خطأ',
+          description: `فشل في حذف ${errors.length} عنصر`,
+          variant: 'destructive',
+        });
+      }
+
       exitSelectionMode();
       refetch();
     } catch (error) {
+      console.error('Delete selected items error:', error);
       toast({
         title: 'خطأ',
-        description: 'فشل في حذف بعض العناصر',
+        description: 'فشل في حذف العناصر المحددة',
         variant: 'destructive',
       });
     }
@@ -455,18 +483,25 @@ export default function FileManager() {
       });
 
       if (response.ok) {
-        toast({
-          title: 'تم الحذف',
-          description: `تم حذف ${item.name} بنجاح`,
-        });
-        refetch();
+        const result = await response.json();
+        if (result.success) {
+          toast({
+            title: 'تم الحذف',
+            description: `تم حذف ${item.name} بنجاح`,
+          });
+          refetch();
+        } else {
+          throw new Error(result.error || 'فشل في الحذف');
+        }
       } else {
-        throw new Error('فشل في الحذف');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل في الحذف');
       }
     } catch (error) {
+      console.error('Delete error:', error);
       toast({
         title: 'خطأ',
-        description: 'فشل في حذف العنصر',
+        description: error instanceof Error ? error.message : 'فشل في حذف العنصر',
         variant: 'destructive',
       });
     }
