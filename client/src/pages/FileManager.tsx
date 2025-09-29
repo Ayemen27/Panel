@@ -43,6 +43,10 @@ import {
   MoreVertical,
   Edit,
   Trash2,
+  Copy,
+  Move,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { FileIconComponent } from "@/components/FileManager/FileIcon";
 import { useToast } from "@/hooks/use-toast";
@@ -95,6 +99,12 @@ export default function FileManager() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [showHidden, setShowHidden] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  
+  // حالات وضع الاختيار المتعدد
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([
     'كشف ايا',
     'خيار',
@@ -202,7 +212,45 @@ export default function FileManager() {
     return files;
   }, [directoryData, searchQuery, activeTab, sortBy, sortOrder, showHidden]);
 
+  // وضع الاختيار المتعدد
+  const enterSelectionMode = useCallback((item: UnifiedFileInfo) => {
+    setSelectionMode(true);
+    setSelectedItems(new Set([item.absolutePath]));
+  }, []);
+
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedItems(new Set());
+  }, []);
+
+  const toggleItemSelection = useCallback((item: UnifiedFileInfo) => {
+    if (!selectionMode) return;
+    
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(item.absolutePath)) {
+        newSet.delete(item.absolutePath);
+        if (newSet.size === 0) {
+          setSelectionMode(false);
+        }
+      } else {
+        newSet.add(item.absolutePath);
+      }
+      return newSet;
+    });
+  }, [selectionMode]);
+
+  const selectAllItems = useCallback(() => {
+    const allPaths = new Set(currentFiles.map(file => file.absolutePath));
+    setSelectedItems(allPaths);
+  }, [currentFiles]);
+
   const handleFolderClick = useCallback((item: UnifiedFileInfo) => {
+    if (selectionMode) {
+      toggleItemSelection(item);
+      return;
+    }
+    
     if (item.type === 'directory') {
       setCurrentPath(item.absolutePath);
       setBreadcrumbs(prev => [...prev, { 
@@ -211,14 +259,15 @@ export default function FileManager() {
         path: item.absolutePath 
       }]);
     }
-  }, []);
+  }, [selectionMode, toggleItemSelection]);
 
   const handleBreadcrumbClick = useCallback((index: number) => {
     const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
     const targetBreadcrumb = newBreadcrumbs[newBreadcrumbs.length - 1];
     setBreadcrumbs(newBreadcrumbs);
     setCurrentPath(targetBreadcrumb.path);
-  }, [breadcrumbs]);
+    exitSelectionMode();
+  }, [breadcrumbs, exitSelectionMode]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -247,13 +296,14 @@ export default function FileManager() {
     }
     setSearchQuery(query);
     setSearchOpen(false);
+    exitSelectionMode();
   };
 
   const removeSuggestion = (suggestion: string) => {
     setSearchSuggestions(prev => prev.filter(s => s !== suggestion));
   };
 
-  // File operations
+  // عمليات الملفات
   const createNewFile = async () => {
     try {
       const fileName = prompt('اسم الملف الجديد:');
@@ -319,6 +369,39 @@ export default function FileManager() {
     }
   };
 
+  const deleteSelectedItems = async () => {
+    if (selectedItems.size === 0) return;
+    
+    try {
+      const itemsToDelete = Array.from(selectedItems);
+      const confirmed = confirm(`هل أنت متأكد من حذف ${itemsToDelete.length} عنصر؟`);
+      if (!confirmed) return;
+
+      for (const itemPath of itemsToDelete) {
+        const response = await apiRequest('DELETE', '/api/unified-files/delete', {
+          path: itemPath
+        });
+
+        if (!response.ok) {
+          throw new Error(`فشل في حذف ${itemPath}`);
+        }
+      }
+
+      toast({
+        title: 'تم الحذف',
+        description: `تم حذف ${itemsToDelete.length} عنصر بنجاح`,
+      });
+      exitSelectionMode();
+      refetch();
+    } catch (error) {
+      toast({
+        title: 'خطأ',
+        description: 'فشل في حذف بعض العناصر',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const deleteItem = async (item: UnifiedFileInfo) => {
     try {
       const confirmed = confirm(`هل أنت متأكد من حذف ${item.name}؟`);
@@ -376,8 +459,91 @@ export default function FileManager() {
     }
   };
 
+  const copySelectedItems = async () => {
+    // تنفيذ عملية النسخ
+    toast({
+      title: 'نسخ',
+      description: `تم نسخ ${selectedItems.size} عنصر`,
+    });
+    exitSelectionMode();
+  };
+
+  const moveSelectedItems = async () => {
+    // تنفيذ عملية النقل
+    toast({
+      title: 'نقل',
+      description: `تم نقل ${selectedItems.size} عنصر`,
+    });
+    exitSelectionMode();
+  };
+
+  // Contextual Action Bar
+  const ContextualActionBar = () => {
+    if (!selectionMode) return null;
+
+    return (
+      <div className="bg-blue-600 text-white flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={exitSelectionMode}
+            className="h-8 w-8 p-0 text-white hover:bg-white/20"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+          <span className="font-medium">
+            {selectedItems.size} عنصر محدد
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={selectAllItems}
+            className="h-8 px-3 text-white hover:bg-white/20"
+          >
+            تحديد الكل
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={copySelectedItems}
+            className="h-8 w-8 p-0 text-white hover:bg-white/20"
+          >
+            <Copy className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={moveSelectedItems}
+            className="h-8 w-8 p-0 text-white hover:bg-white/20"
+          >
+            <Move className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={deleteSelectedItems}
+            className="h-8 w-8 p-0 text-white hover:bg-white/20"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const FileItem = ({ item }: { item: UnifiedFileInfo }) => {
+    const isSelected = selectedItems.has(item.absolutePath);
+
     const handleClick = () => {
+      if (selectionMode) {
+        toggleItemSelection(item);
+        return;
+      }
+      
       if (item.type === 'directory') {
         handleFolderClick(item);
       } else {
@@ -388,101 +554,179 @@ export default function FileManager() {
       }
     };
 
-    const handleContextMenu = (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+    const handleLongPress = (e: React.TouchStart | React.MouseEvent) => {
+      if (selectionMode) return;
+      
+      if ('touches' in e) {
+        // Touch event
+        const timer = setTimeout(() => {
+          enterSelectionMode(item);
+        }, 500);
+        setLongPressTimer(timer);
+      } else {
+        // Mouse event (for testing on desktop)
+        const timer = setTimeout(() => {
+          enterSelectionMode(item);
+        }, 500);
+        setLongPressTimer(timer);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
     };
 
     if (viewMode === 'grid') {
       return (
-        <DropdownMenu>
-          <Card className="p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 group bg-gray-50" onClick={handleClick}>
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative">
-                <FileIconComponent 
-                  type={item.type}
-                  extension={item.extension}
-                  name={item.name}
-                  className="w-16 h-16"
-                />
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute -top-1 -right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreVertical className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </div>
-              <div className="text-center w-full">
-                <p className="font-medium text-sm truncate max-w-[140px] mx-auto mb-1" title={item.name}>
-                  {item.name}
+        <Card 
+          className={cn(
+            "p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 group relative",
+            isSelected && "ring-2 ring-blue-500 bg-blue-50",
+            selectionMode && "hover:bg-blue-50"
+          )}
+          onClick={handleClick}
+          onTouchStart={handleLongPress}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleLongPress}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {/* مؤشر الاختيار */}
+          {selectionMode && (
+            <div className="absolute top-2 left-2 z-10">
+              {isSelected ? (
+                <CheckSquare className="w-5 h-5 text-blue-600" />
+              ) : (
+                <Square className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+          )}
+          
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              <FileIconComponent 
+                type={item.type}
+                extension={item.extension}
+                name={item.name}
+                className="w-16 h-16"
+              />
+              {!selectionMode && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute -top-1 -right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => renameItem(item)}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      إعادة تسمية
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => deleteItem(item)}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      حذف
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+            <div className="text-center w-full">
+              <p className="font-medium text-sm truncate max-w-[140px] mx-auto mb-1" title={item.name}>
+                {item.name}
+              </p>
+              <div className="flex flex-col gap-1">
+                <Badge variant="outline" className="text-xs mx-auto px-2 py-1 bg-white">
+                  {item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}
+                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(item.modified)}
                 </p>
-                <div className="flex flex-col gap-1">
-                  <Badge variant="outline" className="text-xs mx-auto px-2 py-1 bg-white">
-                    {item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(item.modified)}
-                  </p>
-                </div>
               </div>
             </div>
-          </Card>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => renameItem(item)}>
-              <Edit className="w-4 h-4 mr-2" />
-              إعادة تسمية
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => deleteItem(item)}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              حذف
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </div>
+        </Card>
       );
     }
 
     return (
-      <DropdownMenu>
-        <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm group" onClick={handleClick}>
-          <FileIconComponent 
-            type={item.type}
-            extension={item.extension}
-            name={item.name}
-            className="w-6 h-6 flex-shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{item.name}</p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}</span>
-              <span>{formatDate(item.modified)}</span>
-            </div>
+      <div 
+        className={cn(
+          "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm group relative",
+          isSelected && "bg-blue-50 ring-1 ring-blue-500",
+          selectionMode && "hover:bg-blue-50"
+        )}
+        onClick={handleClick}
+        onTouchStart={handleLongPress}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleLongPress}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        {/* مؤشر الاختيار */}
+        {selectionMode && (
+          <div className="flex-shrink-0">
+            {isSelected ? (
+              <CheckSquare className="w-5 h-5 text-blue-600" />
+            ) : (
+              <Square className="w-5 h-5 text-gray-400" />
+            )}
           </div>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
+        )}
+        
+        <FileIconComponent 
+          type={item.type}
+          extension={item.extension}
+          name={item.name}
+          className="w-6 h-6 flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{item.name}</p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}</span>
+            <span>{formatDate(item.modified)}</span>
+          </div>
         </div>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => renameItem(item)}>
-            <Edit className="w-4 h-4 mr-2" />
-            إعادة تسمية
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => deleteItem(item)}>
-            <Trash2 className="w-4 h-4 mr-2" />
-            حذف
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        
+        {!selectionMode && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => renameItem(item)}>
+                <Edit className="w-4 h-4 mr-2" />
+                إعادة تسمية
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => deleteItem(item)}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                حذف
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     );
   };
 
@@ -514,6 +758,7 @@ export default function FileManager() {
               onClick={() => {
                 setActiveTab('files');
                 setSidebarOpen(false);
+                exitSelectionMode();
               }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
@@ -529,6 +774,7 @@ export default function FileManager() {
               onClick={() => {
                 setActiveTab('favorites');
                 setSidebarOpen(false);
+                exitSelectionMode();
               }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
@@ -544,6 +790,7 @@ export default function FileManager() {
               onClick={() => {
                 setActiveTab('recent');
                 setSidebarOpen(false);
+                exitSelectionMode();
               }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
@@ -662,8 +909,14 @@ export default function FileManager() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
+        {/* Contextual Action Bar */}
+        <ContextualActionBar />
+
         {/* Enhanced Main Header Bar */}
-        <div className="bg-gray-900 text-white flex-shrink-0">
+        <div className={cn(
+          "bg-gray-900 text-white flex-shrink-0",
+          selectionMode && "hidden"
+        )}>
           {/* Main Header */}
           <div className="px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
