@@ -475,17 +475,28 @@ export default function FileManager() {
   const renameItem = async (item: UnifiedFileInfo) => {
     try {
       const newName = prompt('الاسم الجديد:', item.name);
-      if (!newName || newName === item.name) return;
+      if (!newName || newName.trim() === '' || newName === item.name) return;
+
+      // تنظيف الاسم من المسارات والأحرف الخاصة
+      const cleanName = newName.trim().replace(/[\/\\:*?"<>|]/g, '');
+      if (!cleanName) {
+        toast({
+          title: 'خطأ',
+          description: 'اسم الملف يحتوي على أحرف غير صالحة',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       const response = await apiRequest('POST', '/api/unified-files/rename', {
         oldPath: item.absolutePath,
-        newName
+        newName: cleanName
       });
 
       if (response.ok) {
         toast({
           title: 'تم التعديل',
-          description: `تم تغيير اسم ${item.name} إلى ${newName}`,
+          description: `تم تغيير اسم ${item.name} إلى ${cleanName}`,
         });
         refetch();
       } else {

@@ -7,6 +7,7 @@ import { serviceInjectionMiddleware } from '../core/ServiceContainer';
 import { storage } from '../storage';
 import { isAuthenticated } from '../auth';
 import { logger } from '../utils/logger';
+import path from 'path';
 
 // Enhanced Request interface with services
 interface AuthenticatedRequest extends Request {
@@ -204,7 +205,13 @@ router.post('/rename', isAuthenticated, async (req: AuthenticatedRequest, res: R
       return ResponseHandler.error(res, 'الاسم الجديد أو المسار الجديد مطلوب', 400, 'MISSING_REQUIRED_FIELD');
     }
 
+    logger.info(`[UnifiedFiles] Renaming from: ${oldPath} to: ${finalNewPath} for user: ${userId}`);
+
     const result = await unifiedFileService.renameItem(oldPath, finalNewPath, userId);
+
+    if (!result.success) {
+      logger.error(`[UnifiedFiles] Rename failed: ${result.error}`);
+    }
 
     ResponseHandler.fromServiceResult(
       res,

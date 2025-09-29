@@ -524,10 +524,13 @@ export class UnifiedFileService extends BaseService {
    */
   async renameItem(oldPath: string, newPath: string, userId: string): Promise<FileOperationResult> {
     try {
+      logger.info(`[UnifiedFileService] Starting rename operation: ${oldPath} -> ${newPath}`);
+
       const oldPathValidation = await this.validatePath(oldPath);
       const newPathValidation = await this.validatePath(newPath);
 
       if (!oldPathValidation.isValid) {
+        logger.warn(`[UnifiedFileService] Old path validation failed: ${oldPathValidation.error}`);
         return {
           success: false,
           message: 'فشل في التحقق من المسار القديم',
@@ -536,6 +539,7 @@ export class UnifiedFileService extends BaseService {
       }
 
       if (!newPathValidation.isValid) {
+        logger.warn(`[UnifiedFileService] New path validation failed: ${newPathValidation.error}`);
         return {
           success: false,
           message: 'فشل في التحقق من المسار الجديد',
@@ -546,7 +550,10 @@ export class UnifiedFileService extends BaseService {
       const oldNormalizedPath = oldPathValidation.normalizedPath;
       const newNormalizedPath = newPathValidation.normalizedPath;
 
+      logger.info(`[UnifiedFileService] Normalized paths - Old: ${oldNormalizedPath}, New: ${newNormalizedPath}`);
+
       if (!existsSync(oldNormalizedPath)) {
+        logger.warn(`[UnifiedFileService] Source path does not exist: ${oldNormalizedPath}`);
         return {
           success: false,
           message: 'الملف أو المجلد غير موجود',
@@ -555,6 +562,7 @@ export class UnifiedFileService extends BaseService {
       }
 
       if (existsSync(newNormalizedPath)) {
+        logger.warn(`[UnifiedFileService] Target path already exists: ${newNormalizedPath}`);
         return {
           success: false,
           message: 'الملف أو المجلد موجود بالفعل في الوجهة',
@@ -569,6 +577,7 @@ export class UnifiedFileService extends BaseService {
       const hasNewWritePermission = await this.checkPermissions(newParentDir, 'write');
 
       if (!hasOldWritePermission || !hasNewWritePermission) {
+        logger.warn(`[UnifiedFileService] Permission denied - Old: ${hasOldWritePermission}, New: ${hasNewWritePermission}`);
         return {
           success: false,
           message: 'الوصول مرفوض',
@@ -577,6 +586,7 @@ export class UnifiedFileService extends BaseService {
       }
 
       await fs.rename(oldNormalizedPath, newNormalizedPath);
+      logger.info(`[UnifiedFileService] Rename operation completed successfully`);
 
       const stats = await fs.stat(newNormalizedPath);
       await this.createAuditLog('rename', userId, oldNormalizedPath, `إعادة تسمية من ${oldNormalizedPath} إلى ${newNormalizedPath}`);
@@ -594,7 +604,7 @@ export class UnifiedFileService extends BaseService {
       };
 
     } catch (error) {
-      logger.error(`Error renaming item from ${oldPath} to ${newPath}: ${error}`);
+      logger.error(`[UnifiedFileService] Error renaming item from ${oldPath} to ${newPath}: ${error}`);
       return {
         success: false,
         message: 'فشل في إعادة تسمية العنصر',
