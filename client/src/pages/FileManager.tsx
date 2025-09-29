@@ -652,6 +652,164 @@ export default function FileManager() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
+        {/* Enhanced Main Header Bar */}
+        <div className="bg-gray-900 text-white p-3 flex-shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(true)}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <Menu className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation('/')}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <h1 className="text-lg font-semibold">التخزين الرئيسي</h1>
+            
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchOpen(true)}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+
+              {/* Sort/Filter Button */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                  >
+                    <Filter className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-sm font-semibold">فرز حسب</div>
+                  <DropdownMenuRadioGroup value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
+                    const [newSortBy, newSortOrder] = value.split('-') as [SortBy, SortOrder];
+                    setSortBy(newSortBy);
+                    setSortOrder(newSortOrder);
+                  }}>
+                    <DropdownMenuRadioItem value="name-asc">
+                      <SortAsc className="w-4 h-4 mr-2" />
+                      الاسم ▲
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="name-desc">
+                      <SortDesc className="w-4 h-4 mr-2" />
+                      الاسم ▼
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="size-asc">
+                      <HardDrive className="w-4 h-4 mr-2" />
+                      الحجم ▲
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="size-desc">
+                      <HardDrive className="w-4 h-4 mr-2" />
+                      الحجم ▼
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="date-asc">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      التاريخ ▲
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="date-desc">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      التاريخ ▼
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="type-asc">
+                      <FileType className="w-4 h-4 mr-2" />
+                      النوع ▲
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="type-desc">
+                      <FileType className="w-4 h-4 mr-2" />
+                      النوع ▼
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowHidden(!showHidden)}>
+                    {showHidden ? '✓' : '○'} إظهار الملفات المخفية
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* View Mode Toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+              </Button>
+
+              {/* Plus Button with Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={createNewFile}>
+                    <FileIcon className="w-4 h-4 mr-2" />
+                    ملف جديد
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={createNewFolder}>
+                    <Folder className="w-4 h-4 mr-2" />
+                    مجلد جديد
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <MoreVertical className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Integrated Breadcrumbs */}
+          <div className="border-t border-white/20 pt-3">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {breadcrumbs.map((crumb, index) => (
+                <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-1 text-sm font-normal whitespace-nowrap text-white hover:bg-white/20"
+                    onClick={() => handleBreadcrumbClick(index)}
+                  >
+                    {index === 0 ? <Home className="w-4 h-4" /> : crumb.name}
+                  </Button>
+                  {index < breadcrumbs.length - 1 && (
+                    <ChevronRight className="w-4 h-4 text-white/60 flex-shrink-0" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {directoryData && (
+              <div className="mt-2 text-xs text-white/70">
+                {directoryData.totalFiles} ملف, {directoryData.totalDirectories} مجلد
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* File Content */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="h-full">
