@@ -35,8 +35,6 @@ import {
   Home,
   AlertTriangle,
   FolderOpen,
-  Star,
-  Clock,
   ArrowLeft,
   X,
   Plus,
@@ -64,9 +62,9 @@ import {
   Archive,
 } from "lucide-react";
 import { FileIconComponent } from "@/components/FileManager/FileIcon";
+import { FileManagerSidebar } from "@/components/FileManager/FileManagerSidebar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useLocation } from "wouter";
 
 interface UnifiedFileInfo {
   name: string;
@@ -103,7 +101,6 @@ type SortOrder = 'asc' | 'desc';
 
 export default function FileManager() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
   const [currentPath, setCurrentPath] = useState<string>('/home/administrator');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -290,6 +287,29 @@ export default function FileManager() {
     setCurrentPath(targetBreadcrumb.path);
     exitSelectionMode();
   }, [breadcrumbs, exitSelectionMode]);
+
+  const handleNavigate = useCallback((path: string) => {
+    setCurrentPath(path);
+    // تحديث مسار التنقل بناءً على المسار الجديد
+    const pathParts = path.split('/').filter(Boolean);
+    const newBreadcrumbs: BreadcrumbItem[] = [
+      { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
+    ];
+    
+    let currentBuildPath = '/home/administrator';
+    for (let i = 3; i < pathParts.length; i++) { // تخطي home/administrator
+      currentBuildPath += '/' + pathParts[i];
+      newBreadcrumbs.push({
+        id: `path-${currentBuildPath}`,
+        name: pathParts[i],
+        path: currentBuildPath
+      });
+    }
+    
+    setBreadcrumbs(newBreadcrumbs);
+    setSidebarOpen(false);
+    exitSelectionMode();
+  }, [exitSelectionMode]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -815,6 +835,16 @@ export default function FileManager() {
 
   return (
     <div className="fixed inset-0 w-full h-full flex bg-background text-foreground z-50">
+      {/* القائمة الجانبية الخاصة بمدير الملفات */}
+      <FileManagerSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        currentPath={currentPath}
+        onNavigate={handleNavigate}
+      />
+
       {/* Search Modal */}
       {searchOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex flex-col">
@@ -853,7 +883,7 @@ export default function FileManager() {
                   {searchSuggestions.map((suggestion, index) => (
                     <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-700 rounded-lg transition-colors">
                       <div className="flex items-center gap-3">
-                        <Clock className="w-5 h-5 text-gray-400" />
+                        <Search className="w-5 h-5 text-gray-400" />
                         <span className="text-white text-lg">{suggestion}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -884,7 +914,7 @@ export default function FileManager() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col lg:mr-80">
         {/* Selection Mode Header */}
         <SelectionModeHeader />
 
@@ -900,7 +930,7 @@ export default function FileManager() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(true)}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20 lg:hidden"
               >
                 <Menu className="w-4 h-4" />
               </Button>
@@ -1006,82 +1036,36 @@ export default function FileManager() {
               </DropdownMenu>
             </div>
           </div>
+        </div>
 
-          {/* Breadcrumbs and File Count */}
-          <div className="bg-blue-700/50 px-4 py-2 border-t border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 overflow-x-auto">
-                {breadcrumbs.map((crumb, index) => (
-                  <div key={crumb.id} className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs font-normal whitespace-nowrap text-white/80 hover:text-white hover:bg-white/10"
-                      onClick={() => handleBreadcrumbClick(index)}
-                    >
-                      {index === 0 ? <Home className="w-3 h-3" /> : crumb.name}
-                    </Button>
-                    {index < breadcrumbs.length - 1 && (
-                      <ChevronRight className="w-3 h-3 text-white/40 flex-shrink-0" />
-                    )}
-                  </div>
-                ))}
-              </div>
-              {directoryData && (
-                <div className="text-xs text-white/70 flex-shrink-0 ml-4">
-                  {directoryData.totalFiles} ملف • {directoryData.totalDirectories} مجلد
+        {/* شريط المسار النحيف */}
+        <div className={cn(
+          "bg-gray-100 border-b border-gray-200 px-4 py-2 flex-shrink-0",
+          selectionMode && "hidden"
+        )}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 overflow-x-auto">
+              {breadcrumbs.map((crumb, index) => (
+                <div key={crumb.id} className="flex items-center gap-1 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs font-normal whitespace-nowrap text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                    onClick={() => handleBreadcrumbClick(index)}
+                  >
+                    {index === 0 ? <Home className="w-3 h-3" /> : crumb.name}
+                  </Button>
+                  {index < breadcrumbs.length - 1 && (
+                    <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-
-            {/* Tabs */}
-            <div className="flex items-center gap-1 mt-2">
-              <button
-                onClick={() => {
-                  setActiveTab('files');
-                  exitSelectionMode();
-                }}
-                className={cn(
-                  "px-3 py-1 text-sm rounded transition-all",
-                  activeTab === 'files' 
-                    ? "bg-white text-blue-600 font-medium" 
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Folder className="w-4 h-4 inline-block mr-1" />
-                الملفات
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('favorites');
-                  exitSelectionMode();
-                }}
-                className={cn(
-                  "px-3 py-1 text-sm rounded transition-all",
-                  activeTab === 'favorites' 
-                    ? "bg-white text-blue-600 font-medium" 
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Star className="w-4 h-4 inline-block mr-1" />
-                المفضلة
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('recent');
-                  exitSelectionMode();
-                }}
-                className={cn(
-                  "px-3 py-1 text-sm rounded transition-all",
-                  activeTab === 'recent' 
-                    ? "bg-white text-blue-600 font-medium" 
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Clock className="w-4 h-4 inline-block mr-1" />
-                الحديثة
-              </button>
-            </div>
+            {directoryData && (
+              <div className="text-xs text-gray-500 flex-shrink-0 ml-4">
+                {directoryData.totalFiles} ملف • {directoryData.totalDirectories} مجلد
+              </div>
+            )}
           </div>
         </div>
 
