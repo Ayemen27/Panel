@@ -2163,7 +2163,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create directory using UnifiedFileService
+  app.post('/api/real-files/mkdir', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req)!;
+      const { path: dirPath, recursive = false } = req.body;
 
+      if (!dirPath || typeof dirPath !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Directory path is required',
+          error: 'Directory path is required'
+        });
+      }
+
+      // DI Phase 3: Use service container instead of direct import
+      const unifiedFileService = req.services.resolveByToken(ServiceTokens.UNIFIED_FILE_SERVICE) as UnifiedFileService;
+      const result = await unifiedFileService.createDirectory(dirPath, userId, { recursive });
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
           message: result.message,
           error: result.error
         });
