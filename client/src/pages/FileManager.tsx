@@ -93,6 +93,13 @@ export default function FileManager() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [showHidden, setShowHidden] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([
+    'كشف ايا',
+    'خيار',
+    'ايار',
+    'v4',
+    'كشف'
+  ]);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
   ]);
@@ -230,6 +237,18 @@ export default function FileManager() {
     } catch {
       return dateString;
     }
+  };
+
+  const handleSearch = (query: string) => {
+    if (query.trim() && !searchSuggestions.includes(query.trim())) {
+      setSearchSuggestions(prev => [query.trim(), ...prev.slice(0, 4)]);
+    }
+    setSearchQuery(query);
+    setSearchOpen(false);
+  };
+
+  const removeSuggestion = (suggestion: string) => {
+    setSearchSuggestions(prev => prev.filter(s => s !== suggestion));
   };
 
   const FileItem = ({ item }: { item: UnifiedFileInfo }) => {
@@ -397,6 +416,74 @@ export default function FileManager() {
         />
       )}
 
+      {/* Search Modal */}
+      {searchOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex flex-col">
+          <div className="bg-gray-900 text-white p-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchOpen(false)}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div className="flex-1 relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  placeholder="بحث"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch(searchQuery);
+                    }
+                  }}
+                  className="w-full pr-12 h-12 text-lg bg-transparent border-0 border-b-2 border-cyan-400 text-white placeholder:text-gray-400 rounded-none focus:ring-0 focus:border-cyan-300"
+                  autoFocus
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex-1 bg-gray-800 overflow-y-auto">
+            {searchSuggestions.length > 0 && (
+              <div className="p-4">
+                <div className="space-y-1">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-700 rounded-lg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-gray-400" />
+                        <span className="text-white text-lg">{suggestion}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSearch(suggestion)}
+                          className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-600"
+                        >
+                          <Search className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSuggestion(suggestion)}
+                          className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Enhanced Header with integrated controls */}
@@ -424,41 +511,15 @@ export default function FileManager() {
             <h1 className="text-lg font-semibold">التخزين الرئيسي</h1>
             
             <div className="flex items-center gap-2">
-              {/* Search Toggle/Input */}
-              {!searchOpen ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchOpen(true)}
-                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                >
-                  <Search className="w-4 h-4" />
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="البحث..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-48 pr-10 h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                      autoFocus
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setSearchQuery('');
-                    }}
-                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+              {/* Search */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchOpen(true)}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
 
               {/* Sort/Filter Button */}
               <DropdownMenu>
