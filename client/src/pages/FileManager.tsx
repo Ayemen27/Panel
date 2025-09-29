@@ -18,6 +18,13 @@ import {
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Folder,
   File as FileIcon,
   Search,
@@ -47,6 +54,12 @@ import {
   Move,
   CheckSquare,
   Square,
+  Info,
+  Settings,
+  Bookmark,
+  Upload,
+  FolderPlus,
+  FilePlus,
 } from "lucide-react";
 import { FileIconComponent } from "@/components/FileManager/FileIcon";
 import { useToast } from "@/hooks/use-toast";
@@ -104,6 +117,13 @@ export default function FileManager() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  // حالات النوافذ المنبثقة
+  const [createFileDialog, setCreateFileDialog] = useState(false);
+  const [createFolderDialog, setCreateFolderDialog] = useState(false);
+  const [sortFilterDialog, setSortFilterDialog] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+  const [newFolderName, setNewFolderName] = useState('');
   
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([
     'كشف ايا',
@@ -305,11 +325,10 @@ export default function FileManager() {
 
   // عمليات الملفات
   const createNewFile = async () => {
+    if (!newFileName.trim()) return;
+    
     try {
-      const fileName = prompt('اسم الملف الجديد:');
-      if (!fileName) return;
-
-      const fullPath = `${currentPath}/${fileName}`.replace(/\/+/g, '/');
+      const fullPath = `${currentPath}/${newFileName.trim()}`.replace(/\/+/g, '/');
 
       const response = await apiRequest('POST', '/api/unified-files/create-file', {
         path: fullPath,
@@ -320,8 +339,10 @@ export default function FileManager() {
       if (response.ok) {
         toast({
           title: 'تم إنشاء الملف',
-          description: `تم إنشاء الملف ${fileName} بنجاح`,
+          description: `تم إنشاء الملف ${newFileName} بنجاح`,
         });
+        setNewFileName('');
+        setCreateFileDialog(false);
         refetch();
       } else {
         const errorData = await response.json();
@@ -338,11 +359,10 @@ export default function FileManager() {
   };
 
   const createNewFolder = async () => {
+    if (!newFolderName.trim()) return;
+    
     try {
-      const folderName = prompt('اسم المجلد الجديد:');
-      if (!folderName) return;
-
-      const fullPath = `${currentPath}/${folderName}`.replace(/\/+/g, '/');
+      const fullPath = `${currentPath}/${newFolderName.trim()}`.replace(/\/+/g, '/');
 
       const response = await apiRequest('POST', '/api/unified-files/create-directory', {
         path: fullPath,
@@ -352,8 +372,10 @@ export default function FileManager() {
       if (response.ok) {
         toast({
           title: 'تم إنشاء المجلد',
-          description: `تم إنشاء المجلد ${folderName} بنجاح`,
+          description: `تم إنشاء المجلد ${newFolderName} بنجاح`,
         });
+        setNewFolderName('');
+        setCreateFolderDialog(false);
         refetch();
       } else {
         const errorData = await response.json();
@@ -460,7 +482,6 @@ export default function FileManager() {
   };
 
   const copySelectedItems = async () => {
-    // تنفيذ عملية النسخ
     toast({
       title: 'نسخ',
       description: `تم نسخ ${selectedItems.size} عنصر`,
@@ -469,7 +490,6 @@ export default function FileManager() {
   };
 
   const moveSelectedItems = async () => {
-    // تنفيذ عملية النقل
     toast({
       title: 'نقل',
       description: `تم نقل ${selectedItems.size} عنصر`,
@@ -493,7 +513,7 @@ export default function FileManager() {
             <X className="w-4 h-4" />
           </Button>
           <span className="font-medium">
-            {selectedItems.size} عنصر محدد
+            {selectedItems.size}/{currentFiles.length}
           </span>
         </div>
         
@@ -558,13 +578,11 @@ export default function FileManager() {
       if (selectionMode) return;
       
       if ('touches' in e) {
-        // Touch event
         const timer = setTimeout(() => {
           enterSelectionMode(item);
         }, 500);
         setLongPressTimer(timer);
       } else {
-        // Mouse event (for testing on desktop)
         const timer = setTimeout(() => {
           enterSelectionMode(item);
         }, 500);
@@ -732,113 +750,6 @@ export default function FileManager() {
 
   return (
     <div className="fixed inset-0 w-full h-full flex bg-background text-foreground z-50">
-      {/* Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 right-0 w-64 bg-card border-l border-border transform transition-transform duration-300 z-50",
-        sidebarOpen ? "translate-x-0" : "translate-x-full"
-      )}>
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">مدير الملفات</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Navigation Tabs */}
-          <div className="p-4 space-y-2">
-            <button
-              onClick={() => {
-                setActiveTab('files');
-                setSidebarOpen(false);
-                exitSelectionMode();
-              }}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
-                activeTab === 'files' 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Folder className="w-5 h-5" />
-              <span>الملفات</span>
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('favorites');
-                setSidebarOpen(false);
-                exitSelectionMode();
-              }}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
-                activeTab === 'favorites' 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Star className="w-5 h-5" />
-              <span>المفضلة</span>
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('recent');
-                setSidebarOpen(false);
-                exitSelectionMode();
-              }}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
-                activeTab === 'recent' 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Clock className="w-5 h-5" />
-              <span>الحديثة</span>
-            </button>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="p-4 border-t border-border">
-            <h3 className="text-sm font-medium mb-3">إجراءات سريعة</h3>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setLocation('/')}
-              >
-                <Home className="w-4 h-4 mr-2" />
-                العودة للرئيسية
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => refetch()}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                تحديث
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       {/* Search Modal */}
       {searchOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex flex-col">
@@ -912,14 +823,14 @@ export default function FileManager() {
         {/* Contextual Action Bar */}
         <ContextualActionBar />
 
-        {/* Enhanced Main Header Bar */}
+        {/* Main Header Bar */}
         <div className={cn(
           "bg-gray-900 text-white flex-shrink-0",
           selectionMode && "hidden"
         )}>
           {/* Main Header */}
-          <div className="px-4 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -928,30 +839,11 @@ export default function FileManager() {
               >
                 <Menu className="w-4 h-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLocation('/')}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
+              <h1 className="text-lg font-semibold">التخزين الرئيسي</h1>
             </div>
             
-            <h1 className="text-lg font-semibold">التخزين الرئيسي</h1>
-            
             <div className="flex items-center gap-2">
-              {/* Search */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearchOpen(true)}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-              >
-                <Search className="w-4 h-4" />
-              </Button>
-
-              {/* Sort/Filter Button */}
+              {/* New File/Folder Button */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -959,52 +851,23 @@ export default function FileManager() {
                     size="sm"
                     className="h-8 w-8 p-0 text-white hover:bg-white/20"
                   >
-                    <Filter className="w-4 h-4" />
+                    <Plus className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <div className="px-2 py-1.5 text-sm font-semibold">فرز حسب</div>
-                  <DropdownMenuRadioGroup value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
-                    const [newSortBy, newSortOrder] = value.split('-') as [SortBy, SortOrder];
-                    setSortBy(newSortBy);
-                    setSortOrder(newSortOrder);
-                  }}>
-                    <DropdownMenuRadioItem value="name-asc">
-                      <SortAsc className="w-4 h-4 mr-2" />
-                      الاسم ▲
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="name-desc">
-                      <SortDesc className="w-4 h-4 mr-2" />
-                      الاسم ▼
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="size-asc">
-                      <HardDrive className="w-4 h-4 mr-2" />
-                      الحجم ▲
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="size-desc">
-                      <HardDrive className="w-4 h-4 mr-2" />
-                      الحجم ▼
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="date-asc">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      التاريخ ▲
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="date-desc">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      التاريخ ▼
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="type-asc">
-                      <FileType className="w-4 h-4 mr-2" />
-                      النوع ▲
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="type-desc">
-                      <FileType className="w-4 h-4 mr-2" />
-                      النوع ▼
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowHidden(!showHidden)}>
-                    {showHidden ? '✓' : '○'} إظهار الملفات المخفية
+                <DropdownMenuContent align="end" className="w-48 bg-gray-800 text-white border-gray-700">
+                  <DropdownMenuItem 
+                    onClick={() => setCreateFileDialog(true)}
+                    className="text-white hover:bg-gray-700"
+                  >
+                    <FilePlus className="w-4 h-4 mr-2" />
+                    ملف
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setCreateFolderDialog(true)}
+                    className="text-white hover:bg-gray-700"
+                  >
+                    <FolderPlus className="w-4 h-4 mr-2" />
+                    مجلد
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1013,9 +876,9 @@ export default function FileManager() {
             </div>
           </div>
 
-          {/* Compact Breadcrumbs Bar */}
+          {/* Secondary Header with Breadcrumbs and Tabs */}
           <div className="bg-gray-800/50 px-4 py-2 border-t border-white/10">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1 overflow-x-auto">
                 {breadcrumbs.map((crumb, index) => (
                   <div key={crumb.id} className="flex items-center gap-1 flex-shrink-0">
@@ -1038,6 +901,111 @@ export default function FileManager() {
                   {directoryData.totalFiles} ملف • {directoryData.totalDirectories} مجلد
                 </div>
               )}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setActiveTab('files');
+                  exitSelectionMode();
+                }}
+                className={cn(
+                  "px-4 py-2 text-sm rounded-t-lg transition-all",
+                  activeTab === 'files' 
+                    ? "bg-white text-gray-900 border-b-2 border-white" 
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                )}
+              >
+                <Folder className="w-4 h-4 inline-block mr-2" />
+                الملفات
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('favorites');
+                  exitSelectionMode();
+                }}
+                className={cn(
+                  "px-4 py-2 text-sm rounded-t-lg transition-all",
+                  activeTab === 'favorites' 
+                    ? "bg-white text-gray-900 border-b-2 border-white" 
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                )}
+              >
+                <Star className="w-4 h-4 inline-block mr-2" />
+                المفضلة
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('recent');
+                  exitSelectionMode();
+                }}
+                className={cn(
+                  "px-4 py-2 text-sm rounded-t-lg transition-all",
+                  activeTab === 'recent' 
+                    ? "bg-white text-gray-900 border-b-2 border-white" 
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                )}
+              >
+                <Clock className="w-4 h-4 inline-block mr-2" />
+                الحديثة
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Toolbar with Search and View Controls */}
+          <div className="bg-white text-gray-900 px-4 py-3 flex items-center justify-between border-b">
+            <div className="flex items-center gap-3">
+              {/* Search */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchOpen(true)}
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-6 w-6 p-0"
+                >
+                  <Grid3X3 className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-6 w-6 p-0"
+                >
+                  <List className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Sort/Filter Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortFilterDialog(true)}
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => refetch()}
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -1084,6 +1052,127 @@ export default function FileManager() {
           </ScrollArea>
         </div>
       </div>
+
+      {/* Create File Dialog */}
+      <Dialog open={createFileDialog} onOpenChange={setCreateFileDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>إنشاء ملف</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="اسم الملف"
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  createNewFile();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateFileDialog(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={createNewFile}>
+              إنشاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Folder Dialog */}
+      <Dialog open={createFolderDialog} onOpenChange={setCreateFolderDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>إنشاء مجلد</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="اسم المجلد"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  createNewFolder();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateFolderDialog(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={createNewFolder}>
+              إنشاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sort/Filter Dialog */}
+      <Dialog open={sortFilterDialog} onOpenChange={setSortFilterDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>فرز حسب</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              {[
+                { value: 'name-asc', label: 'بدون فرز', icon: SortAsc },
+                { value: 'name-asc', label: 'الاسم ▲', icon: SortAsc },
+                { value: 'name-desc', label: 'الاسم ▼', icon: SortDesc },
+                { value: 'size-asc', label: 'الحجم ▲', icon: HardDrive },
+                { value: 'size-desc', label: 'الحجم ▼', icon: HardDrive },
+                { value: 'date-asc', label: 'التاريخ ▲', icon: Calendar },
+                { value: 'date-desc', label: 'التاريخ ▼', icon: Calendar },
+                { value: 'type-asc', label: 'نوع ▲', icon: FileType },
+                { value: 'type-desc', label: 'نوع ▼', icon: FileType },
+              ].map((option, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="sortOption"
+                      checked={index === 6} // Default to التاريخ ▼
+                      onChange={() => {
+                        const [newSortBy, newSortOrder] = option.value.split('-') as [SortBy, SortOrder];
+                        setSortBy(newSortBy);
+                        setSortOrder(newSortOrder);
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span>{option.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <span>غير ذلك</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span>إظهار الملفات المخفية</span>
+                <input
+                  type="checkbox"
+                  checked={showHidden}
+                  onChange={(e) => setShowHidden(e.target.checked)}
+                  className="w-4 h-4"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSortFilterDialog(false)}>
+              CANCEL
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
