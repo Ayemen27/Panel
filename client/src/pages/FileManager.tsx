@@ -106,7 +106,6 @@ export default function FileManager() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('files');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [showHidden, setShowHidden] = useState(false);
@@ -307,7 +306,6 @@ export default function FileManager() {
     }
 
     setBreadcrumbs(newBreadcrumbs);
-    setSidebarOpen(false);
     exitSelectionMode();
   }, [exitSelectionMode]);
 
@@ -659,7 +657,7 @@ export default function FileManager() {
       }
     };
 
-    const handleLongPress = (e: React.TouchStart | React.MouseEvent) => {
+    const handleLongPress = (e: React.TouchEvent<HTMLElement> | React.MouseEvent) => {
       if (selectionMode) return;
 
       if ('touches' in e) {
@@ -833,137 +831,6 @@ export default function FileManager() {
     );
   };
 
-  // File Manager Sidebar
-  const FileManagerSidebar = () => {
-    if (!sidebarOpen) return null;
-
-    const quickPaths = [
-      { name: 'الرئيسية', path: '/home/administrator', icon: Home },
-      { name: 'المستندات', path: '/home/administrator/Documents', icon: FileText },
-      { name: 'الصور', path: '/home/administrator/Pictures', icon: FileIcon },
-      { name: 'التحميلات', path: '/home/administrator/Downloads', icon: Folder },
-      { name: 'سطح المكتب', path: '/home/administrator/Desktop', icon: Folder },
-      { name: 'الجذر', path: '/', icon: HardDrive },
-    ];
-
-    const navigateToPath = (path: string, name: string) => {
-      setCurrentPath(path);
-      setBreadcrumbs([{ id: 'root', name, path }]);
-      setSidebarOpen(false); // إغلاق القائمة الجانبية
-      exitSelectionMode();
-    };
-
-    const handleOverlayClick = () => {
-      setSidebarOpen(false);
-    };
-
-    const handleSidebarClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); // منع إغلاق القائمة عند النقر داخل القائمة
-    };
-
-    return (
-      <>
-        {/* Mobile overlay */}
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-          onClick={handleOverlayClick}
-        />
-
-        {/* Sidebar */}
-        <div 
-          className="fixed inset-y-0 right-0 w-80 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform"
-          onClick={handleSidebarClick}
-        >
-          {/* Header */}
-          <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">تنقل سريع</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(false)}
-              className="h-8 w-8 p-0 text-white hover:bg-white/20"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Quick Paths */}
-          <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-600 mb-3">المسارات المفضلة</h3>
-            <div className="space-y-1">
-              {quickPaths.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPath === item.path;
-
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigateToPath(item.path, item.name)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-right transition-colors",
-                      isActive 
-                        ? "bg-blue-50 text-blue-600 font-medium" 
-                        : "hover:bg-gray-100 text-gray-700"
-                    )}
-                  >
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="flex-1">{item.name}</span>
-                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Storage Info */}
-          <div className="p-4 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-600 mb-3">معلومات التخزين</h3>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">المساحة المستخدمة</span>
-                <span className="text-sm font-medium">2.1 GB / 10 GB</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '21%' }}></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Locations */}
-          <div className="p-4 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-600 mb-3">المواقع الحديثة</h3>
-            <div className="space-y-1">
-              {breadcrumbs.slice(-3).map((crumb, index) => (
-                <button
-                  key={crumb.id}
-                  onClick={() => navigateToPath(crumb.path, crumb.name)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-right hover:bg-gray-100 text-gray-600"
-                >
-                  <Clock className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 truncate">{crumb.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="p-4 border-t border-gray-200">
-            <Button
-              onClick={() => {
-                window.location.href = '/';
-                setSidebarOpen(false); // إغلاق القائمة عند العودة للوحة التحكم
-              }}
-              variant="outline"
-              className="w-full"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              العودة للوحة التحكم
-            </Button>
-          </div>
-        </div>
-      </>
-    );
-  };
 
   return (
     <div className="fixed inset-0 w-full h-full flex bg-background text-foreground z-50">
@@ -1036,7 +903,7 @@ export default function FileManager() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:mr-80">
+      <div className="flex-1 flex flex-col">
         {/* Selection Mode Header */}
         <SelectionModeHeader />
 
@@ -1048,14 +915,6 @@ export default function FileManager() {
           {/* Main Header */}
           <div className="px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(true)}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20 lg:hidden"
-              >
-                <Menu className="w-4 h-4" />
-              </Button>
               <h1 className="text-lg font-semibold">
                 {activeTab === 'files' ? 'الملفات' : 
                  activeTab === 'favorites' ? 'المفضلة' : 'الحديثة'}
