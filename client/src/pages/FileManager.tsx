@@ -41,6 +41,8 @@ import {
   FileType,
   Menu,
   MoreVertical,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { FileIconComponent } from "@/components/FileManager/FileIcon";
 import { useToast } from "@/hooks/use-toast";
@@ -251,6 +253,119 @@ export default function FileManager() {
     setSearchSuggestions(prev => prev.filter(s => s !== suggestion));
   };
 
+  // File operations
+  const createNewFile = async () => {
+    try {
+      const fileName = prompt('اسم الملف الجديد:');
+      if (!fileName) return;
+
+      const response = await apiRequest('POST', '/api/unified-files/create-file', {
+        path: currentPath,
+        fileName,
+        content: ''
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'تم إنشاء الملف',
+          description: `تم إنشاء الملف ${fileName} بنجاح`,
+        });
+        refetch();
+      } else {
+        throw new Error('فشل في إنشاء الملف');
+      }
+    } catch (error) {
+      toast({
+        title: 'خطأ',
+        description: 'فشل في إنشاء الملف',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const createNewFolder = async () => {
+    try {
+      const folderName = prompt('اسم المجلد الجديد:');
+      if (!folderName) return;
+
+      const response = await apiRequest('POST', '/api/unified-files/create-directory', {
+        path: currentPath,
+        dirName: folderName
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'تم إنشاء المجلد',
+          description: `تم إنشاء المجلد ${folderName} بنجاح`,
+        });
+        refetch();
+      } else {
+        throw new Error('فشل في إنشاء المجلد');
+      }
+    } catch (error) {
+      toast({
+        title: 'خطأ',
+        description: 'فشل في إنشاء المجلد',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const deleteItem = async (item: UnifiedFileInfo) => {
+    try {
+      const confirmed = confirm(`هل أنت متأكد من حذف ${item.name}؟`);
+      if (!confirmed) return;
+
+      const response = await apiRequest('DELETE', '/api/unified-files/delete', {
+        path: item.absolutePath
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'تم الحذف',
+          description: `تم حذف ${item.name} بنجاح`,
+        });
+        refetch();
+      } else {
+        throw new Error('فشل في الحذف');
+      }
+    } catch (error) {
+      toast({
+        title: 'خطأ',
+        description: 'فشل في حذف العنصر',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const renameItem = async (item: UnifiedFileInfo) => {
+    try {
+      const newName = prompt('الاسم الجديد:', item.name);
+      if (!newName || newName === item.name) return;
+
+      const response = await apiRequest('POST', '/api/unified-files/rename', {
+        oldPath: item.absolutePath,
+        newName
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'تم التعديل',
+          description: `تم تغيير اسم ${item.name} إلى ${newName}`,
+        });
+        refetch();
+      } else {
+        throw new Error('فشل في إعادة التسمية');
+      }
+    } catch (error) {
+      toast({
+        title: 'خطأ',
+        description: 'فشل في تعديل الاسم',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const FileItem = ({ item }: { item: UnifiedFileInfo }) => {
     const handleClick = () => {
       if (item.type === 'directory') {
@@ -263,50 +378,101 @@ export default function FileManager() {
       }
     };
 
+    const handleContextMenu = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
     if (viewMode === 'grid') {
       return (
-        <Card className="p-3 cursor-pointer transition-all hover:shadow-md hover:scale-105" onClick={handleClick}>
-          <div className="flex flex-col items-center gap-3">
-            <FileIconComponent 
-              type={item.type}
-              extension={item.extension}
-              name={item.name}
-              className="w-10 h-10"
-            />
-            <div className="text-center w-full">
-              <p className="font-medium text-xs truncate max-w-[100px] mx-auto" title={item.name}>
-                {item.name}
-              </p>
-              <div className="flex flex-col gap-1 mt-2">
-                <Badge variant="outline" className="text-xs mx-auto px-2 py-1">
-                  {item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}
-                </Badge>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(item.modified)}
+        <DropdownMenu>
+          <Card className="p-3 cursor-pointer transition-all hover:shadow-md hover:scale-105 group" onClick={handleClick}>
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative">
+                <FileIconComponent 
+                  type={item.type}
+                  extension={item.extension}
+                  name={item.name}
+                  className="w-10 h-10"
+                />
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-1 -right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </div>
+              <div className="text-center w-full">
+                <p className="font-medium text-xs truncate max-w-[100px] mx-auto" title={item.name}>
+                  {item.name}
                 </p>
+                <div className="flex flex-col gap-1 mt-2">
+                  <Badge variant="outline" className="text-xs mx-auto px-2 py-1">
+                    {item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(item.modified)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => renameItem(item)}>
+              <Edit className="w-4 h-4 mr-2" />
+              إعادة تسمية
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => deleteItem(item)}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              حذف
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     }
 
     return (
-      <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm" onClick={handleClick}>
-        <FileIconComponent 
-          type={item.type}
-          extension={item.extension}
-          name={item.name}
-          className="w-6 h-6 flex-shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{item.name}</p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}</span>
-            <span>{formatDate(item.modified)}</span>
+      <DropdownMenu>
+        <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm group" onClick={handleClick}>
+          <FileIconComponent 
+            type={item.type}
+            extension={item.extension}
+            name={item.name}
+            className="w-6 h-6 flex-shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{item.name}</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}</span>
+              <span>{formatDate(item.modified)}</span>
+            </div>
           </div>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
         </div>
-      </div>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => renameItem(item)}>
+            <Edit className="w-4 h-4 mr-2" />
+            إعادة تسمية
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => deleteItem(item)}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            حذف
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   };
 
@@ -601,11 +767,11 @@ export default function FileManager() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={createNewFile}>
                     <FileIcon className="w-4 h-4 mr-2" />
                     ملف جديد
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={createNewFolder}>
                     <Folder className="w-4 h-4 mr-2" />
                     مجلد جديد
                   </DropdownMenuItem>

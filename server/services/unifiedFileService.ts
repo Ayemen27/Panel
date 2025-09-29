@@ -1,4 +1,3 @@
-
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
@@ -51,39 +50,39 @@ export class UnifiedFileService extends BaseService {
   /**
    * التحقق من صحة وأمان المسار
    */
-  private async validatePath(inputPath: string): Promise<{ 
-    isValid: boolean; 
-    normalizedPath: string; 
-    error?: string 
+  private async validatePath(inputPath: string): Promise<{
+    isValid: boolean;
+    normalizedPath: string;
+    error?: string
   }> {
     try {
       const normalizedPath = path.resolve(path.normalize(inputPath));
-      
+
       // فحص محاولات التسلل
       if (inputPath.includes('..') || inputPath.includes('./') || inputPath.includes('.\\')) {
         logger.warn(`Directory traversal attempt: ${inputPath}`);
-        return { 
-          isValid: false, 
-          normalizedPath, 
-          error: 'محاولة تسلل في المجلدات - مسار غير آمن' 
+        return {
+          isValid: false,
+          normalizedPath,
+          error: 'محاولة تسلل في المجلدات - مسار غير آمن'
         };
       }
 
       // فحص الأحرف غير المسموحة
       if (normalizedPath.includes('\0')) {
-        return { 
-          isValid: false, 
-          normalizedPath, 
-          error: 'مسار غير صحيح - يحتوي على أحرف غير مسموحة' 
+        return {
+          isValid: false,
+          normalizedPath,
+          error: 'مسار غير صحيح - يحتوي على أحرف غير مسموحة'
         };
       }
 
       // فحص طول المسار
       if (normalizedPath.length > 4096) {
-        return { 
-          isValid: false, 
-          normalizedPath, 
-          error: 'المسار طويل جداً' 
+        return {
+          isValid: false,
+          normalizedPath,
+          error: 'المسار طويل جداً'
         };
       }
 
@@ -91,20 +90,20 @@ export class UnifiedFileService extends BaseService {
       const isAllowed = await this.storage.checkPathAllowed(normalizedPath);
       if (!isAllowed) {
         logger.warn(`Access denied to path: ${normalizedPath}`);
-        return { 
-          isValid: false, 
-          normalizedPath, 
-          error: 'الوصول مرفوض - المسار غير مدرج في القائمة المسموحة' 
+        return {
+          isValid: false,
+          normalizedPath,
+          error: 'الوصول مرفوض - المسار غير مدرج في القائمة المسموحة'
         };
       }
 
       return { isValid: true, normalizedPath };
     } catch (error) {
       logger.error(`Path validation error: ${error}`);
-      return { 
-        isValid: false, 
-        normalizedPath: inputPath, 
-        error: 'فشل في التحقق من المسار' 
+      return {
+        isValid: false,
+        normalizedPath: inputPath,
+        error: 'فشل في التحقق من المسار'
       };
     }
   }
@@ -787,7 +786,7 @@ export class UnifiedFileService extends BaseService {
 
       // Generate checksum for verification
       const checksum = crypto.createHash('md5').update(content).digest('hex');
-      
+
       await this.createAuditLog('update', userId, normalizedPath, `كتابة محتوى في الملف (${content.length} حرف)`);
 
       return {
@@ -876,5 +875,3 @@ export class UnifiedFileService extends BaseService {
     }
   }
 }
-
-// تصدير الكلاس للاستخدام في routes.ts بشكل مباشر

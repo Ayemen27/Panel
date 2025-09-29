@@ -1,4 +1,3 @@
-
 import { Request, Response, Router } from 'express';
 import { ResponseHandler } from '../core/ResponseHandler';
 import { ServiceContainer } from '../core/ServiceContainer';
@@ -36,7 +35,7 @@ router.get('/browse', isAuthenticated, async (req: AuthenticatedRequest, res: Re
     }
 
     const result = await unifiedFileService.listDirectory(path, userId);
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -65,7 +64,7 @@ router.get('/content', isAuthenticated, async (req: AuthenticatedRequest, res: R
     }
 
     const result = await unifiedFileService.readFileContent(path, userId);
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -94,7 +93,7 @@ router.post('/create-directory', isAuthenticated, async (req: AuthenticatedReque
     }
 
     const result = await unifiedFileService.createDirectory(path, userId, options || {});
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -127,7 +126,7 @@ router.post('/create-file', isAuthenticated, async (req: AuthenticatedRequest, r
       content: content || '',
       ...options
     });
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -157,7 +156,7 @@ router.post('/write-file', isAuthenticated, async (req: AuthenticatedRequest, re
     }
 
     const result = await unifiedFileService.writeFile(path, content || '', userId);
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -186,7 +185,7 @@ router.post('/rename', isAuthenticated, async (req: AuthenticatedRequest, res: R
     }
 
     const result = await unifiedFileService.renameItem(oldPath, newPath, userId);
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -215,7 +214,7 @@ router.post('/copy', isAuthenticated, async (req: AuthenticatedRequest, res: Res
     }
 
     const result = await unifiedFileService.copyItem(sourcePath, destinationPath, userId);
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -244,7 +243,7 @@ router.delete('/delete', isAuthenticated, async (req: AuthenticatedRequest, res:
     }
 
     const result = await unifiedFileService.deleteItem(path, userId);
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
@@ -273,7 +272,7 @@ router.get('/info', isAuthenticated, async (req: AuthenticatedRequest, res: Resp
     }
 
     const result = await unifiedFileService.getFileInfo(path, userId);
-    
+
     ResponseHandler.fromServiceResult(
       res,
       result,
