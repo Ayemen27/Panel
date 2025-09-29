@@ -1151,43 +1151,43 @@ export default function FileManager() {
           />
           
           {/* Bottom Sheet */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-[101] transform transition-transform duration-300 ease-out animate-in slide-in-from-bottom">
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-[101] transform transition-transform duration-300 ease-out animate-in slide-in-from-bottom max-h-[70vh]">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-800">تطبق على جميع المجلدات</h3>
+            <div className="flex items-center justify-between p-3 border-b border-gray-200">
+              <h3 className="text-base font-medium text-gray-800">تطبق على جميع المجلدات</h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewSortDialog(false)}
-                className="h-8 w-8 p-0"
+                className="h-7 w-7 p-0"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </Button>
             </div>
             
             {/* Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-4">
               {/* View Mode Section */}
               <div>
-                <h4 className="text-sm font-medium mb-4 text-right text-blue-600">عرض</h4>
+                <h4 className="text-sm font-medium mb-3 text-right text-blue-600">عرض</h4>
                 
                 {/* Top Row - 3 icons */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-3 gap-3 mb-3">
                   <div className="text-center">
                     <button
                       onClick={() => {
                         setViewMode('list');
                         setViewSortDialog(false);
                       }}
-                      className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
+                      className={`w-full p-3 rounded-xl border-2 transition-all duration-200 ${
                         viewMode === 'list' 
                           ? 'border-green-500 bg-green-50 shadow-md' 
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                       data-testid="view-mode-list"
                     >
-                      <List className="w-8 h-8 mx-auto mb-2 text-gray-700" />
-                      <div className="text-sm font-medium text-gray-700">قائمة</div>
+                      <List className="w-6 h-6 mx-auto mb-1 text-gray-700" />
+                      <div className="text-xs font-medium text-gray-700">قائمة</div>
                     </button>
                   </div>
                   <div className="text-center">
@@ -1196,48 +1196,48 @@ export default function FileManager() {
                         setViewMode('grid');
                         setViewSortDialog(false);
                       }}
-                      className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
+                      className={`w-full p-3 rounded-xl border-2 transition-all duration-200 ${
                         viewMode === 'grid' 
                           ? 'border-green-500 bg-green-50 shadow-md' 
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                       data-testid="view-mode-grid"
                     >
-                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
-                      <div className="text-sm font-medium text-gray-700">شبكة</div>
+                      <Grid3X3 className="w-6 h-6 mx-auto mb-1 text-gray-700" />
+                      <div className="text-xs font-medium text-gray-700">شبكة</div>
                     </button>
                   </div>
                   <div className="text-center">
-                    <button className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
-                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
-                      <div className="text-sm font-medium text-gray-700">شبكة كبيرة</div>
+                    <button className="w-full p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+                      <Grid3X3 className="w-6 h-6 mx-auto mb-1 text-gray-700" />
+                      <div className="text-xs font-medium text-gray-700">شبكة كبيرة</div>
                     </button>
                   </div>
                 </div>
                 
                 {/* Bottom Row - 2 icons */}
-                <div className="grid grid-cols-2 gap-4 max-w-md">
+                <div className="grid grid-cols-2 gap-3 max-w-xs">
                   <div className="text-center">
-                    <button className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
-                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                    <button className="w-full p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+                      <Grid3X3 className="w-6 h-6 mx-auto text-gray-700" />
                     </button>
                   </div>
                   <div className="text-center">
-                    <button className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
-                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                    <button className="w-full p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+                      <Grid3X3 className="w-6 h-6 mx-auto text-gray-700" />
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Sort Button */}
-              <div className="border-t border-gray-200 pt-4">
+              <div className="border-t border-gray-200 pt-3">
                 <button
                   onClick={() => {
                     setViewSortDialog(false);
                     setSortDialog(true);
                   }}
-                  className="w-full text-right text-blue-600 font-medium py-2 hover:text-blue-700 transition-colors"
+                  className="w-full text-right text-blue-600 font-medium py-1.5 hover:text-blue-700 transition-colors"
                   data-testid="button-sort"
                 >
                   فرز
@@ -1245,11 +1245,11 @@ export default function FileManager() {
               </div>
 
               {/* Other Options */}
-              <div className="border-t border-gray-200 pt-4 space-y-4">
-                <div className="text-right text-gray-600 font-medium">
+              <div className="border-t border-gray-200 pt-3 space-y-3">
+                <div className="text-right text-gray-600 font-medium text-sm">
                   غير ذلك
                 </div>
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-1.5">
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -1258,17 +1258,17 @@ export default function FileManager() {
                         setShowHidden(e.target.checked);
                         setViewSortDialog(false);
                       }}
-                      className="w-5 h-5 accent-green-600 rounded"
+                      className="w-4 h-4 accent-green-600 rounded"
                       data-testid="checkbox-show-hidden"
                     />
                   </div>
-                  <span className="text-gray-800 font-medium">إظهار الملفات المخفية</span>
+                  <span className="text-gray-800 font-medium text-sm">إظهار الملفات المخفية</span>
                 </div>
               </div>
             </div>
             
             {/* Safe Area for mobile */}
-            <div className="h-6"></div>
+            <div className="h-4"></div>
           </div>
         </>
       )}
