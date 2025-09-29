@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { useLocation } from "wouter";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -10,7 +10,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isMobile } = useMobile();
+  const isMobile = useIsMobile();
   const [location] = useLocation();
 
   // صفحة مدير الملفات تستخدم تخطيط خاص
