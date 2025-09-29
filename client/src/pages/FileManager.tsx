@@ -119,7 +119,8 @@ export default function FileManager() {
   // حالات النوافذ المنبثقة
   const [createFileDialog, setCreateFileDialog] = useState(false);
   const [createFolderDialog, setCreateFolderDialog] = useState(false);
-  const [sortFilterDialog, setSortFilterDialog] = useState(false);
+  const [viewSortDialog, setViewSortDialog] = useState(false);
+  const [sortDialog, setSortDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
 
@@ -932,35 +933,16 @@ export default function FileManager() {
                 <Search className="w-4 h-4" />
               </Button>
 
-              {/* Sort/Filter Button */}
+              {/* Combined View/Sort Button */}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSortFilterDialog(true)}
+                onClick={() => setViewSortDialog(true)}
                 className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                data-testid="button-view-sort-options"
               >
                 <Filter className="w-4 h-4" />
               </Button>
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-1 bg-white/20 rounded-lg p-1">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="h-6 w-6 p-0 text-white hover:bg-white/30"
-                >
-                  <Grid3X3 className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="h-6 w-6 p-0 text-white hover:bg-white/30"
-                >
-                  <List className="w-3 h-3" />
-                </Button>
-              </div>
 
               {/* Add Button */}
               <DropdownMenu>
@@ -1159,66 +1141,225 @@ export default function FileManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Sort/Filter Dialog */}
-      <Dialog open={sortFilterDialog} onOpenChange={setSortFilterDialog}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>فرز حسب</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              {[
-                { value: 'name-asc', label: 'بدون فرز', icon: SortAsc },
-                { value: 'name-asc', label: 'الاسم ▲', icon: SortAsc },
-                { value: 'name-desc', label: 'الاسم ▼', icon: SortDesc },
-                { value: 'size-asc', label: 'الحجم ▲', icon: HardDrive },
-                { value: 'size-desc', label: 'الحجم ▼', icon: HardDrive },
-                { value: 'date-asc', label: 'التاريخ ▲', icon: Calendar },
-                { value: 'date-desc', label: 'التاريخ ▼', icon: Calendar },
-                { value: 'type-asc', label: 'نوع ▲', icon: FileType },
-                { value: 'type-desc', label: 'نوع ▼', icon: FileType },
-              ].map((option, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="sortOption"
-                      checked={index === 6} // Default to التاريخ ▼
-                      onChange={() => {
-                        const [newSortBy, newSortOrder] = option.value.split('-') as [SortBy, SortOrder];
-                        setSortBy(newSortBy);
-                        setSortOrder(newSortOrder);
+      {/* View & Sort Options Bottom Sheet */}
+      {viewSortDialog && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[100]" 
+            onClick={() => setViewSortDialog(false)}
+          />
+          
+          {/* Bottom Sheet */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-[101] transform transition-transform duration-300 ease-out animate-in slide-in-from-bottom">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-800">تطبق على جميع المجلدات</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewSortDialog(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* View Mode Section */}
+              <div>
+                <h4 className="text-sm font-medium mb-4 text-right text-blue-600">عرض</h4>
+                
+                {/* Top Row - 3 icons */}
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center">
+                    <button
+                      onClick={() => {
+                        setViewMode('list');
+                        setViewSortDialog(false);
                       }}
-                      className="w-4 h-4"
-                    />
-                    <span>{option.label}</span>
+                      className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
+                        viewMode === 'list' 
+                          ? 'border-green-500 bg-green-50 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      data-testid="view-mode-list"
+                    >
+                      <List className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                      <div className="text-sm font-medium text-gray-700">قائمة</div>
+                    </button>
+                  </div>
+                  <div className="text-center">
+                    <button
+                      onClick={() => {
+                        setViewMode('grid');
+                        setViewSortDialog(false);
+                      }}
+                      className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
+                        viewMode === 'grid' 
+                          ? 'border-green-500 bg-green-50 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      data-testid="view-mode-grid"
+                    >
+                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                      <div className="text-sm font-medium text-gray-700">شبكة</div>
+                    </button>
+                  </div>
+                  <div className="text-center">
+                    <button className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                      <div className="text-sm font-medium text-gray-700">شبكة كبيرة</div>
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+                
+                {/* Bottom Row - 2 icons */}
+                <div className="grid grid-cols-2 gap-4 max-w-md">
+                  <div className="text-center">
+                    <button className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                    </button>
+                  </div>
+                  <div className="text-center">
+                    <button className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+                      <Grid3X3 className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-            <div className="pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <span>غير ذلك</span>
+              {/* Sort Button */}
+              <div className="border-t border-gray-200 pt-4">
+                <button
+                  onClick={() => {
+                    setViewSortDialog(false);
+                    setSortDialog(true);
+                  }}
+                  className="w-full text-right text-blue-600 font-medium py-2 hover:text-blue-700 transition-colors"
+                  data-testid="button-sort"
+                >
+                  فرز
+                </button>
               </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span>إظهار الملفات المخفية</span>
-                <input
-                  type="checkbox"
-                  checked={showHidden}
-                  onChange={(e) => setShowHidden(e.target.checked)}
-                  className="w-4 h-4"
-                />
+
+              {/* Other Options */}
+              <div className="border-t border-gray-200 pt-4 space-y-4">
+                <div className="text-right text-gray-600 font-medium">
+                  غير ذلك
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={showHidden}
+                      onChange={(e) => {
+                        setShowHidden(e.target.checked);
+                        setViewSortDialog(false);
+                      }}
+                      className="w-5 h-5 accent-green-600 rounded"
+                      data-testid="checkbox-show-hidden"
+                    />
+                  </div>
+                  <span className="text-gray-800 font-medium">إظهار الملفات المخفية</span>
+                </div>
               </div>
             </div>
+            
+            {/* Safe Area for mobile */}
+            <div className="h-6"></div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSortFilterDialog(false)}>
-              CANCEL
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </>
+      )}
+
+      {/* Sort Bottom Sheet */}
+      {sortDialog && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[100]" 
+            onClick={() => setSortDialog(false)}
+          />
+          
+          {/* Bottom Sheet */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-[101] transform transition-transform duration-300 ease-out animate-in slide-in-from-bottom">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-800">فرز حسب</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortDialog(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              <div className="space-y-4">
+                {[
+                  { value: '', label: 'بدون فرز' },
+                  { value: 'name-asc', label: 'الاسم ▲' },
+                  { value: 'name-desc', label: 'الاسم ▼' },
+                  { value: 'size-asc', label: 'الحجم ▲' },
+                  { value: 'size-desc', label: 'الحجم ▼' },
+                  { value: 'date-asc', label: 'التاريخ ▲' },
+                  { value: 'date-desc', label: 'التاريخ ▼' },
+                  { value: 'type-asc', label: 'نوع ▲' },
+                  { value: 'type-desc', label: 'نوع ▼' },
+                ].map((option, index) => {
+                  const isSelected = index === 6 || (sortBy === 'date' && sortOrder === 'desc');
+                  return (
+                    <div 
+                      key={index} 
+                      className="flex items-center justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors"
+                      onClick={() => {
+                        if (option.value) {
+                          const [newSortBy, newSortOrder] = option.value.split('-') as [SortBy, SortOrder];
+                          setSortBy(newSortBy);
+                          setSortOrder(newSortOrder);
+                        }
+                        setSortDialog(false);
+                      }}
+                      data-testid={`sort-option-${index}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            isSelected ? 'border-green-600 bg-green-50' : 'border-gray-300'
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-green-600"></div>
+                          )}
+                        </div>
+                        <span className="text-gray-800 font-medium">{option.label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Cancel Button */}
+              <div className="pt-6 border-t border-gray-200 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSortDialog(false)}
+                  className="w-full py-3 text-gray-600 hover:text-gray-800 font-medium"
+                >
+                  CANCEL
+                </Button>
+              </div>
+            </div>
+            
+            {/* Safe Area for mobile */}
+            <div className="h-6"></div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

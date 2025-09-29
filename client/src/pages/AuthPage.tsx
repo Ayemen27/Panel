@@ -216,8 +216,34 @@ export default function AuthPage() {
                 )}
               </div>
 
+              {/* Test Login Button - Only in development */}
+              {import.meta.env.DEV && (
+                <div className="pb-2">
+                  <Button
+                    type="button"
+                    data-testid="button-test-login"
+                    onClick={() => {
+                      // تعبئة الحقول تلقائياً بالبيانات الموجودة بالفعل في الـ form
+                      loginForm.setValue("username", "binarjoinanalytic");
+                      loginForm.setValue("password", "Ay**--772283228");
+                      // تسجيل الدخول مباشرة
+                      setTimeout(() => {
+                        onLogin({
+                          username: "binarjoinanalytic", 
+                          password: "Ay**--772283228"
+                        });
+                      }, 100);
+                    }}
+                    className="w-full h-10 font-medium rounded-xl bg-green-600 hover:bg-green-700 text-white transition-colors duration-300"
+                    disabled={isLoading}
+                  >
+                    🧪 اختبار تسجيل الدخول
+                  </Button>
+                </div>
+              )}
+
               {/* Login Button */}
-              <div className="pt-4">
+              <div className="pt-2">
                 <Button
                   type="submit"
                   data-testid="button-login"
