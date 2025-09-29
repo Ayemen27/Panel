@@ -91,6 +91,7 @@ export default function FileManager() {
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [showHidden, setShowHidden] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
   ]);
@@ -442,88 +443,116 @@ export default function FileManager() {
           </div>
 
           {/* Search Bar and Filters Row */}
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="البحث..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-              />
-            </div>
-
-            {/* Sort/Filter Button */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+          <div className="flex items-center gap-2">
+            {/* Search Toggle */}
+            {!searchOpen ? (
+              <div className="flex items-center gap-2">
+                {/* Search Icon */}
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => setSearchOpen(true)}
                   className="h-8 w-8 p-0 text-white hover:bg-white/20"
                 >
-                  <Filter className="w-4 h-4" />
+                  <Search className="w-4 h-4" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5 text-sm font-semibold">فرز حسب</div>
-                <DropdownMenuRadioGroup value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
-                  const [newSortBy, newSortOrder] = value.split('-') as [SortBy, SortOrder];
-                  setSortBy(newSortBy);
-                  setSortOrder(newSortOrder);
-                }}>
-                  <DropdownMenuRadioItem value="name-asc">
-                    <SortAsc className="w-4 h-4 mr-2" />
-                    الاسم ▲
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="name-desc">
-                    <SortDesc className="w-4 h-4 mr-2" />
-                    الاسم ▼
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="size-asc">
-                    <HardDrive className="w-4 h-4 mr-2" />
-                    الحجم ▲
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="size-desc">
-                    <HardDrive className="w-4 h-4 mr-2" />
-                    الحجم ▼
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="date-asc">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    التاريخ ▲
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="date-desc">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    التاريخ ▼
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="type-asc">
-                    <FileType className="w-4 h-4 mr-2" />
-                    النوع ▲
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="type-desc">
-                    <FileType className="w-4 h-4 mr-2" />
-                    النوع ▼
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowHidden(!showHidden)}>
-                  {showHidden ? '✓' : '○'} إظهار الملفات المخفية
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  CANCEL
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
 
-            {/* View Mode Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-              className="h-8 w-8 p-0 text-white hover:bg-white/20"
-            >
-              {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
-            </Button>
+                {/* Sort/Filter Button */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                    >
+                      <Filter className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <div className="px-2 py-1.5 text-sm font-semibold">فرز حسب</div>
+                    <DropdownMenuRadioGroup value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
+                      const [newSortBy, newSortOrder] = value.split('-') as [SortBy, SortOrder];
+                      setSortBy(newSortBy);
+                      setSortOrder(newSortOrder);
+                    }}>
+                      <DropdownMenuRadioItem value="name-asc">
+                        <SortAsc className="w-4 h-4 mr-2" />
+                        الاسم ▲
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="name-desc">
+                        <SortDesc className="w-4 h-4 mr-2" />
+                        الاسم ▼
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="size-asc">
+                        <HardDrive className="w-4 h-4 mr-2" />
+                        الحجم ▲
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="size-desc">
+                        <HardDrive className="w-4 h-4 mr-2" />
+                        الحجم ▼
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="date-asc">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        التاريخ ▲
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="date-desc">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        التاريخ ▼
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="type-asc">
+                        <FileType className="w-4 h-4 mr-2" />
+                        النوع ▲
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="type-desc">
+                        <FileType className="w-4 h-4 mr-2" />
+                        النوع ▼
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowHidden(!showHidden)}>
+                      {showHidden ? '✓' : '○'} إظهار الملفات المخفية
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* View Mode Toggle */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                >
+                  {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-1">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="البحث..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-10 h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                    autoFocus
+                  />
+                </div>
+                
+                {/* Cancel Search */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
