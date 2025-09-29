@@ -269,11 +269,6 @@ export default function FileManager() {
   }, [currentFiles]);
 
   const handleFolderClick = useCallback((item: UnifiedFileInfo) => {
-    if (selectionMode) {
-      toggleItemSelection(item);
-      return;
-    }
-
     if (item.type === 'directory') {
       setCurrentPath(item.absolutePath);
       setBreadcrumbs(prev => [...prev, { 
@@ -281,8 +276,14 @@ export default function FileManager() {
         name: item.name, 
         path: item.absolutePath 
       }]);
+      
+      // إضافة رسالة تأكيد
+      toast({
+        title: `تم فتح المجلد`,
+        description: item.name,
+      });
     }
-  }, [selectionMode, toggleItemSelection]);
+  }, []);
 
   const handleBreadcrumbClick = useCallback((index: number) => {
     const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
@@ -792,8 +793,10 @@ export default function FileManager() {
 
   const FileItem = ({ item }: { item: UnifiedFileInfo }) => {
     const isSelected = selectedItems.has(item.absolutePath);
+    const [longPressStarted, setLongPressStarted] = useState(false);
 
-    const handleClick = () => {
+    // النقر الواحد - فتح الملف/المجلد
+    const handleSingleClick = () => {
       if (selectionMode) {
         toggleItemSelection(item);
         return;
@@ -802,40 +805,54 @@ export default function FileManager() {
       if (item.type === 'directory') {
         handleFolderClick(item);
       } else {
+        // فتح الملف أو عرض تفاصيله
         toast({
-          title: item.name,
+          title: `تم فتح ${item.name}`,
           description: `الحجم: ${formatFileSize(item.size)} | تم التعديل: ${formatDate(item.modified)}`,
         });
       }
     };
 
-    const handleLongPress = (e: React.TouchEvent<HTMLElement> | React.MouseEvent) => {
-      if (selectionMode) return;
-
-      if ('touches' in e) {
-        const timer = setTimeout(() => {
+    // النقر المطول - دخول وضع التحديد
+    const handleLongPressStart = (e: React.TouchEvent<HTMLElement> | React.MouseEvent) => {
+      e.preventDefault();
+      setLongPressStarted(true);
+      
+      const timer = setTimeout(() => {
+        if (!selectionMode) {
           enterSelectionMode(item);
-        }, 500);
-        setLongPressTimer(timer);
-      } else {
-        const timer = setTimeout(() => {
-          enterSelectionMode(item);
-        }, 500);
-        setLongPressTimer(timer);
-      }
+          // إضافة اهتزاز خفيف للإشارة لدخول وضع التحديد
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+        }
+        setLongPressStarted(false);
+      }, 500);
+      
+      setLongPressTimer(timer);
     };
 
-    const handleTouchEnd = () => {
+    const handleLongPressEnd = () => {
       if (longPressTimer) {
         clearTimeout(longPressTimer);
         setLongPressTimer(null);
       }
+      
+      // إذا لم يكن النقر مطولاً، نفذ النقر العادي
+      if (longPressStarted) {
+        setLongPressStarted(false);
+        setTimeout(() => {
+          if (!selectionMode) {
+            handleSingleClick();
+          }
+        }, 50);
+      }
     };
 
-    const handleMouseUp = () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
+    const handleClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (!longPressStarted) {
+        handleSingleClick();
       }
     };
 
@@ -845,14 +862,21 @@ export default function FileManager() {
           className={cn(
             "p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 group relative",
             isSelected && "ring-2 ring-blue-500 bg-blue-50",
-            selectionMode && "hover:bg-blue-50"
+            selectionMode && "hover:bg-blue-50",
+            longPressStarted && "scale-95 transition-transform duration-150"
           )}
           onClick={handleClick}
-          onTouchStart={handleLongPress}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={handleLongPress}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onTouchStart={handleLongPressStart}
+          onTouchEnd={handleLongPressEnd}
+          onMouseDown={handleLongPressStart}
+          onMouseUp={handleLongPressEnd}
+          onMouseLeave={handleLongPressEnd}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            if (!selectionMode) {
+              enterSelectionMode(item);
+            }
+          }}
         >
           {/* مؤشر الاختيار */}
           {selectionMode && (
@@ -921,14 +945,21 @@ export default function FileManager() {
         className={cn(
           "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 hover:shadow-sm group relative",
           isSelected && "bg-blue-50 ring-1 ring-blue-500",
-          selectionMode && "hover:bg-blue-50"
+          selectionMode && "hover:bg-blue-50",
+          longPressStarted && "bg-gray-100 transition-colors duration-150"
         )}
         onClick={handleClick}
-        onTouchStart={handleLongPress}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleLongPress}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onTouchStart={handleLongPressStart}
+        onTouchEnd={handleLongPressEnd}
+        onMouseDown={handleLongPressStart}
+        onMouseUp={handleLongPressEnd}
+        onMouseLeave={handleLongPressEnd}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          if (!selectionMode) {
+            enterSelectionMode(item);
+          }
+        }}
       >
         {/* مؤشر الاختيار */}
         {selectionMode && (
