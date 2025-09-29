@@ -90,20 +90,34 @@ export function getSession() {
   if (ENV_CONFIG.isReplit) {
     cookieDomain = undefined; // Replit يدير الدومين تلقائياً
   } else if (isCustomDomain) {
-    cookieDomain = 'panel.binarjoinanelytic.info'; // النطاق المخصص
+    // في بيئة التطوير مع النطاق المخصص، لا نحدد الدومين لتجنب مشاكل الكوكيز
+    cookieDomain = ENV_CONFIG.name === 'production' ? 'panel.binarjoinanelytic.info' : undefined;
   } else if (ENV_CONFIG.host !== '0.0.0.0' && ENV_CONFIG.host !== 'localhost') {
     cookieDomain = ENV_CONFIG.host;
   } else {
     cookieDomain = undefined; // للتطوير المحلي
   }
 
+  // تحديد إعدادات الأمان بناءً على البيئة
+  const isProductionSecurity = ENV_CONFIG.name === 'production';
+  
   const cookieSettings = {
     httpOnly: true, // منع الوصول من JavaScript
-    secure: isCustomDomain || ENV_CONFIG.name === 'production', // HTTPS للنطاق المخصص والإنتاج
+    secure: isProductionSecurity, // HTTPS في الإنتاج فقط
     maxAge: sessionTtl,
-    sameSite: (isCustomDomain || ENV_CONFIG.name === 'production') ? "strict" as const : "lax" as const,
+    sameSite: isProductionSecurity ? "strict" as const : "lax" as const, // إعدادات أكثر مرونة في التطوير
     domain: cookieDomain,
   };
+  
+  // سجل تشخيصي لمساعدة في حل مشاكل الكوكيز
+  console.log('🍪 Cookie Settings:', {
+    isCustomDomain,
+    isProductionSecurity,
+    cookieDomain,
+    secure: cookieSettings.secure,
+    sameSite: cookieSettings.sameSite,
+    environment: ENV_CONFIG.name
+  });
 
   return session({
     secret: process.env.SESSION_SECRET || 'dev-only-secret-change-immediately',
@@ -166,9 +180,23 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: string, done) => {
     try {
+      // سجل تشخيصي لـ passport deserializeUser
+      console.log('👤 Passport Deserialize User:', {
+        userID: id ? 'provided' : 'missing',
+        timestamp: new Date().toISOString()
+      });
+      
       const user = await storage.getUser(id);
+      
+      console.log('👤 User Retrieved:', {
+        userFound: !!user,
+        userID: user?.id ? 'exists' : 'missing',
+        username: user?.username ? user.username.substring(0, 3) + '***' : 'missing'
+      });
+      
       done(null, user);
     } catch (error) {
+      console.error('❌ Passport Deserialize Error:', error);
       done(error);
     }
   });
@@ -257,6 +285,20 @@ export function setupAuth(app: Express) {
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
 
+            // سجل تشخيصي للكوكيز ومعلومات الجلسة
+            console.log('🍪 Login Response Debug:', {
+              sessionID: req.sessionID ? 'exists' : 'missing',
+              isAuthenticated: req.isAuthenticated(),
+              cookiesSent: req.headers.cookie ? 'has cookies' : 'no cookies',
+              userAgent: req.headers['user-agent']?.substring(0, 50) + '...',
+              origin: req.headers.origin,
+              host: req.headers.host
+            });
+
+            // التحقق من أن Set-Cookie header سيتم إرساله
+            const cookieHeader = res.getHeader('Set-Cookie');
+            console.log('🍪 Set-Cookie Header:', cookieHeader ? 'will be sent' : 'missing');
+
             // 🛡️ SECURITY FIX: استخدام sanitizeUser مع إضافة token للاستجابة
             const userWithToken = {
               ...sanitizeUser(user),
@@ -279,6 +321,17 @@ export function setupAuth(app: Express) {
 
   // الحصول على المستخدم الحالي
   app.get("/api/user", (req, res) => {
+    // سجل تشخيصي لفهم حالة المصادقة
+    console.log('🔍 Auth Check - GET /user:', {
+      sessionExists: !!req.session,
+      sessionID: req.sessionID ? 'exists' : 'missing', 
+      isAuthenticated: req.isAuthenticated(),
+      hasUser: !!req.user,
+      userAgent: req.headers['user-agent']?.substring(0, 50) + '...',
+      origin: req.headers.origin,
+      cookies: req.headers.cookie ? 'present' : 'none'
+    });
+    
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
@@ -286,6 +339,17 @@ export function setupAuth(app: Express) {
 
 // وسطاء للتحقق من المصادقة
 export function isAuthenticated(req: any, res: any, next: any) {
+  // سجل تشخيصي لـ middleware المصادقة
+  console.log('🔍 Auth Middleware Check:', {
+    sessionExists: !!req.session,
+    sessionID: req.sessionID ? 'exists' : 'missing',
+    isAuthenticated: req.isAuthenticated(),
+    hasUser: !!req.user,
+    userAgent: req.headers['user-agent']?.substring(0, 50) + '...',
+    origin: req.headers.origin,
+    cookies: req.headers.cookie ? 'present' : 'none'
+  });
+  
   if (req.isAuthenticated()) {
     return next();
   }
