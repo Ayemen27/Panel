@@ -228,9 +228,9 @@ export default function FileManager() {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-background text-foreground">
+    <div className="fixed inset-0 w-full h-full flex flex-col bg-background text-foreground z-50">
       {/* Header */}
-      <div className="bg-gray-900 text-white p-4">
+      <div className="bg-gray-900 text-white p-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" className="h-10 w-10 p-0 text-white hover:bg-white/20">
@@ -292,7 +292,7 @@ export default function FileManager() {
       </div>
 
       {/* Breadcrumbs and Search */}
-      <div className="border-b border-border bg-card p-4">
+      <div className="border-b border-border bg-card p-4 flex-shrink-0">
         <div className="flex items-center gap-2 mb-4 overflow-x-auto">
           {breadcrumbs.map((crumb, index) => (
             <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
@@ -347,7 +347,7 @@ export default function FileManager() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
