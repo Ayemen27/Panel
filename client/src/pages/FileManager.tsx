@@ -63,7 +63,6 @@ import {
   Clock,
 } from "lucide-react";
 import { FileIconComponent } from "@/components/FileManager/FileIcon";
-import { FileManagerSidebar } from "@/components/FileManager/FileManagerSidebar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -951,7 +950,7 @@ export default function FileManager() {
           <div className="p-4 border-t border-gray-200">
             <Button
               onClick={() => {
-                setLocation('/');
+                window.location.href = '/';
                 setSidebarOpen(false); // إغلاق القائمة عند العودة للوحة التحكم
               }}
               variant="outline"
@@ -968,16 +967,6 @@ export default function FileManager() {
 
   return (
     <div className="fixed inset-0 w-full h-full flex bg-background text-foreground z-50">
-      {/* القائمة الجانبية الخاصة بمدير الملفات */}
-      <FileManagerSidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        currentPath={currentPath}
-        onNavigate={handleNavigate}
-      />
-
       {/* Search Modal */}
       {searchOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex flex-col">

@@ -16,7 +16,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   // صفحة مدير الملفات تستخدم تخطيط خاص
   if (location === '/file-manager') {
     return (
-      <div className="min-h-screen bg-background" data-testid="main-layout">
+      <div className="min-h-screen bg-background overflow-hidden" data-testid="main-layout">
         {children}
       </div>
     );
