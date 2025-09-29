@@ -119,10 +119,14 @@ export default function FileManager() {
   // حالات النوافذ المنبثقة
   const [createFileDialog, setCreateFileDialog] = useState(false);
   const [createFolderDialog, setCreateFolderDialog] = useState(false);
+  const [uploadDialog, setUploadDialog] = useState(false);
   const [viewSortDialog, setViewSortDialog] = useState(false);
   const [sortDialog, setSortDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
 
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([
     'كشف ايا',
@@ -505,6 +509,107 @@ export default function FileManager() {
         variant: 'destructive',
       });
     }
+  };
+
+  // وظائف رفع الملفات
+  const uploadFiles = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+
+    try {
+      const fileArray = Array.from(files);
+      const uploadData = [];
+
+      // قراءة جميع الملفات
+      for (const file of fileArray) {
+        const content = await readFileAsBase64(file);
+        uploadData.push({
+          name: file.name,
+          content,
+          size: file.size,
+          type: file.type
+        });
+      }
+
+      const response = await apiRequest('POST', '/api/unified-files/upload', {
+        targetPath: currentPath,
+        files: uploadData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const successCount = result.data.summary.success;
+          const failedCount = result.data.summary.failed;
+          
+          toast({
+            title: 'اكتمل الرفع',
+            description: `تم رفع ${successCount} ملف بنجاح${failedCount > 0 ? `، وفشل ${failedCount} ملف` : ''}`,
+          });
+          
+          if (failedCount > 0) {
+            console.warn('فشل في رفع بعض الملفات:', result.data.failed);
+          }
+          
+          refetch();
+        } else {
+          throw new Error(result.error || 'فشل في رفع الملفات');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل في رفع الملفات');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: 'خطأ',
+        description: error instanceof Error ? error.message : 'فشل في رفع الملفات',
+        variant: 'destructive',
+      });
+    } finally {
+      setSelectedFiles(null);
+      setUploadDialog(false);
+    }
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      setSelectedFiles(files);
+      setUploadDialog(true);
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      setSelectedFiles(files);
+      setUploadDialog(true);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
   };
 
   const renameItem = async (item: UnifiedFileInfo) => {
@@ -1010,12 +1115,21 @@ export default function FileManager() {
                     <FolderPlus className="w-4 h-4 mr-2" />
                     مجلد جديد
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => document.getElementById('file-upload')?.click()}>
                     <Upload className="w-4 h-4 mr-2" />
                     رفع ملف
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              {/* مدخل رفع الملفات المخفي */}
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
+              />
 
               {/* More Options */}
               <DropdownMenu>
@@ -1079,10 +1193,25 @@ export default function FileManager() {
         </div>
 
         {/* File Content */}
-        <div className={cn(
-          "flex-1 min-h-0 overflow-hidden",
-          selectionMode && "pb-20"
-        )}>
+        <div 
+          className={cn(
+            "flex-1 min-h-0 overflow-hidden relative",
+            selectionMode && "pb-20"
+          )}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          {/* منطقة السحب والإفلات */}
+          {isDragging && (
+            <div className="absolute inset-0 bg-blue-500 bg-opacity-20 border-2 border-dashed border-blue-500 flex items-center justify-center z-20">
+              <div className="text-center">
+                <Upload className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                <p className="text-lg font-medium text-blue-600">قم بإفلات الملفات هنا للرفع</p>
+              </div>
+            </div>
+          )}
+          
           <ScrollArea className="h-full">
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
@@ -1106,6 +1235,14 @@ export default function FileManager() {
                 <p className="text-sm text-muted-foreground max-w-sm">
                   {searchQuery ? 'لم يتم العثور على ملفات تطابق البحث' : 'هذا المجلد فارغ'}
                 </p>
+                <Button
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  className="mt-4"
+                  variant="outline"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  رفع ملف
+                </Button>
               </div>
             ) : (
               <div className="p-3">
@@ -1182,6 +1319,51 @@ export default function FileManager() {
             </Button>
             <Button onClick={createNewFolder}>
               إنشاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Files Dialog */}
+      <Dialog open={uploadDialog} onOpenChange={setUploadDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>رفع الملفات</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground mb-2">
+                سيتم رفع الملفات إلى: <span className="font-medium">{currentPath}</span>
+              </p>
+            </div>
+            
+            {selectedFiles && (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium">الملفات المحددة:</p>
+                {Array.from(selectedFiles).map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 border rounded">
+                    <div className="flex items-center gap-2">
+                      <FileIcon className="w-4 h-4" />
+                      <span className="text-sm truncate max-w-[200px]">{file.name}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setUploadDialog(false);
+              setSelectedFiles(null);
+            }}>
+              إلغاء
+            </Button>
+            <Button onClick={() => selectedFiles && uploadFiles(selectedFiles)}>
+              <Upload className="w-4 h-4 mr-2" />
+              رفع الملفات
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -355,4 +355,92 @@ router.get('/info', isAuthenticated, async (req: AuthenticatedRequest, res: Resp
   }
 });
 
+// رفع ملف أو عدة ملفات
+router.post('/upload', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const unifiedFileService = req.services.resolveByToken<UnifiedFileService>(
+      ServiceTokens.UNIFIED_FILE_SERVICE
+    );
+
+    const { targetPath, files } = req.body;
+    const userId = req.user?.id;
+
+    if (!targetPath || typeof targetPath !== 'string') {
+      return ResponseHandler.error(res, 'مسار الرفع مطلوب', 400, 'MISSING_REQUIRED_FIELD');
+    }
+
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return ResponseHandler.error(res, 'يجب تحديد ملف واحد على الأقل للرفع', 400, 'MISSING_REQUIRED_FIELD');
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const file of files) {
+      try {
+        const fullPath = `${targetPath}/${file.name}`.replace(/\/+/g, '/');
+        
+        const result = await unifiedFileService.createFile(fullPath, userId, {
+          content: file.content,
+          overwrite: false
+        });
+
+        if (result.success) {
+          results.push({
+            name: file.name,
+            path: fullPath,
+            size: file.size || 0,
+            success: true
+          });
+        } else {
+          errors.push({
+            name: file.name,
+            error: result.error || 'فشل في رفع الملف'
+          });
+        }
+      } catch (error) {
+        errors.push({
+          name: file.name,
+          error: error instanceof Error ? error.message : 'خطأ غير معروف'
+        });
+      }
+    }
+
+    const successCount = results.length;
+    const errorCount = errors.length;
+
+    if (successCount > 0 && errorCount === 0) {
+      ResponseHandler.success(res, {
+        uploaded: results,
+        summary: {
+          success: successCount,
+          failed: errorCount
+        }
+      }, `تم رفع ${successCount} ملف بنجاح`, 201);
+    } else if (successCount > 0 && errorCount > 0) {
+      ResponseHandler.success(res, {
+        uploaded: results,
+        failed: errors,
+        summary: {
+          success: successCount,
+          failed: errorCount
+        }
+      }, `تم رفع ${successCount} ملف، وفشل ${errorCount} ملف`);
+    } else {
+      ResponseHandler.error(res, 'فشل في رفع جميع الملفات', 400, 'UPLOAD_FAILED', {
+        failed: errors,
+        summary: {
+          success: successCount,
+          failed: errorCount
+        }
+      });
+    }
+
+  } catch (error) {
+    logger.error(`[UnifiedFiles] Upload error: ${error}`);
+    const message = error instanceof Error ? error.message : 'خطأ غير معروف';
+    ResponseHandler.error(res, message, 500, 'INTERNAL_ERROR');
+  }
+});
+
 export default router;

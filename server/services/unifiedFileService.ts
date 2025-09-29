@@ -840,6 +840,200 @@ export class UnifiedFileService extends BaseService {
   }
 
   /**
+   * رفع ملف مع محتوى base64
+   */
+  async uploadFile(filePath: string, content: string, userId: string, options: {
+    encoding?: BufferEncoding;
+    overwrite?: boolean;
+    mimeType?: string;
+  } = {}): Promise<FileOperationResult> {
+    try {
+      logger.info(`[UnifiedFileService] Starting upload operation for: ${filePath}`);
+
+      const pathValidation = await this.validatePath(filePath);
+      if (!pathValidation.isValid) {
+        logger.warn(`[UnifiedFileService] Path validation failed: ${pathValidation.error}`);
+        return {
+          success: false,
+          message: 'فشل في التحقق من المسار',
+          error: pathValidation.error
+        };
+      }
+
+      const normalizedPath = pathValidation.normalizedPath;
+      logger.info(`[UnifiedFileService] Normalized path: ${normalizedPath}`);
+
+      // التحقق من وجود الملف إذا لم يكن الكتابة فوق مسموحة
+      if (!options.overwrite && existsSync(normalizedPath)) {
+        return {
+          success: false,
+          message: 'الملف موجود بالفعل',
+          error: 'يوجد ملف بهذا الاسم، استخدم خيار الكتابة فوق إذا كنت تريد استبداله'
+        };
+      }
+
+      const parentDir = path.dirname(normalizedPath);
+      
+      // التأكد من وجود المجلد الأب
+      if (!existsSync(parentDir)) {
+        try {
+          await fs.mkdir(parentDir, { recursive: true });
+        } catch (error) {
+          return {
+            success: false,
+            message: 'فشل في إنشاء المجلد الأب',
+            error: error instanceof Error ? error.message : 'خطأ في إنشاء المجلد'
+          };
+        }
+      }
+
+      const hasWritePermission = await this.checkPermissions(parentDir, 'write');
+      if (!hasWritePermission) {
+        logger.warn(`[UnifiedFileService] No write permission for directory: ${parentDir}`);
+        return {
+          success: false,
+          message: 'الوصول مرفوض',
+          error: 'لا توجد صلاحية كتابة في المجلد المحدد'
+        };
+      }
+
+      // معالجة المحتوى حسب النوع
+      let fileContent: string | Buffer = content;
+      let actualSize = 0;
+
+      try {
+        // إذا كان المحتوى base64، قم بفك التشفير
+        if (content.startsWith('data:')) {
+          const base64Data = content.split(',')[1];
+          if (base64Data) {
+            fileContent = Buffer.from(base64Data, 'base64');
+            actualSize = fileContent.length;
+          }
+        } else if (content.includes('base64,')) {
+          // محتوى base64 بدون data URL prefix
+          const base64Data = content.split('base64,')[1];
+          if (base64Data) {
+            fileContent = Buffer.from(base64Data, 'base64');
+            actualSize = fileContent.length;
+          }
+        } else {
+          // محتوى نصي عادي
+          fileContent = content;
+          actualSize = Buffer.byteLength(content, 'utf8');
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: 'فشل في معالجة محتوى الملف',
+          error: 'تنسيق المحتوى غير صحيح'
+        };
+      }
+
+      // كتابة الملف
+      await fs.writeFile(normalizedPath, fileContent);
+
+      // التحقق من نجاح الكتابة
+      if (!existsSync(normalizedPath)) {
+        throw new Error('فشل في حفظ الملف');
+      }
+
+      const stats = await fs.stat(normalizedPath);
+      const fileName = path.basename(normalizedPath);
+
+      await this.createAuditLog('upload', userId, normalizedPath, `رفع ملف: ${fileName} (${actualSize} بايت)`);
+
+      logger.info(`[UnifiedFileService] Upload operation completed successfully`);
+
+      return {
+        success: true,
+        message: 'تم رفع الملف بنجاح',
+        data: {
+          path: normalizedPath,
+          name: fileName,
+          size: stats.size,
+          created: stats.birthtime.toISOString(),
+          modified: stats.mtime.toISOString(),
+          mimeType: options.mimeType || this.getMimeType(fileName)
+        }
+      };
+
+    } catch (error) {
+      logger.error(`[UnifiedFileService] Error uploading file ${filePath}: ${error}`);
+      return {
+        success: false,
+        message: 'فشل في رفع الملف',
+        error: error instanceof Error ? error.message : 'خطأ غير معروف'
+      };
+    }
+  }
+
+  /**
+   * رفع عدة ملفات
+   */
+  async uploadMultipleFiles(targetPath: string, files: Array<{
+    name: string;
+    content: string;
+    size?: number;
+    type?: string;
+  }>, userId: string): Promise<FileOperationResult> {
+    try {
+      logger.info(`[UnifiedFileService] Starting multiple files upload to: ${targetPath}`);
+
+      const results = [];
+      const errors = [];
+
+      for (const file of files) {
+        const filePath = path.join(targetPath, file.name);
+        
+        const uploadResult = await this.uploadFile(filePath, file.content, userId, {
+          mimeType: file.type,
+          overwrite: false
+        });
+
+        if (uploadResult.success) {
+          results.push({
+            name: file.name,
+            path: filePath,
+            size: uploadResult.data?.size || file.size || 0,
+            success: true
+          });
+        } else {
+          errors.push({
+            name: file.name,
+            error: uploadResult.error || 'فشل في رفع الملف'
+          });
+        }
+      }
+
+      const successCount = results.length;
+      const errorCount = errors.length;
+
+      return {
+        success: successCount > 0,
+        message: successCount > 0 ? 
+          `تم رفع ${successCount} ملف بنجاح${errorCount > 0 ? `، وفشل ${errorCount} ملف` : ''}` :
+          'فشل في رفع جميع الملفات',
+        data: {
+          uploaded: results,
+          failed: errors,
+          summary: {
+            success: successCount,
+            failed: errorCount
+          }
+        }
+      };
+
+    } catch (error) {
+      logger.error(`[UnifiedFileService] Error uploading multiple files: ${error}`);
+      return {
+        success: false,
+        message: 'فشل في رفع الملفات',
+        error: error instanceof Error ? error.message : 'خطأ غير معروف'
+      };
+    }
+  }
+
+  /**
    * حذف ملف أو مجلد
    */
   async deleteItem(filePath: string, userId: string): Promise<FileOperationResult> {
