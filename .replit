@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["nettools", "lsof"]
+packages = ["nettools", "lsof", "unzipNLS"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -136,3 +136,20 @@ args = "npm run audit:comprehensive"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"📄 تم إنشاء التقرير في: comprehensive-audit-report.html\""
+
+[[workflows.workflow]]
+name = "تشغيل تطبيق الويب"
+author = 48096736
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd web-file-manager"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
