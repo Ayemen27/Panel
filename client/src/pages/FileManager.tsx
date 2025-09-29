@@ -652,9 +652,9 @@ export default function FileManager() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Enhanced Header with integrated controls */}
+        {/* Enhanced Main Header Bar */}
         <div className="bg-gray-900 text-white p-3 flex-shrink-0">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -781,33 +781,33 @@ export default function FileManager() {
               <MoreVertical className="w-4 h-4" />
             </div>
           </div>
-        </div>
 
-        {/* Breadcrumbs */}
-        <div className="border-b border-border bg-card p-3 flex-shrink-0">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            {breadcrumbs.map((crumb, index) => (
-              <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto p-1 text-sm font-normal whitespace-nowrap"
-                  onClick={() => handleBreadcrumbClick(index)}
-                >
-                  {index === 0 ? <Home className="w-4 h-4" /> : crumb.name}
-                </Button>
-                {index < breadcrumbs.length - 1 && (
-                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {directoryData && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              {directoryData.totalFiles} ملف, {directoryData.totalDirectories} مجلد
+          {/* Integrated Breadcrumbs */}
+          <div className="border-t border-white/20 pt-3">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {breadcrumbs.map((crumb, index) => (
+                <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-1 text-sm font-normal whitespace-nowrap text-white hover:bg-white/20"
+                    onClick={() => handleBreadcrumbClick(index)}
+                  >
+                    {index === 0 ? <Home className="w-4 h-4" /> : crumb.name}
+                  </Button>
+                  {index < breadcrumbs.length - 1 && (
+                    <ChevronRight className="w-4 h-4 text-white/60 flex-shrink-0" />
+                  )}
+                </div>
+              ))}
             </div>
-          )}
+
+            {directoryData && (
+              <div className="mt-2 text-xs text-white/70">
+                {directoryData.totalFiles} ملف, {directoryData.totalDirectories} مجلد
+              </div>
+            )}
+          </div>
         </div>
 
         {/* File Content */}
