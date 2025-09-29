@@ -30,13 +30,13 @@ export function MainLayout({ children }: MainLayoutProps) {
         isMobile={isMobile}
       />
 
-      <div className="flex-1 flex flex-col lg:mr-64">
+      <div className="flex-1 flex flex-col">
         <Header 
           onMenuClick={() => setSidebarOpen(true)}
           showMenuButton={isMobile}
         />
 
-        <main className="flex-1 overflow-auto p-4">
+        <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>
