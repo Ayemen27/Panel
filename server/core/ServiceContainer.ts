@@ -309,7 +309,7 @@ export class ServiceContainer {
     [ServiceTokens.SMART_CONNECTION_MANAGER]: {
       metadata: {
         token: ServiceTokens.SMART_CONNECTION_MANAGER,
-        constructor: SmartConnectionManagerStub,
+        constructor: () => { throw new Error('Use smartConnectionManager singleton instance'); },
         dependencies: [],
         priority: 1,
         singleton: true,
@@ -321,7 +321,9 @@ export class ServiceContainer {
       },
       factory: {
         create: (storage: IStorage, context?: ServiceContext) => { 
-          throw new Error('SmartConnectionManager is singleton - use imported instance'); 
+          // Import and return the singleton instance
+          const { smartConnectionManager } = require('../services/smart-connection-manager');
+          return smartConnectionManager;
         },
         metadata: {} as ServiceMetadata
       }
