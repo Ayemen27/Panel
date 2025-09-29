@@ -263,17 +263,51 @@ router.delete('/delete', isAuthenticated, async (req: AuthenticatedRequest, res:
       ServiceTokens.UNIFIED_FILE_SERVICE
     );
 
-    // تجربة الحصول على المسار من query parameters أو body
-    const path = req.query.path as string || req.body.path;
+    // تجربة الحصول على المسار من query parameters أو body أو req.query
+    let filePath = req.query.path as string || req.body.path;
     const userId = req.user?.id;
 
-    if (!path) {
-      return ResponseHandler.error(res, 'مسار الملف مطلوب', 400, 'MISSING_REQUIRED_FIELD');
+    // إذا لم يوجد المسار، تحقق من وجوده في الـ body كـ JSON
+    if (!filePath && req.body) {
+      // في حالة إرسال البيانات كـ JSON في الـ body
+      if (typeof req.body === 'object' && req.body.path) {
+        filePath = req.body.path;
+      }
+      // في حالة إرسال البيانات كـ query string في الـ URL
+      else if (typeof req.body === 'string') {
+        try {
+          const parsed = JSON.parse(req.body);
+          filePath = parsed.path;
+        } catch {
+          // إذا فشل الـ parsing، استخدم القيمة كما هي
+          filePath = req.body;
+        }
+      }
     }
 
-    logger.info(`[UnifiedFiles] Deleting item: ${path} for user: ${userId}`);
+    // تنظيف المسار من الأحرف غير المرغوبة
+    if (filePath && typeof filePath === 'string') {
+      filePath = filePath.trim();
+      // إزالة علامات الاقتباس إذا كانت موجودة
+      if ((filePath.startsWith('"') && filePath.endsWith('"')) || 
+          (filePath.startsWith("'") && filePath.endsWith("'"))) {
+        filePath = filePath.slice(1, -1);
+      }
+    }
 
-    const result = await unifiedFileService.deleteItem(path, userId);
+    if (!filePath || typeof filePath !== 'string' || filePath.trim() === '') {
+      logger.warn(`[UnifiedFiles] Delete failed - invalid path: ${JSON.stringify({
+        queryPath: req.query.path,
+        bodyPath: req.body?.path,
+        fullBody: req.body,
+        computedPath: filePath
+      })}`);
+      return ResponseHandler.error(res, 'مسار الملف مطلوب وصحيح', 400, 'MISSING_REQUIRED_FIELD');
+    }
+
+    logger.info(`[UnifiedFiles] Deleting item: ${filePath} for user: ${userId}`);
+
+    const result = await unifiedFileService.deleteItem(filePath, userId);
 
     if (!result.success) {
       logger.error(`[UnifiedFiles] Delete failed: ${result.error}`);

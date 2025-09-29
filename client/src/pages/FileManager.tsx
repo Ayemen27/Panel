@@ -425,9 +425,9 @@ export default function FileManager() {
 
       for (const itemPath of itemsToDelete) {
         try {
-          const response = await apiRequest('DELETE', '/api/unified-files/delete', {
-            path: itemPath
-          });
+          // استخدام query parameter بدلاً من body للـ DELETE request
+          const url = `/api/unified-files/delete?path=${encodeURIComponent(itemPath)}`;
+          const response = await apiRequest('DELETE', url);
 
           if (response.ok) {
             const result = await response.json();
@@ -478,9 +478,9 @@ export default function FileManager() {
       const confirmed = confirm(`هل أنت متأكد من حذف ${item.name}؟`);
       if (!confirmed) return;
 
-      const response = await apiRequest('DELETE', '/api/unified-files/delete', {
-        path: item.absolutePath
-      });
+      // استخدام query parameter بدلاً من body للـ DELETE request
+      const url = `/api/unified-files/delete?path=${encodeURIComponent(item.absolutePath)}`;
+      const response = await apiRequest('DELETE', url);
 
       if (response.ok) {
         const result = await response.json();
