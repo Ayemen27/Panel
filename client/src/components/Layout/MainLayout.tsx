@@ -1,45 +1,38 @@
-import { ReactNode, useState } from "react";
-import { useLocation } from "wouter";
+import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
-import { useMobile } from "@/hooks/use-mobile";
+import { BottomNavigation } from "./BottomNavigation";
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isMobile } = useMobile();
-  const [location] = useLocation();
-
-  // صفحة مدير الملفات تستخدم تخطيط خاص
-  if (location === '/file-manager') {
-    return (
-      <div className="min-h-screen bg-background" data-testid="main-layout">
-        {children}
-      </div>
-    );
-  }
+  const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen bg-background flex" data-testid="main-layout">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <Sidebar 
         open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+        onClose={() => setSidebarOpen(false)}
         isMobile={isMobile}
       />
-
-      <div className="flex-1 flex flex-col">
+      
+      <main className="flex-1 flex flex-col overflow-hidden">
         <Header 
           onMenuClick={() => setSidebarOpen(true)}
           showMenuButton={isMobile}
         />
-
-        <main className="flex-1 overflow-hidden">
+        
+        <div className={`flex-1 overflow-auto p-6 ${isMobile ? 'pb-20' : ''}`}>
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
+      
+      {/* Bottom Navigation for mobile only */}
+      <BottomNavigation />
     </div>
   );
 }
