@@ -221,17 +221,29 @@ export default function AuthPage() {
                 <Button
                   type="submit"
                   data-testid="button-login"
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  className={`w-full h-12 font-semibold rounded-xl shadow-lg transition-all duration-300 transform ${
+                    isLoading 
+                      ? 'bg-gradient-to-r from-blue-400 to-indigo-400 cursor-not-allowed scale-[0.98] shadow-md' 
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]'
+                  } text-white`}
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 animate-spin border-2 border-white border-t-transparent rounded-full" />
-                      <span>جاري تسجيل الدخول...</span>
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="relative">
+                        <div className="w-5 h-5 border-2 border-white/30 rounded-full"></div>
+                        <div className="absolute top-0 left-0 w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <span className="animate-pulse">جاري تسجيل الدخول...</span>
+                      <div className="flex gap-1">
+                        <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3">
-                      <LogIn className="w-5 h-5" />
+                    <div className="flex items-center justify-center gap-3 transition-all duration-200 group">
+                      <LogIn className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
                       <span>تسجيل الدخول</span>
                     </div>
                   )}
