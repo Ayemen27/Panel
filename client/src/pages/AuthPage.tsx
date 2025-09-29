@@ -81,7 +81,7 @@ export default function AuthPage() {
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "binarjoinjoin", // القيمة الافتراضية لسهولة الاختبار
+      username: "binarjoinanalytic", // القيمة الافتراضية لسهولة الاختبار
       password: "",
     },
   });
