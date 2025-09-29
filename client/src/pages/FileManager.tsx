@@ -21,6 +21,8 @@ import {
   FolderOpen,
   Star,
   Clock,
+  ArrowLeft,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -65,6 +67,7 @@ export default function FileManager() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('files');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
   ]);
@@ -228,164 +231,236 @@ export default function FileManager() {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full flex flex-col bg-background text-foreground z-50">
-      {/* Header */}
-      <div className="bg-gray-900 text-white p-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" className="h-10 w-10 p-0 text-white hover:bg-white/20">
-              <Search className="w-5 h-5" />
-            </Button>
-          </div>
-          <h1 className="text-xl font-semibold">مدير الملفات +</h1>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-10 w-10 p-0 text-white hover:bg-white/20"
-              onClick={() => setLocation('/')}
-            >
-              <Home className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex items-center justify-center gap-8 mt-4 border-t border-white/20 pt-4">
-          <button
-            onClick={() => setActiveTab('files')}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
-              activeTab === 'files' 
-                ? "bg-white/20 text-white" 
-                : "text-white/70 hover:text-white hover:bg-white/10"
-            )}
-          >
-            <Folder className="w-5 h-5" />
-            <span>الملفات</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('favorites')}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
-              activeTab === 'favorites' 
-                ? "bg-white/20 text-white" 
-                : "text-white/70 hover:text-white hover:bg-white/10"
-            )}
-          >
-            <Star className="w-5 h-5" />
-            <span>المفضلة</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('recent')}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
-              activeTab === 'recent' 
-                ? "bg-white/20 text-white" 
-                : "text-white/70 hover:text-white hover:bg-white/10"
-            )}
-          >
-            <Clock className="w-5 h-5" />
-            <span>الحديثة</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Breadcrumbs and Search */}
-      <div className="border-b border-border bg-card p-4 flex-shrink-0">
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto">
-          {breadcrumbs.map((crumb, index) => (
-            <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
+    <div className="fixed inset-0 w-full h-full flex bg-background text-foreground z-50">
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed inset-y-0 right-0 w-72 bg-card border-l border-border transform transition-transform duration-300 z-50",
+        sidebarOpen ? "translate-x-0" : "translate-x-full"
+      )}>
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">مدير الملفات</h2>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-1 text-sm font-normal whitespace-nowrap"
-                onClick={() => handleBreadcrumbClick(index)}
+                onClick={() => setSidebarOpen(false)}
               >
-                {index === 0 ? <Home className="w-4 h-4" /> : crumb.name}
+                <X className="w-5 h-5" />
               </Button>
-              {index < breadcrumbs.length - 1 && (
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              )}
             </div>
-          ))}
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="p-4 space-y-2">
+            <button
+              onClick={() => {
+                setActiveTab('files');
+                setSidebarOpen(false);
+              }}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
+                activeTab === 'files' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Folder className="w-5 h-5" />
+              <span>الملفات</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('favorites');
+                setSidebarOpen(false);
+              }}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
+                activeTab === 'favorites' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Star className="w-5 h-5" />
+              <span>المفضلة</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('recent');
+                setSidebarOpen(false);
+              }}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right",
+                activeTab === 'recent' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Clock className="w-5 h-5" />
+              <span>الحديثة</span>
+            </button>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="p-4 border-t border-border">
+            <h3 className="text-sm font-medium mb-3">إجراءات سريعة</h3>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setLocation('/')}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                العودة للرئيسية
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => refetch()}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                تحديث
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="bg-gray-900 text-white p-3 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(true)}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation('/')}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <h1 className="text-lg font-semibold">مدير الملفات</h1>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex-1 relative">
+        {/* Breadcrumbs and Search */}
+        <div className="border-b border-border bg-card p-3 flex-shrink-0">
+          <div className="flex items-center gap-2 mb-3 overflow-x-auto">
+            {breadcrumbs.map((crumb, index) => (
+              <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-1 text-sm font-normal whitespace-nowrap"
+                  onClick={() => handleBreadcrumbClick(index)}
+                >
+                  {index === 0 ? <Home className="w-4 h-4" /> : crumb.name}
+                </Button>
+                {index < breadcrumbs.length - 1 && (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="البحث في الملفات..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10 h-10 text-sm"
+              className="pr-10 h-9 text-sm"
             />
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-          >
-            {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
-          </Button>
-        </div>
 
-        {directoryData && (
-          <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-muted-foreground gap-1">
-              <div className="flex items-center gap-4 flex-wrap">
-                <span>المسار: {currentPath}</span>
-                <span>إجمالي {directoryData.totalFiles} ملف</span>
-                <span>{directoryData.totalDirectories} مجلد</span>
-              </div>
-              <div>
-                إجمالي الحجم: {formatFileSize(directoryData.totalSize)}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <ScrollArea className="h-full">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-              <span className="mr-2 text-muted-foreground">جاري التحميل...</span>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-              <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
-              <h3 className="text-lg font-medium text-red-600 mb-2">خطأ في تحميل الملفات</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">{error.message}</p>
-              <Button onClick={() => refetch()} className="mt-4">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                إعادة المحاولة
-              </Button>
-            </div>
-          ) : currentFiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-              <FolderOpen className="w-16 h-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">لا توجد ملفات</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                {searchQuery ? 'لم يتم العثور على ملفات تطابق البحث' : 'هذا المجلد فارغ'}
-              </p>
-            </div>
-          ) : (
-            <div className="p-4">
-              <div className={cn(
-                viewMode === 'grid' 
-                  ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
-                  : "space-y-1"
-              )}>
-                {currentFiles.map((item, index) => (
-                  <FileItem key={`${item.absolutePath}-${index}`} item={item} />
-                ))}
+          {directoryData && (
+            <div className="mt-3 p-2 bg-muted/30 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground gap-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span>{directoryData.totalFiles} ملف</span>
+                  <span>{directoryData.totalDirectories} مجلد</span>
+                </div>
+                <div>
+                  الحجم: {formatFileSize(directoryData.totalSize)}
+                </div>
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
+
+        {/* File Content */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+                <span className="mr-2 text-muted-foreground">جاري التحميل...</span>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+                <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+                <h3 className="text-lg font-medium text-red-600 mb-2">خطأ في تحميل الملفات</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">{error.message}</p>
+                <Button onClick={() => refetch()} className="mt-4">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  إعادة المحاولة
+                </Button>
+              </div>
+            ) : currentFiles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+                <FolderOpen className="w-16 h-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">لا توجد ملفات</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  {searchQuery ? 'لم يتم العثور على ملفات تطابق البحث' : 'هذا المجلد فارغ'}
+                </p>
+              </div>
+            ) : (
+              <div className="p-3">
+                <div className={cn(
+                  viewMode === 'grid' 
+                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
+                    : "space-y-1"
+                )}>
+                  {currentFiles.map((item, index) => (
+                    <FileItem key={`${item.absolutePath}-${index}`} item={item} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+        </div>
       </div>
     </div>
   );
