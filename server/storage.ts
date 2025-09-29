@@ -15,6 +15,7 @@ import {
   fileLocks,
   filePermissions,
   allowedPaths,
+  userRoleEnum,
   type User,
   type UpsertUser,
   type Application,
@@ -64,9 +65,9 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<UpsertUser>): Promise<User>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  updateUserRole(id: string, role: string): Promise<User>;
+  updateUserRole(id: string, role: 'admin' | 'user' | 'moderator' | 'viewer'): Promise<User>;
   updateUserPermissions(id: string, permissions: string[]): Promise<User>;
-  getUsersByRole(role: string): Promise<User[]>;
+  getUsersByRole(role: 'admin' | 'user' | 'moderator' | 'viewer'): Promise<User[]>;
 
   // Application operations
   getApplications(userId: string): Promise<Application[]>;
@@ -432,10 +433,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserRole(id: string, role: string): Promise<User> {
+  async updateUserRole(id: string, role: 'admin' | 'user' | 'moderator' | 'viewer'): Promise<User> {
     const [user] = await db
       .update(users)
-      .set({ role: role as any, updatedAt: new Date() })
+      .set({ role, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user;
@@ -450,11 +451,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUsersByRole(role: string): Promise<User[]> {
+  async getUsersByRole(role: 'admin' | 'user' | 'moderator' | 'viewer'): Promise<User[]> {
     return await db
       .select()
       .from(users)
-      .where(eq(users.role, role as any))
+      .where(eq(users.role, role))
       .orderBy(desc(users.createdAt));
   }
 
