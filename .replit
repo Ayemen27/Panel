@@ -12,6 +12,10 @@ build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
 [[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
 localPort = 5000
 externalPort = 80
 
@@ -27,7 +31,7 @@ PORT = "5000"
 integrations = ["javascript_log_in_with_replit:1.0.0", "javascript_database:1.0.0", "javascript_websocket:1.0.0", "javascript_auth_all_persistance:1.0.0"]
 
 [workflows]
-runButton = "Clean Restart"
+runButton = "تطبيق مدير الملفات محدث"
 
 [[workflows.workflow]]
 name = "Project"
@@ -153,3 +157,21 @@ args = "npm install"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "تطبيق مدير الملفات "
+mode = "sequential"
+author = 48096736
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd web-file-manager && npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "تطبيق مدير الملفات محدث"
+author = 48096736
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd web-file-manager && npm run dev"
