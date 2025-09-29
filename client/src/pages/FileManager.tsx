@@ -794,6 +794,8 @@ export default function FileManager() {
     const isSelected = selectedItems.has(item.absolutePath);
     const [isLongPressing, setIsLongPressing] = useState(false);
     const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
+    const [touchStartY, setTouchStartY] = useState<number>(0);
+    const [touchMoved, setTouchMoved] = useState(false);
 
     // النقر الواحد - فتح الملف/المجلد
     const handleSingleClick = () => {
@@ -805,26 +807,28 @@ export default function FileManager() {
       if (item.type === 'directory') {
         handleFolderClick(item);
       } else {
-        // فتح الملف أو عرض تفاصيله
-        toast({
-          title: `تم فتح ${item.name}`,
-          description: `الحجم: ${formatFileSize(item.size)} | تم التعديل: ${formatDate(item.modified)}`,
-        });
+        // فتح الملف بدون رسالة Toast مزعجة
+        // يمكن إضافة منطق فتح الملف هنا لاحقاً
+        console.log(`Opening file: ${item.name}`);
       }
     };
 
     // بداية الضغط - للنقر المطول
-    const handlePressStart = (e: React.TouchEvent | React.MouseEvent) => {
-      e.preventDefault();
+    const handleTouchStart = (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      setTouchStartY(touch.clientY);
+      setTouchMoved(false);
       setIsLongPressing(false);
       
       const timer = setTimeout(() => {
-        setIsLongPressing(true);
-        if (!selectionMode) {
-          enterSelectionMode(item);
-          // إضافة اهتزاز خفيف للإشارة لدخول وضع التحديد
-          if (navigator.vibrate) {
-            navigator.vibrate(50);
+        if (!touchMoved) {
+          setIsLongPressing(true);
+          if (!selectionMode) {
+            enterSelectionMode(item);
+            // إضافة اهتزاز خفيف للإشارة لدخول وضع التحديد
+            if (navigator.vibrate) {
+              navigator.vibrate(50);
+            }
           }
         }
       }, 500); // 500ms للنقر المطول
@@ -832,21 +836,40 @@ export default function FileManager() {
       setPressTimer(timer);
     };
 
-    // إنهاء الضغط
-    const handlePressEnd = () => {
+    // تتبع حركة التمرير
+    const handleTouchMove = (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      const moveY = Math.abs(touch.clientY - touchStartY);
+      
+      // إذا تحرك المستخدم أكثر من 10px، فهو يتمرير وليس نقر
+      if (moveY > 10) {
+        setTouchMoved(true);
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          setPressTimer(null);
+        }
+        setIsLongPressing(false);
+      }
+    };
+
+    // إنهاء اللمس
+    const handleTouchEnd = (e: React.TouchEvent) => {
+      e.preventDefault();
+      
       if (pressTimer) {
         clearTimeout(pressTimer);
         setPressTimer(null);
       }
       
-      // إذا لم يكن نقراً مطولاً، نفذ النقر العادي
-      if (!isLongPressing) {
+      // إذا لم يكن نقراً مطولاً ولم يتحرك المستخدم، نفذ النقر العادي
+      if (!isLongPressing && !touchMoved) {
         setTimeout(() => {
           handleSingleClick();
         }, 10);
       }
       
       setIsLongPressing(false);
+      setTouchMoved(false);
     };
 
     // النقر بالماوس - للنقر العادي فقط
@@ -870,8 +893,9 @@ export default function FileManager() {
             isLongPressing && "scale-95 transition-transform duration-150"
           )}
           onClick={handleMouseClick}
-          onTouchStart={handlePressStart}
-          onTouchEnd={handlePressEnd}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onContextMenu={(e) => {
             e.preventDefault();
             if (!selectionMode) {
@@ -950,8 +974,9 @@ export default function FileManager() {
           isLongPressing && "bg-gray-100 transition-colors duration-150"
         )}
         onClick={handleMouseClick}
-        onTouchStart={handlePressStart}
-        onTouchEnd={handlePressEnd}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onContextMenu={(e) => {
           e.preventDefault();
           if (!selectionMode) {
