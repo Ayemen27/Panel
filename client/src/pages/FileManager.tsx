@@ -9,6 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import {
   Folder,
   File as FileIcon,
   Search,
@@ -23,6 +32,15 @@ import {
   Clock,
   ArrowLeft,
   X,
+  Plus,
+  Filter,
+  SortAsc,
+  SortDesc,
+  Calendar,
+  HardDrive,
+  FileType,
+  Menu,
+  MoreVertical,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -58,6 +76,8 @@ interface BreadcrumbItem {
 }
 
 type TabType = 'files' | 'favorites' | 'recent';
+type SortBy = 'name' | 'size' | 'date' | 'type';
+type SortOrder = 'asc' | 'desc';
 
 export default function FileManager() {
   const { toast } = useToast();
@@ -68,6 +88,9 @@ export default function FileManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('files');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortBy>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [showHidden, setShowHidden] = useState(false);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: 'root', name: 'الرئيسية', path: '/home/administrator' }
   ]);
@@ -108,6 +131,11 @@ export default function FileManager() {
 
     let files = directoryData.items;
 
+    // Apply hidden files filter
+    if (!showHidden) {
+      files = files.filter(file => !file.isHidden);
+    }
+
     // Apply tab filter
     if (activeTab === 'favorites') {
       const favoriteExtensions = new Set(['jpg', 'png', 'pdf', 'txt', 'doc', 'docx']);
@@ -130,13 +158,38 @@ export default function FileManager() {
       );
     }
 
-    return files.sort((a, b) => {
-      if (a.type !== b.type) {
+    // Apply sorting
+    files = [...files].sort((a, b) => {
+      // Always put directories first unless sorting by type
+      if (sortBy !== 'type' && a.type !== b.type) {
         return a.type === 'directory' ? -1 : 1;
       }
-      return a.name.localeCompare(b.name, 'ar');
+
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name, 'ar');
+          break;
+        case 'size':
+          comparison = a.size - b.size;
+          break;
+        case 'date':
+          comparison = new Date(a.modified).getTime() - new Date(b.modified).getTime();
+          break;
+        case 'type':
+          if (a.type !== b.type) {
+            comparison = a.type === 'directory' ? -1 : 1;
+          } else {
+            comparison = a.name.localeCompare(b.name, 'ar');
+          }
+          break;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [directoryData, searchQuery, activeTab]);
+
+    return files;
+  }, [directoryData, searchQuery, activeTab, sortBy, sortOrder, showHidden]);
 
   const handleFolderClick = useCallback((item: UnifiedFileInfo) => {
     if (item.type === 'directory') {
@@ -170,9 +223,7 @@ export default function FileManager() {
       return date.toLocaleDateString('ar-SA', {
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
+        day: '2-digit'
       });
     } catch {
       return dateString;
@@ -195,18 +246,18 @@ export default function FileManager() {
 
     if (viewMode === 'grid') {
       return (
-        <Card className="p-4 cursor-pointer transition-all hover:shadow-md" onClick={handleClick}>
-          <div className="flex flex-col items-center gap-3">
+        <Card className="p-3 cursor-pointer transition-all hover:shadow-md" onClick={handleClick}>
+          <div className="flex flex-col items-center gap-2">
             <Icon className="w-8 h-8 text-muted-foreground" />
             <div className="text-center w-full">
-              <p className="font-medium text-sm truncate max-w-[120px] mx-auto" title={item.name}>
+              <p className="font-medium text-xs truncate max-w-[100px] mx-auto" title={item.name}>
                 {item.name}
               </p>
-              <div className="flex flex-col gap-1 mt-2">
-                <Badge variant="outline" className="text-xs mx-auto">
+              <div className="flex flex-col gap-1 mt-1">
+                <Badge variant="outline" className="text-xs mx-auto px-1 py-0">
                   {item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}
                 </Badge>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground">
                   {formatDate(item.modified)}
                 </p>
               </div>
@@ -218,7 +269,7 @@ export default function FileManager() {
 
     return (
       <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50" onClick={handleClick}>
-        <Icon className="w-4 h-4 flex-shrink-0" />
+        <Icon className="w-5 h-5 flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{item.name}</p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -234,7 +285,7 @@ export default function FileManager() {
     <div className="fixed inset-0 w-full h-full flex bg-background text-foreground z-50">
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 right-0 w-72 bg-card border-l border-border transform transition-transform duration-300 z-50",
+        "fixed inset-y-0 right-0 w-64 bg-card border-l border-border transform transition-transform duration-300 z-50",
         sidebarOpen ? "translate-x-0" : "translate-x-full"
       )}>
         <div className="flex flex-col h-full">
@@ -338,9 +389,9 @@ export default function FileManager() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
+        {/* Enhanced Header with Search and Filters */}
         <div className="bg-gray-900 text-white p-3 flex-shrink-0">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -348,7 +399,7 @@ export default function FileManager() {
                 onClick={() => setSidebarOpen(true)}
                 className="h-8 w-8 p-0 text-white hover:bg-white/20"
               >
-                <List className="w-4 h-4" />
+                <Menu className="w-4 h-4" />
               </Button>
               <Button
                 variant="ghost"
@@ -360,24 +411,125 @@ export default function FileManager() {
               </Button>
             </div>
             
-            <h1 className="text-lg font-semibold">مدير الملفات</h1>
+            <h1 className="text-lg font-semibold">التخزين الرئيسي</h1>
             
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-              >
-                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
-              </Button>
+              {/* Plus Button with Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem>
+                    <FileIcon className="w-4 h-4 mr-2" />
+                    ملف جديد
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Folder className="w-4 h-4 mr-2" />
+                    مجلد جديد
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <MoreVertical className="w-4 h-4" />
             </div>
+          </div>
+
+          {/* Search Bar and Filters Row */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="البحث..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-10 h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              />
+            </div>
+
+            {/* Sort/Filter Button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                >
+                  <Filter className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5 text-sm font-semibold">فرز حسب</div>
+                <DropdownMenuRadioGroup value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
+                  const [newSortBy, newSortOrder] = value.split('-') as [SortBy, SortOrder];
+                  setSortBy(newSortBy);
+                  setSortOrder(newSortOrder);
+                }}>
+                  <DropdownMenuRadioItem value="name-asc">
+                    <SortAsc className="w-4 h-4 mr-2" />
+                    الاسم ▲
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="name-desc">
+                    <SortDesc className="w-4 h-4 mr-2" />
+                    الاسم ▼
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="size-asc">
+                    <HardDrive className="w-4 h-4 mr-2" />
+                    الحجم ▲
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="size-desc">
+                    <HardDrive className="w-4 h-4 mr-2" />
+                    الحجم ▼
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="date-asc">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    التاريخ ▲
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="date-desc">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    التاريخ ▼
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="type-asc">
+                    <FileType className="w-4 h-4 mr-2" />
+                    النوع ▲
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="type-desc">
+                    <FileType className="w-4 h-4 mr-2" />
+                    النوع ▼
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowHidden(!showHidden)}>
+                  {showHidden ? '✓' : '○'} إظهار الملفات المخفية
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  CANCEL
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* View Mode Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="h-8 w-8 p-0 text-white hover:bg-white/20"
+            >
+              {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+            </Button>
           </div>
         </div>
 
-        {/* Breadcrumbs and Search */}
+        {/* Breadcrumbs */}
         <div className="border-b border-border bg-card p-3 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-3 overflow-x-auto">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {breadcrumbs.map((crumb, index) => (
               <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
                 <Button
@@ -395,27 +547,9 @@ export default function FileManager() {
             ))}
           </div>
 
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="البحث في الملفات..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10 h-9 text-sm"
-            />
-          </div>
-
           {directoryData && (
-            <div className="mt-3 p-2 bg-muted/30 rounded-lg">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground gap-1">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span>{directoryData.totalFiles} ملف</span>
-                  <span>{directoryData.totalDirectories} مجلد</span>
-                </div>
-                <div>
-                  الحجم: {formatFileSize(directoryData.totalSize)}
-                </div>
-              </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              {directoryData.totalFiles} ملف, {directoryData.totalDirectories} مجلد
             </div>
           )}
         </div>
@@ -450,7 +584,7 @@ export default function FileManager() {
               <div className="p-3">
                 <div className={cn(
                   viewMode === 'grid' 
-                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
+                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2"
                     : "space-y-1"
                 )}>
                   {currentFiles.map((item, index) => (
