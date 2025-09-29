@@ -27,14 +27,21 @@ router.get('/browse', isAuthenticated, async (req: AuthenticatedRequest, res: Re
       ServiceTokens.UNIFIED_FILE_SERVICE
     );
 
-    const { path } = req.query;
+    let { path } = req.query;
     const userId = req.user?.id;
 
+    // إذا لم يتم تمرير مسار، استخدم المسار الافتراضي
     if (!path || typeof path !== 'string') {
-      return ResponseHandler.error(res, 'مسار المجلد مطلوب', 400, 'MISSING_REQUIRED_FIELD');
+      path = '/home/administrator';
     }
 
+    logger.info(`[UnifiedFiles] Browsing directory: ${path} for user: ${userId}`);
+
     const result = await unifiedFileService.listDirectory(path, userId);
+
+    if (!result.success) {
+      logger.error(`[UnifiedFiles] Browse failed: ${result.error}`);
+    }
 
     ResponseHandler.fromServiceResult(
       res,
@@ -43,6 +50,7 @@ router.get('/browse', isAuthenticated, async (req: AuthenticatedRequest, res: Re
     );
 
   } catch (error) {
+    logger.error(`[UnifiedFiles] Browse error: ${error}`);
     const message = error instanceof Error ? error.message : 'خطأ غير معروف';
     ResponseHandler.error(res, message, 500, 'INTERNAL_ERROR');
   }
@@ -177,14 +185,26 @@ router.post('/rename', isAuthenticated, async (req: AuthenticatedRequest, res: R
       ServiceTokens.UNIFIED_FILE_SERVICE
     );
 
-    const { oldPath, newPath } = req.body;
+    const { oldPath, newName, newPath } = req.body;
     const userId = req.user?.id;
 
-    if (!oldPath || !newPath) {
-      return ResponseHandler.error(res, 'المسار القديم والجديد مطلوبان', 400, 'MISSING_REQUIRED_FIELD');
+    if (!oldPath) {
+      return ResponseHandler.error(res, 'المسار القديم مطلوب', 400, 'MISSING_REQUIRED_FIELD');
     }
 
-    const result = await unifiedFileService.renameItem(oldPath, newPath, userId);
+    let finalNewPath = newPath;
+    
+    // إذا تم تمرير اسم جديد فقط، قم ببناء المسار الكامل
+    if (newName && !newPath) {
+      const oldDir = path.dirname(oldPath);
+      finalNewPath = path.join(oldDir, newName);
+    }
+
+    if (!finalNewPath) {
+      return ResponseHandler.error(res, 'الاسم الجديد أو المسار الجديد مطلوب', 400, 'MISSING_REQUIRED_FIELD');
+    }
+
+    const result = await unifiedFileService.renameItem(oldPath, finalNewPath, userId);
 
     ResponseHandler.fromServiceResult(
       res,
@@ -193,6 +213,7 @@ router.post('/rename', isAuthenticated, async (req: AuthenticatedRequest, res: R
     );
 
   } catch (error) {
+    logger.error(`[UnifiedFiles] Rename error: ${error}`);
     const message = error instanceof Error ? error.message : 'خطأ غير معروف';
     ResponseHandler.error(res, message, 500, 'INTERNAL_ERROR');
   }

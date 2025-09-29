@@ -259,10 +259,12 @@ export default function FileManager() {
       const fileName = prompt('اسم الملف الجديد:');
       if (!fileName) return;
 
+      const fullPath = `${currentPath}/${fileName}`.replace(/\/+/g, '/');
+
       const response = await apiRequest('POST', '/api/unified-files/create-file', {
-        path: currentPath,
-        fileName,
-        content: ''
+        path: fullPath,
+        content: '',
+        options: { overwrite: false }
       });
 
       if (response.ok) {
@@ -272,12 +274,14 @@ export default function FileManager() {
         });
         refetch();
       } else {
-        throw new Error('فشل في إنشاء الملف');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل في إنشاء الملف');
       }
     } catch (error) {
+      console.error('Create file error:', error);
       toast({
         title: 'خطأ',
-        description: 'فشل في إنشاء الملف',
+        description: error instanceof Error ? error.message : 'فشل في إنشاء الملف',
         variant: 'destructive',
       });
     }
@@ -288,9 +292,11 @@ export default function FileManager() {
       const folderName = prompt('اسم المجلد الجديد:');
       if (!folderName) return;
 
+      const fullPath = `${currentPath}/${folderName}`.replace(/\/+/g, '/');
+
       const response = await apiRequest('POST', '/api/unified-files/create-directory', {
-        path: currentPath,
-        dirName: folderName
+        path: fullPath,
+        options: { recursive: false }
       });
 
       if (response.ok) {
@@ -300,12 +306,14 @@ export default function FileManager() {
         });
         refetch();
       } else {
-        throw new Error('فشل في إنشاء المجلد');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل في إنشاء المجلد');
       }
     } catch (error) {
+      console.error('Create folder error:', error);
       toast({
         title: 'خطأ',
-        description: 'فشل في إنشاء المجلد',
+        description: error instanceof Error ? error.message : 'فشل في إنشاء المجلد',
         variant: 'destructive',
       });
     }
@@ -355,12 +363,14 @@ export default function FileManager() {
         });
         refetch();
       } else {
-        throw new Error('فشل في إعادة التسمية');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل في إعادة التسمية');
       }
     } catch (error) {
+      console.error('Rename error:', error);
       toast({
         title: 'خطأ',
-        description: 'فشل في تعديل الاسم',
+        description: error instanceof Error ? error.message : 'فشل في تعديل الاسم',
         variant: 'destructive',
       });
     }

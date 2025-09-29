@@ -86,8 +86,29 @@ export class UnifiedFileService extends BaseService {
         };
       }
 
-      // التحقق من المسارات المسموحة في قاعدة البيانات
-      const isAllowed = await this.storage.checkPathAllowed(normalizedPath);
+      // قائمة المسارات المسموحة افتراضياً
+      const allowedPaths = [
+        '/home/administrator',
+        '/home/runner',
+        '/workspace',
+        '/tmp',
+        process.cwd()
+      ];
+
+      // التحقق من المسارات المسموحة
+      let isAllowed = false;
+      
+      try {
+        // محاولة التحقق من قاعدة البيانات أولاً
+        isAllowed = await this.storage.checkPathAllowed(normalizedPath);
+      } catch (dbError) {
+        logger.warn(`Database path check failed, using fallback: ${dbError}`);
+        // في حالة فشل قاعدة البيانات، استخدم القائمة الافتراضية
+        isAllowed = allowedPaths.some(allowedPath => 
+          normalizedPath.startsWith(path.resolve(allowedPath))
+        );
+      }
+
       if (!isAllowed) {
         logger.warn(`Access denied to path: ${normalizedPath}`);
         return {
