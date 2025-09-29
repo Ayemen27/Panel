@@ -60,6 +60,8 @@ import {
   Upload,
   FolderPlus,
   FilePlus,
+  Eye,
+  Archive,
 } from "lucide-react";
 import { FileIconComponent } from "@/components/FileManager/FileIcon";
 import { useToast } from "@/hooks/use-toast";
@@ -497,8 +499,8 @@ export default function FileManager() {
     exitSelectionMode();
   };
 
-  // Contextual Action Bar
-  const ContextualActionBar = () => {
+  // Selection Mode Header
+  const SelectionModeHeader = () => {
     if (!selectionMode) return null;
 
     return (
@@ -512,8 +514,8 @@ export default function FileManager() {
           >
             <X className="w-4 h-4" />
           </Button>
-          <span className="font-medium">
-            {selectedItems.size}/{currentFiles.length}
+          <span className="font-medium text-lg">
+            {selectedItems.size} محدد
           </span>
         </div>
         
@@ -522,34 +524,97 @@ export default function FileManager() {
             variant="ghost"
             size="sm"
             onClick={selectAllItems}
-            className="h-8 px-3 text-white hover:bg-white/20"
+            className="h-8 px-3 text-white hover:bg-white/20 text-sm"
           >
             تحديد الكل
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={copySelectedItems}
             className="h-8 w-8 p-0 text-white hover:bg-white/20"
           >
-            <Copy className="w-4 h-4" />
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Bottom Action Bar for Selection Mode
+  const BottomActionBar = () => {
+    if (!selectionMode) return null;
+
+    return (
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="flex items-center justify-around px-4 py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={copySelectedItems}
+            className="flex flex-col items-center gap-1 h-auto p-2 hover:bg-gray-100"
+          >
+            <Copy className="w-5 h-5" />
+            <span className="text-xs">نسخ</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={moveSelectedItems}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20"
+            className="flex flex-col items-center gap-1 h-auto p-2 hover:bg-gray-100"
           >
-            <Move className="w-4 h-4" />
+            <Move className="w-5 h-5" />
+            <span className="text-xs">نقل</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (selectedItems.size === 1) {
+                const selectedFile = currentFiles.find(f => selectedItems.has(f.absolutePath));
+                if (selectedFile) renameItem(selectedFile);
+              }
+            }}
+            disabled={selectedItems.size !== 1}
+            className="flex flex-col items-center gap-1 h-auto p-2 hover:bg-gray-100 disabled:opacity-50"
+          >
+            <Edit className="w-5 h-5" />
+            <span className="text-xs">إعادة تسمية</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={deleteSelectedItems}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20"
+            className="flex flex-col items-center gap-1 h-auto p-2 hover:bg-gray-100 text-red-600"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-5 h-5" />
+            <span className="text-xs">حذف</span>
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex flex-col items-center gap-1 h-auto p-2 hover:bg-gray-100"
+              >
+                <MoreVertical className="w-5 h-5" />
+                <span className="text-xs">المزيد</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" side="top" className="w-48 mb-2">
+              <DropdownMenuItem>
+                <Info className="w-4 h-4 mr-2" />
+                تفاصيل
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Bookmark className="w-4 h-4 mr-2" />
+                إضافة للمفضلة
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Archive className="w-4 h-4 mr-2" />
+                ضغط
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     );
@@ -820,12 +885,12 @@ export default function FileManager() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Contextual Action Bar */}
-        <ContextualActionBar />
+        {/* Selection Mode Header */}
+        <SelectionModeHeader />
 
-        {/* Main Header Bar */}
+        {/* Main Header Bar - Normal Mode */}
         <div className={cn(
-          "bg-gray-900 text-white flex-shrink-0",
+          "bg-blue-600 text-white flex-shrink-0",
           selectionMode && "hidden"
         )}>
           {/* Main Header */}
@@ -839,11 +904,54 @@ export default function FileManager() {
               >
                 <Menu className="w-4 h-4" />
               </Button>
-              <h1 className="text-lg font-semibold">التخزين الرئيسي</h1>
+              <h1 className="text-lg font-semibold">
+                {activeTab === 'files' ? 'الملفات' : 
+                 activeTab === 'favorites' ? 'المفضلة' : 'الحديثة'}
+              </h1>
             </div>
             
             <div className="flex items-center gap-2">
-              {/* New File/Folder Button */}
+              {/* Search Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchOpen(true)}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+
+              {/* Sort/Filter Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortFilterDialog(true)}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 bg-white/20 rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-6 w-6 p-0 text-white hover:bg-white/30"
+                >
+                  <Grid3X3 className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-6 w-6 p-0 text-white hover:bg-white/30"
+                >
+                  <List className="w-3 h-3" />
+                </Button>
+              </div>
+
+              {/* Add Button */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -854,31 +962,54 @@ export default function FileManager() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-gray-800 text-white border-gray-700">
-                  <DropdownMenuItem 
-                    onClick={() => setCreateFileDialog(true)}
-                    className="text-white hover:bg-gray-700"
-                  >
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => setCreateFileDialog(true)}>
                     <FilePlus className="w-4 h-4 mr-2" />
-                    ملف
+                    ملف جديد
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setCreateFolderDialog(true)}
-                    className="text-white hover:bg-gray-700"
-                  >
+                  <DropdownMenuItem onClick={() => setCreateFolderDialog(true)}>
                     <FolderPlus className="w-4 h-4 mr-2" />
-                    مجلد
+                    مجلد جديد
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Upload className="w-4 h-4 mr-2" />
+                    رفع ملف
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <MoreVertical className="w-4 h-4" />
+              {/* More Options */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => refetch()}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    تحديث
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowHidden(!showHidden)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    {showHidden ? 'إخفاء الملفات المخفية' : 'إظهار الملفات المخفية'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="w-4 h-4 mr-2" />
+                    الإعدادات
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
-          {/* Secondary Header with Breadcrumbs and Tabs */}
-          <div className="bg-gray-800/50 px-4 py-2 border-t border-white/10">
-            <div className="flex items-center justify-between mb-2">
+          {/* Breadcrumbs and File Count */}
+          <div className="bg-blue-700/50 px-4 py-2 border-t border-white/10">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 overflow-x-auto">
                 {breadcrumbs.map((crumb, index) => (
                   <div key={crumb.id} className="flex items-center gap-1 flex-shrink-0">
@@ -897,27 +1028,27 @@ export default function FileManager() {
                 ))}
               </div>
               {directoryData && (
-                <div className="text-xs text-white/60 flex-shrink-0 ml-4">
+                <div className="text-xs text-white/70 flex-shrink-0 ml-4">
                   {directoryData.totalFiles} ملف • {directoryData.totalDirectories} مجلد
                 </div>
               )}
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 mt-2">
               <button
                 onClick={() => {
                   setActiveTab('files');
                   exitSelectionMode();
                 }}
                 className={cn(
-                  "px-4 py-2 text-sm rounded-t-lg transition-all",
+                  "px-3 py-1 text-sm rounded transition-all",
                   activeTab === 'files' 
-                    ? "bg-white text-gray-900 border-b-2 border-white" 
+                    ? "bg-white text-blue-600 font-medium" 
                     : "text-white/70 hover:text-white hover:bg-white/10"
                 )}
               >
-                <Folder className="w-4 h-4 inline-block mr-2" />
+                <Folder className="w-4 h-4 inline-block mr-1" />
                 الملفات
               </button>
               <button
@@ -926,13 +1057,13 @@ export default function FileManager() {
                   exitSelectionMode();
                 }}
                 className={cn(
-                  "px-4 py-2 text-sm rounded-t-lg transition-all",
+                  "px-3 py-1 text-sm rounded transition-all",
                   activeTab === 'favorites' 
-                    ? "bg-white text-gray-900 border-b-2 border-white" 
+                    ? "bg-white text-blue-600 font-medium" 
                     : "text-white/70 hover:text-white hover:bg-white/10"
                 )}
               >
-                <Star className="w-4 h-4 inline-block mr-2" />
+                <Star className="w-4 h-4 inline-block mr-1" />
                 المفضلة
               </button>
               <button
@@ -941,77 +1072,24 @@ export default function FileManager() {
                   exitSelectionMode();
                 }}
                 className={cn(
-                  "px-4 py-2 text-sm rounded-t-lg transition-all",
+                  "px-3 py-1 text-sm rounded transition-all",
                   activeTab === 'recent' 
-                    ? "bg-white text-gray-900 border-b-2 border-white" 
+                    ? "bg-white text-blue-600 font-medium" 
                     : "text-white/70 hover:text-white hover:bg-white/10"
                 )}
               >
-                <Clock className="w-4 h-4 inline-block mr-2" />
+                <Clock className="w-4 h-4 inline-block mr-1" />
                 الحديثة
               </button>
-            </div>
-          </div>
-
-          {/* Bottom Toolbar with Search and View Controls */}
-          <div className="bg-white text-gray-900 px-4 py-3 flex items-center justify-between border-b">
-            <div className="flex items-center gap-3">
-              {/* Search */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearchOpen(true)}
-                className="h-8 w-8 p-0 hover:bg-gray-100"
-              >
-                <Search className="w-4 h-4" />
-              </Button>
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="h-6 w-6 p-0"
-                >
-                  <Grid3X3 className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="h-6 w-6 p-0"
-                >
-                  <List className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Sort/Filter Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSortFilterDialog(true)}
-                className="h-8 w-8 p-0 hover:bg-gray-100"
-              >
-                <Filter className="w-4 h-4" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => refetch()}
-                className="h-8 w-8 p-0 hover:bg-gray-100"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </Button>
             </div>
           </div>
         </div>
 
         {/* File Content */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className={cn(
+          "flex-1 min-h-0 overflow-hidden",
+          selectionMode && "pb-20"
+        )}>
           <ScrollArea className="h-full">
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
@@ -1052,6 +1130,9 @@ export default function FileManager() {
           </ScrollArea>
         </div>
       </div>
+
+      {/* Bottom Action Bar for Selection Mode */}
+      <BottomActionBar />
 
       {/* Create File Dialog */}
       <Dialog open={createFileDialog} onOpenChange={setCreateFileDialog}>
