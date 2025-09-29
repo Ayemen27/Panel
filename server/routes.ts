@@ -2082,6 +2082,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!result.success) {
         return res.status(400).json({
           success: false,
+          message: result.message,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error("Error creating directory:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create directory",
+        error: "Internal server error"
+      });
+    }
+  });
 
   // Emergency session reset endpoint for troubleshooting
   app.post('/api/auth/reset-session', async (req: AuthenticatedRequest, res) => {
