@@ -1,8 +1,6 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
-import { BaseService, ServiceContext } from '../core/BaseService';
-import { IStorage } from '../storage';
 
 interface SmartConnection {
   pool: Pool | null;
@@ -12,7 +10,7 @@ interface SmartConnection {
   lastChecked: Date;
 }
 
-class SmartConnectionManager extends BaseService {
+class SmartConnectionManager {
   private connections: Map<string, SmartConnection> = new Map();
   private readonly healthCheckInterval = 30000; // 30 seconds
 
@@ -26,8 +24,7 @@ class SmartConnectionManager extends BaseService {
 
   private isProcessingQueue = false;
 
-  constructor(storage: IStorage, context: ServiceContext = {}) {
-    super(storage, context);
+  constructor() {
     this.initializeConnections();
     this.startHealthCheck();
   }
@@ -219,9 +216,4 @@ class SmartConnectionManager extends BaseService {
   }
 }
 
-// تصدير الفئة بدلاً من instance للتوافق مع النظام الموحد
-export { SmartConnectionManager };
-
-// إنشاء instance منفصل للاستخدام المباشر (backward compatibility)
-import { storage } from '../storage';
-export const smartConnectionManager = new SmartConnectionManager(storage);
+export const smartConnectionManager = new SmartConnectionManager();

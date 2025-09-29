@@ -10,14 +10,13 @@
       "monitoringService.ts",
       "nginxService.ts",
       "pm2Service.ts",
+      "smart-connection-manager.ts",
       "sslService.ts",
       "storageStatsService.ts",
       "systemService.ts",
       "unifiedFileService.ts"
     ],
-    "notUsingBaseService": [
-      "smart-connection-manager.ts"
-    ],
+    "notUsingBaseService": [],
     "usingServiceContainer": [
       "auditService.ts",
       "backupService.ts",
@@ -37,9 +36,10 @@
     ]
   },
   "legacyFiles": {
-    "total": 1,
+    "total": 2,
     "files": [
-      "/home/runner/workspace/server/scripts/cleanup-legacy-files.ts"
+      "/home/runner/workspace/cleanup-backup/cleanup-legacy-files.ts",
+      "/home/runner/workspace/dist/server/server/scripts/cleanup-legacy-files.js"
     ],
     "directories": []
   },
@@ -56,20 +56,16 @@
     ],
     "needsIntegration": []
   },
-  "unusedFiles": [
-    "client/src/components/Common/ErrorBoundaryButton.tsx",
-    "client/src/components/Common/LoadingSpinner.tsx",
-    "client/src/components/FileManager/FileManagerCore.tsx"
-  ],
+  "unusedFiles": [],
   "systemHealth": {
     "buildStatus": "fail",
     "lintStatus": "fail",
-    "serverStatus": "running"
+    "serverStatus": "stopped"
   },
   "recommendations": [
     "إصلاح أخطاء البناء",
     "إصلاح أخطاء TypeScript",
-    "تحديث 1 خدمة لاستخدام BaseService",
-    "تنظيف 1 ملف/مجلد قديم"
+    "تشغيل الخادم والتأكد من عمله",
+    "تنظيف 2 ملف/مجلد قديم"
   ]
 }
