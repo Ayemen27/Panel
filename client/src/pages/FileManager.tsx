@@ -396,14 +396,14 @@ export default function FileManager() {
     if (viewMode === 'grid') {
       return (
         <DropdownMenu>
-          <Card className="p-3 cursor-pointer transition-all hover:shadow-md hover:scale-105 group" onClick={handleClick}>
+          <Card className="p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 group bg-gray-50" onClick={handleClick}>
             <div className="flex flex-col items-center gap-3">
               <div className="relative">
                 <FileIconComponent 
                   type={item.type}
                   extension={item.extension}
                   name={item.name}
-                  className="w-10 h-10"
+                  className="w-16 h-16"
                 />
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -417,11 +417,11 @@ export default function FileManager() {
                 </DropdownMenuTrigger>
               </div>
               <div className="text-center w-full">
-                <p className="font-medium text-xs truncate max-w-[100px] mx-auto" title={item.name}>
+                <p className="font-medium text-sm truncate max-w-[140px] mx-auto mb-1" title={item.name}>
                   {item.name}
                 </p>
-                <div className="flex flex-col gap-1 mt-2">
-                  <Badge variant="outline" className="text-xs mx-auto px-2 py-1">
+                <div className="flex flex-col gap-1">
+                  <Badge variant="outline" className="text-xs mx-auto px-2 py-1 bg-white">
                     {item.type === 'directory' ? 'مجلد' : formatFileSize(item.size)}
                   </Badge>
                   <p className="text-xs text-muted-foreground">
@@ -663,8 +663,9 @@ export default function FileManager() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Enhanced Main Header Bar */}
-        <div className="bg-gray-900 text-white p-3 flex-shrink-0">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-gray-900 text-white flex-shrink-0">
+          {/* Main Header */}
+          <div className="px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -755,68 +756,36 @@ export default function FileManager() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* View Mode Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-              >
-                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
-              </Button>
-
-              {/* Plus Button with Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={createNewFile}>
-                    <FileIcon className="w-4 h-4 mr-2" />
-                    ملف جديد
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={createNewFolder}>
-                    <Folder className="w-4 h-4 mr-2" />
-                    مجلد جديد
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               <MoreVertical className="w-4 h-4" />
             </div>
           </div>
 
-          {/* Integrated Breadcrumbs */}
-          <div className="border-t border-white/20 pt-3">
-            <div className="flex items-center gap-2 overflow-x-auto">
-              {breadcrumbs.map((crumb, index) => (
-                <div key={crumb.id} className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-1 text-sm font-normal whitespace-nowrap text-white hover:bg-white/20"
-                    onClick={() => handleBreadcrumbClick(index)}
-                  >
-                    {index === 0 ? <Home className="w-4 h-4" /> : crumb.name}
-                  </Button>
-                  {index < breadcrumbs.length - 1 && (
-                    <ChevronRight className="w-4 h-4 text-white/60 flex-shrink-0" />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {directoryData && (
-              <div className="mt-2 text-xs text-white/70">
-                {directoryData.totalFiles} ملف, {directoryData.totalDirectories} مجلد
+          {/* Compact Breadcrumbs Bar */}
+          <div className="bg-gray-800/50 px-4 py-2 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 overflow-x-auto">
+                {breadcrumbs.map((crumb, index) => (
+                  <div key={crumb.id} className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs font-normal whitespace-nowrap text-white/80 hover:text-white hover:bg-white/10"
+                      onClick={() => handleBreadcrumbClick(index)}
+                    >
+                      {index === 0 ? <Home className="w-3 h-3" /> : crumb.name}
+                    </Button>
+                    {index < breadcrumbs.length - 1 && (
+                      <ChevronRight className="w-3 h-3 text-white/40 flex-shrink-0" />
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
+              {directoryData && (
+                <div className="text-xs text-white/60 flex-shrink-0 ml-4">
+                  {directoryData.totalFiles} ملف • {directoryData.totalDirectories} مجلد
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -850,7 +819,7 @@ export default function FileManager() {
               <div className="p-3">
                 <div className={cn(
                   viewMode === 'grid' 
-                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2"
+                    ? "grid grid-cols-2 gap-3"
                     : "space-y-1"
                 )}>
                   {currentFiles.map((item, index) => (
