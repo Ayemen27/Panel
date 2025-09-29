@@ -2117,8 +2117,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
-      // Check password (you'll need to import the comparePasswords function)
+      // Check password
       const { comparePasswords } = await import('./auth.js');
+      if (!user.password) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
       const isValidPassword = await comparePasswords(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Invalid credentials' });

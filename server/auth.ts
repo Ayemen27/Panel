@@ -5,13 +5,22 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage.js";
-import { User as SelectUser, insertUserSchema } from "@shared/schema";
+import { User as SelectUser, insertUserSchema, UpsertUser } from "@shared/schema";
 import { ENV_CONFIG } from "@shared/environment";
 import { z } from "zod";
 import connectPg from "connect-pg-simple";
 import MemoryStore from "memorystore";
 import rateLimit from "express-rate-limit";
 import jwt from 'jsonwebtoken';
+
+// Session type extensions for auth properties
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+    userRole?: string;
+    isAuthenticated?: boolean;
+  }
+}
 
 declare global {
   namespace Express {
@@ -27,7 +36,7 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string) {
+export async function comparePasswords(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
@@ -187,7 +196,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        if (!user || !user.password || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         } else {
           // تحديث آخر تسجيل دخول
@@ -241,8 +250,8 @@ export function setupAuth(app: Express) {
 
       const user = await storage.createUser({
         ...validatedData,
-        password: await hashPassword(validatedData.password),
-      });
+        password: validatedData.password ? await hashPassword(validatedData.password) : undefined,
+      } as UpsertUser);
 
       req.login(user, (err) => {
         if (err) return next(err);

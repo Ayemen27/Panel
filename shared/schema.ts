@@ -31,9 +31,11 @@ export const sessions = pgTable(
 // User roles enum
 export const userRoleEnum = pgEnum('user_role', ['admin', 'user', 'moderator', 'viewer']);
 
-// User storage table with OIDC authentication via Replit Auth
+// User storage table with both OIDC authentication and traditional username/password support
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username").unique(), // For traditional auth
+  password: varchar("password"), // For traditional auth (hashed)
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
@@ -609,7 +611,24 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-});
+}).extend({
+  // Make username and email mutually exclusive for different auth methods
+  username: z.string().min(3).max(50).optional(),
+  password: z.string().min(6).optional(),
+  email: z.string().email().optional(),
+}).refine(
+  (data) => data.username || data.email,
+  {
+    message: "Either username or email must be provided",
+    path: ["username"],
+  }
+).refine(
+  (data) => !data.username || data.password,
+  {
+    message: "Password is required when username is provided",
+    path: ["password"],
+  }
+);
 
 export const insertApplicationSchema = createInsertSchema(applications).omit({
   id: true,
