@@ -113,13 +113,14 @@ function Router() {
   }
 
   // If authentication state is still loading, show loading screen
-  if (isAuthenticated === undefined) {
+  if (isAuthenticated === undefined || isLoading) {
     console.log('Authentication state loading, showing Loading');
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-muted-foreground text-lg">جاري التحقق من المصادقة...</p>
+          <p className="text-xs text-muted-foreground mt-2">يرجى الانتظار...</p>
         </div>
       </div>
     );
@@ -144,8 +145,13 @@ function Router() {
   }
 
   // If user is authenticated, show protected routes
-  console.log('User authenticated, showing protected routes for:', user?.username);
-
+  console.log('🔐 User authenticated, showing protected routes:', {
+    username: user?.username,
+    userId: user?.id,
+    role: user?.role,
+    isAuthenticated,
+    isLoading
+  });
 
   return (
     <MainLayout>
@@ -154,6 +160,9 @@ function Router() {
           <Dashboard />
         </Route>
         <Route path="/auth">
+          <Dashboard />
+        </Route>
+        <Route path="/login">
           <Dashboard />
         </Route>
         <Route path="/dashboard">
