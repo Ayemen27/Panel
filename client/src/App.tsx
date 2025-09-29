@@ -12,7 +12,7 @@ import { runWebSocketDiagnostics } from "@/utils/websocketDiagnostics";
 import { useEffect, lazy, Suspense, useState } from "react";
 import { errorLogger, updateAppState } from "@/lib/errorLogger";
 import NotFound from "@/pages/not-found";
-import MainLayout from "@/components/Layout/MainLayout";
+import { MainLayout } from "@/components/Layout/MainLayout";
 import { AdminOnly, ModeratorAndAbove } from "@/components/auth/RoleGuard";
 
 // Critical components loaded immediately
