@@ -309,7 +309,7 @@ export class ServiceContainer {
     [ServiceTokens.SMART_CONNECTION_MANAGER]: {
       metadata: {
         token: ServiceTokens.SMART_CONNECTION_MANAGER,
-        constructor: () => { throw new Error('Use smartConnectionManager singleton instance'); },
+        constructor: SmartConnectionManagerStub,
         dependencies: [],
         priority: 1,
         singleton: true,
