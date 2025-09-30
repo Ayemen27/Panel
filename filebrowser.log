@@ -1,0 +1,7 @@
+nohup: ignoring input
+2025/09/29 19:43:40 Using database: /home/administrator/Panel/filebrowser.db
+2025/09/29 19:43:40 No config file used
+2025/09/29 19:43:40 Listening on [::]:8080
+2025/09/29 19:55:50 /api/login: 403 31.31.178.226 <nil>
+2025/09/29 19:55:53 /api/login: 403 31.31.178.226 <nil>
+2025/09/29 19:55:54 /api/login: 403 31.31.178.226 <nil>

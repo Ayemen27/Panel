@@ -1,0 +1,3037 @@
+nohup: ignoring input
+
+> rest-express@1.0.0 dev
+> npm run setup:directories && tsx server/index.ts
+
+
+> rest-express@1.0.0 setup:directories
+> tsx server/scripts/setup-directories.ts
+
+🔍 Server Environment Detection:
+   PWD: /home/administrator/Panel
+   HOME: /home/administrator
+   HOSTNAME: undefined
+   REPL_ID: undefined
+   Is Replit (env): false
+   Is Replit (hostname): false
+   Is External: true
+   Server Type: external
+🏗️ Setting up required directories for external environment...
+🔍 Environment detected: VPS
+📁 Current working directory: /home/administrator/Panel
+🏠 Home directory: /home/administrator
+📂 PWD: /home/administrator/Panel
+🔧 Using VPS project directory: /home/administrator/Panel
+✓ Directory already exists: storage -> /home/administrator/Panel/storage
+✅ Write permission confirmed for: storage
+✓ Directory already exists: real-files -> /home/administrator/Panel/real-files
+✅ Write permission confirmed for: real-files
+✓ Directory already exists: uploads -> /home/administrator/Panel/uploads
+✅ Write permission confirmed for: uploads
+✓ Directory already exists: logs -> /home/administrator/Panel/logs
+✅ Write permission confirmed for: logs
+✓ Directory already exists: config -> /home/administrator/Panel/config
+✅ Write permission confirmed for: config
+✓ Directory already exists: ssl -> /home/administrator/Panel/ssl
+✅ Write permission confirmed for: ssl
+✓ Directory already exists: nginx -> /home/administrator/Panel/nginx
+✅ Write permission confirmed for: nginx
+✓ Directory already exists: pm2 -> /home/administrator/Panel/pm2
+✅ Write permission confirmed for: pm2
+📄 Creating configuration files...
+🎉 Directory setup completed!
+
+📋 Directory Summary:
+   Base Directory: /home/administrator/Panel
+   Environment: VPS
+   Using ENV_CONFIG paths: {
+  "root": "/home/administrator/Panel",
+  "logs": "./logs",
+  "uploads": "./uploads",
+  "config": "./config",
+  "ssl": "./ssl",
+  "nginx": "./nginx",
+  "pm2": "./.pm2"
+}
+
+🔍 Verifying directory structure...
+✅ storage: exists, directory, writable
+✅ real-files: exists, directory, writable
+✅ uploads: exists, directory, writable
+✅ logs: exists, directory, writable
+✅ config: exists, directory, writable
+✅ ssl: exists, directory, writable
+✅ nginx: exists, directory, writable
+✅ pm2: exists, directory, writable
+✅ storage/apps: exists, directory, writable
+✅ storage/backups: exists, directory, writable
+✅ storage/cache: exists, directory, writable
+✅ logs/applications: exists, directory, writable
+✅ logs/system: exists, directory, writable
+✅ logs/nginx: exists, directory, writable
+✅ config/apps: exists, directory, writable
+✅ config/nginx: exists, directory, writable
+✅ ssl/certificates: exists, directory, writable
+✅ nginx/sites-available: exists, directory, writable
+✅ nginx/sites-enabled: exists, directory, writable
+✅ nginx/conf.d: exists, directory, writable
+✅ pm2/logs: exists, directory, writable
+✅ pm2/pids: exists, directory, writable
+
+📊 Summary: 22/22 directories created successfully
+🎉 All directories are ready!
+[dotenv@17.2.2] injecting env (9) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+✅ تم تحميل ملف .env
+🧠 تم تهيئة مدير الاتصالات الذكي
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+✅ تم تحميل ملف .env
+🔧 تم تهيئة متغيرات البيئة
+✅ تم العثور على DATABASE_URL
+🔧 Connection string: postgresql://***:***@127.0.0.1:5432/admindata?sslmode=disable
+✅ تم العثور على DATABASE_URL
+🔧 Connection string: postgresql://***:***@127.0.0.1:5432/admindata?sslmode=disable
+🔓 اتصال محلي - تعطيل SSL
+🔍 Server Environment Detection:
+   PWD: /home/administrator/Panel
+   HOME: /home/administrator
+   HOSTNAME: undefined
+   REPL_ID: defined
+   Is Replit (env): false
+   Is Replit (hostname): false
+   Is External: true
+   Server Type: external
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.2] injecting env (6) from server/.env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+✅ نجح الاتصال بقاعدة البيانات
+📊 إصدار PostgreSQL: PostgreSQL
+🗃️ قاعدة البيانات: admindata
+👤 المستخدم: admin
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+🌍 Environment Configuration:
+📍 Environment: replit
+🔧 Replit: true
+💻 Current Host: server
+🌐 Server: 0.0.0.0:5000
+⚡ HMR: wss://0.0.0.0:24678
+🔌 WebSocket: wss://0.0.0.0:5000
+📡 API Base: http://0.0.0.0:5000
+🔌 WS URL: wss://0.0.0.0:5000/ws
+🔐 CORS Origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+📁 Environment Paths:
+   root: /home/administrator/Panel ❓
+   logs: ./logs ❓
+   uploads: ./uploads ❓
+   config: ./config ❓
+   ssl: ./ssl ❓
+   nginx: ./nginx ❓
+   pm2: ./.pm2 ❓
+✅ WebSocket URL صالح: wss://0.0.0.0:5000/ws
+🔧 NODE_ENV: undefined
+🔧 PORT: 5000
+🔧 REPL_ID: defined
+🔍 Server Environment Detection:
+   PWD: /home/administrator/Panel
+   HOME: /home/administrator
+   HOSTNAME: undefined
+   REPL_ID: defined
+   Is Replit (env): false
+   Is Replit (hostname): false
+   Is External: true
+   Server Type: external
+🔧 Server Type: external
+🔧 Is External Server: true
+🔧 Custom Domain Detected: false
+🔧 Environment: server
+🔧 Process Available: true
+🔧 Import.meta Available: false
+🔧 WebSocket Constructor Available: false
+🏗️ Setting up required directories for Replit environment...
+🔍 Environment detected: Replit
+📁 Current working directory: /home/administrator/Panel
+🏠 Home directory: /home/administrator
+📂 PWD: /home/administrator/Panel
+🔧 Using Replit project directory: /home/administrator/Panel
+✓ Directory already exists: storage -> /home/administrator/Panel/storage
+✅ Write permission confirmed for: storage
+✓ Directory already exists: real-files -> /home/administrator/Panel/real-files
+✅ Write permission confirmed for: real-files
+✓ Directory already exists: uploads -> /home/administrator/Panel/uploads
+✅ Write permission confirmed for: uploads
+✓ Directory already exists: logs -> /home/administrator/Panel/logs
+✅ Write permission confirmed for: logs
+✓ Directory already exists: config -> /home/administrator/Panel/config
+✅ Write permission confirmed for: config
+✓ Directory already exists: ssl -> /home/administrator/Panel/ssl
+✅ Write permission confirmed for: ssl
+✓ Directory already exists: nginx -> /home/administrator/Panel/nginx
+✅ Write permission confirmed for: nginx
+✓ Directory already exists: pm2 -> /home/administrator/Panel/pm2
+✅ Write permission confirmed for: pm2
+🔧 Creating Replit-specific subdirectories...
+✓ Directory already exists: Replit/storage/apps -> /home/administrator/Panel/storage/apps
+✅ Write permission confirmed for: Replit/storage/apps
+✓ Directory already exists: Replit/storage/backups -> /home/administrator/Panel/storage/backups
+✅ Write permission confirmed for: Replit/storage/backups
+✓ Directory already exists: Replit/storage/cache -> /home/administrator/Panel/storage/cache
+✅ Write permission confirmed for: Replit/storage/cache
+✓ Directory already exists: Replit/logs/applications -> /home/administrator/Panel/logs/applications
+✅ Write permission confirmed for: Replit/logs/applications
+✓ Directory already exists: Replit/logs/system -> /home/administrator/Panel/logs/system
+✅ Write permission confirmed for: Replit/logs/system
+✓ Directory already exists: Replit/logs/nginx -> /home/administrator/Panel/logs/nginx
+✅ Write permission confirmed for: Replit/logs/nginx
+✓ Directory already exists: Replit/config/apps -> /home/administrator/Panel/config/apps
+✅ Write permission confirmed for: Replit/config/apps
+✓ Directory already exists: Replit/config/nginx -> /home/administrator/Panel/config/nginx
+✅ Write permission confirmed for: Replit/config/nginx
+✓ Directory already exists: Replit/ssl/certificates -> /home/administrator/Panel/ssl/certificates
+✅ Write permission confirmed for: Replit/ssl/certificates
+✓ Directory already exists: Replit/nginx/sites-available -> /home/administrator/Panel/nginx/sites-available
+✅ Write permission confirmed for: Replit/nginx/sites-available
+✓ Directory already exists: Replit/nginx/sites-enabled -> /home/administrator/Panel/nginx/sites-enabled
+✅ Write permission confirmed for: Replit/nginx/sites-enabled
+✓ Directory already exists: Replit/nginx/conf.d -> /home/administrator/Panel/nginx/conf.d
+✅ Write permission confirmed for: Replit/nginx/conf.d
+✓ Directory already exists: Replit/pm2/logs -> /home/administrator/Panel/pm2/logs
+✅ Write permission confirmed for: Replit/pm2/logs
+✓ Directory already exists: Replit/pm2/pids -> /home/administrator/Panel/pm2/pids
+✅ Write permission confirmed for: Replit/pm2/pids
+📄 Creating configuration files...
+🎉 Directory setup completed!
+
+📋 Directory Summary:
+   Base Directory: /home/administrator/Panel
+   Environment: Replit
+   Using ENV_CONFIG paths: {
+  "root": "/home/administrator/Panel",
+  "logs": "./logs",
+  "uploads": "./uploads",
+  "config": "./config",
+  "ssl": "./ssl",
+  "nginx": "./nginx",
+  "pm2": "./.pm2"
+}
+
+🔍 Verifying directory structure...
+✅ storage: exists, directory, writable
+✅ real-files: exists, directory, writable
+✅ uploads: exists, directory, writable
+✅ logs: exists, directory, writable
+✅ config: exists, directory, writable
+✅ ssl: exists, directory, writable
+✅ nginx: exists, directory, writable
+✅ pm2: exists, directory, writable
+✅ storage/apps: exists, directory, writable
+✅ storage/backups: exists, directory, writable
+✅ storage/cache: exists, directory, writable
+✅ logs/applications: exists, directory, writable
+✅ logs/system: exists, directory, writable
+✅ logs/nginx: exists, directory, writable
+✅ config/apps: exists, directory, writable
+✅ config/nginx: exists, directory, writable
+✅ ssl/certificates: exists, directory, writable
+✅ nginx/sites-available: exists, directory, writable
+✅ nginx/sites-enabled: exists, directory, writable
+✅ nginx/conf.d: exists, directory, writable
+✅ pm2/logs: exists, directory, writable
+✅ pm2/pids: exists, directory, writable
+
+📊 Summary: 22/22 directories created successfully
+🎉 All directories are ready!
+📁 تشخيص المسارات:
+🌍 البيئة: replit
+🔧 نوع الخادم: Replit
+   📂 root: /home/administrator/Panel
+      - موجود: ✅
+      - قابل للقراءة: ✅
+      - قابل للكتابة: ✅
+   📂 logs: /home/administrator/Panel/logs
+      - موجود: ✅
+      - قابل للقراءة: ✅
+      - قابل للكتابة: ✅
+   📂 uploads: /home/administrator/Panel/uploads
+      - موجود: ✅
+      - قابل للقراءة: ✅
+      - قابل للكتابة: ✅
+   📂 config: /home/administrator/Panel/config
+      - موجود: ✅
+      - قابل للقراءة: ✅
+      - قابل للكتابة: ✅
+   📂 ssl: /home/administrator/Panel/ssl
+      - موجود: ✅
+      - قابل للقراءة: ✅
+      - قابل للكتابة: ✅
+   📂 nginx: /home/administrator/Panel/nginx
+      - موجود: ✅
+      - قابل للقراءة: ✅
+      - قابل للكتابة: ✅
+   📂 pm2: /home/administrator/Panel/.pm2
+      - موجود: ✅
+      - قابل للقراءة: ✅
+      - قابل للكتابة: ✅
+6:48:09 PM [express] 🔒 Trust proxy: 1 level (Replit/external server)
+6:48:09 PM [express] 🔌 Setting up Dependency Injection middleware...
+6:48:09 PM [express] ✅ DI middleware configured - services available via req.services
+🏗️ Setting up directories...
+🏗️ Setting up required directories for Replit environment...
+🔍 Environment detected: Replit
+📁 Current working directory: /home/administrator/Panel
+🏠 Home directory: /home/administrator
+📂 PWD: /home/administrator/Panel
+🔧 Using Replit project directory: /home/administrator/Panel
+✓ Directory already exists: storage -> /home/administrator/Panel/storage
+✅ Write permission confirmed for: storage
+✓ Directory already exists: real-files -> /home/administrator/Panel/real-files
+✅ Write permission confirmed for: real-files
+✓ Directory already exists: uploads -> /home/administrator/Panel/uploads
+✅ Write permission confirmed for: uploads
+✓ Directory already exists: logs -> /home/administrator/Panel/logs
+✅ Write permission confirmed for: logs
+✓ Directory already exists: config -> /home/administrator/Panel/config
+✅ Write permission confirmed for: config
+✓ Directory already exists: ssl -> /home/administrator/Panel/ssl
+✅ Write permission confirmed for: ssl
+✓ Directory already exists: nginx -> /home/administrator/Panel/nginx
+✅ Write permission confirmed for: nginx
+✓ Directory already exists: pm2 -> /home/administrator/Panel/pm2
+✅ Write permission confirmed for: pm2
+🔧 Creating Replit-specific subdirectories...
+✓ Directory already exists: Replit/storage/apps -> /home/administrator/Panel/storage/apps
+✅ Write permission confirmed for: Replit/storage/apps
+✓ Directory already exists: Replit/storage/backups -> /home/administrator/Panel/storage/backups
+✅ Write permission confirmed for: Replit/storage/backups
+✓ Directory already exists: Replit/storage/cache -> /home/administrator/Panel/storage/cache
+✅ Write permission confirmed for: Replit/storage/cache
+✓ Directory already exists: Replit/logs/applications -> /home/administrator/Panel/logs/applications
+✅ Write permission confirmed for: Replit/logs/applications
+✓ Directory already exists: Replit/logs/system -> /home/administrator/Panel/logs/system
+✅ Write permission confirmed for: Replit/logs/system
+✓ Directory already exists: Replit/logs/nginx -> /home/administrator/Panel/logs/nginx
+✅ Write permission confirmed for: Replit/logs/nginx
+✓ Directory already exists: Replit/config/apps -> /home/administrator/Panel/config/apps
+✅ Write permission confirmed for: Replit/config/apps
+✓ Directory already exists: Replit/config/nginx -> /home/administrator/Panel/config/nginx
+✅ Write permission confirmed for: Replit/config/nginx
+✓ Directory already exists: Replit/ssl/certificates -> /home/administrator/Panel/ssl/certificates
+✅ Write permission confirmed for: Replit/ssl/certificates
+✓ Directory already exists: Replit/nginx/sites-available -> /home/administrator/Panel/nginx/sites-available
+✅ Write permission confirmed for: Replit/nginx/sites-available
+✓ Directory already exists: Replit/nginx/sites-enabled -> /home/administrator/Panel/nginx/sites-enabled
+✅ Write permission confirmed for: Replit/nginx/sites-enabled
+✓ Directory already exists: Replit/nginx/conf.d -> /home/administrator/Panel/nginx/conf.d
+✅ Write permission confirmed for: Replit/nginx/conf.d
+✓ Directory already exists: Replit/pm2/logs -> /home/administrator/Panel/pm2/logs
+✅ Write permission confirmed for: Replit/pm2/logs
+✓ Directory already exists: Replit/pm2/pids -> /home/administrator/Panel/pm2/pids
+✅ Write permission confirmed for: Replit/pm2/pids
+📄 Creating configuration files...
+🎉 Directory setup completed!
+
+📋 Directory Summary:
+   Base Directory: /home/administrator/Panel
+   Environment: Replit
+   Using ENV_CONFIG paths: {
+  "root": "/home/administrator/Panel",
+  "logs": "./logs",
+  "uploads": "./uploads",
+  "config": "./config",
+  "ssl": "./ssl",
+  "nginx": "./nginx",
+  "pm2": "./.pm2"
+}
+
+🔍 Verifying directory structure...
+✅ storage: exists, directory, writable
+✅ real-files: exists, directory, writable
+✅ uploads: exists, directory, writable
+✅ logs: exists, directory, writable
+✅ config: exists, directory, writable
+✅ ssl: exists, directory, writable
+✅ nginx: exists, directory, writable
+✅ pm2: exists, directory, writable
+✅ storage/apps: exists, directory, writable
+✅ storage/backups: exists, directory, writable
+✅ storage/cache: exists, directory, writable
+✅ logs/applications: exists, directory, writable
+✅ logs/system: exists, directory, writable
+✅ logs/nginx: exists, directory, writable
+✅ config/apps: exists, directory, writable
+✅ config/nginx: exists, directory, writable
+✅ ssl/certificates: exists, directory, writable
+✅ nginx/sites-available: exists, directory, writable
+✅ nginx/sites-enabled: exists, directory, writable
+✅ nginx/conf.d: exists, directory, writable
+✅ pm2/logs: exists, directory, writable
+✅ pm2/pids: exists, directory, writable
+
+📊 Summary: 22/22 directories created successfully
+🎉 All directories are ready!
+✅ Directory setup completed
+🔧 Setting up PM2...
+✅ PM2 is available
+✅ PM2 cleaned and ready
+✅ Using secure PostgreSQL session store
+🍪 Enhanced Cookie Settings for Cross-Browser Compatibility: {
+  isSecureConnection: undefined,
+  cookieDomain: undefined,
+  secure: undefined,
+  sameSite: 'lax',
+  environment: 'replit',
+  customDomain: undefined,
+  userAgent: 'will-be-detected-per-request'
+}
+🔧 Server will start on port: 5000
+6:48:10 PM [express] 🔄 About to call tryStartServer...
+6:48:10 PM [express] 🚀 Starting server on port 5000...
+6:48:10 PM [express] Server listening on all interfaces at port 5000
+6:48:10 PM [express] WebSocket server available at ws://localhost:5000/ws
+6:48:10 PM [express] ✅ Server startup process completed
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:21.992Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:22.675Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:23.080Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:23.101Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:23.960Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:24.967Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:24.969Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:27.372Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:27.429Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.155Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.741Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.946Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.950Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.955Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.959Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.967Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:28.974Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.327Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.336Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.338Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.530Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.548Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.567Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.598Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.744Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.769Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.799Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.801Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:29.828Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.078Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.088Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.094Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.095Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.098Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.107Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.319Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.323Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.334Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.339Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.344Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.351Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.544Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.553Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.561Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.572Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.573Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.583Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.884Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.887Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.889Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.895Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.899Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:30.901Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.139Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.141Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.152Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.157Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.158Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.162Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.469Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.471Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:31.473Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:32.149Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:32.473Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:48:32 PM [express] GET /api/user 304 in 12ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:32.649Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:48:32.655Z] [INFO] [system] بدء جلب إشعارات المستخدم
+[2025-09-29T18:48:32.663Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T18:48:32.664Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+6:48:32 PM [express] GET /api/notifications 304 in 24ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:32.701Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:48:32 PM [express] POST /api/user-activities/batch 201 in 27ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:32.900Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:32.908Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:48:32.911Z] [INFO] [system] بدء جلب إشعارات المستخدم
+6:48:32 PM [express] POST /api/user-activities/batch 201 in 15ms :: {"success":true,"count":2,"ids":…
+[2025-09-29T18:48:32.915Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T18:48:32.916Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+6:48:32 PM [express] GET /api/notifications 304 in 13ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:33.304Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:48:33 PM [express] GET /api/user 304 in 9ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:33.328Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:33.528Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:33.612Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:48:33 PM [express] GET /api/user 304 in 34ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:33.873Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:48:33 PM [express] GET /api/user 304 in 8ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:34.178Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:34.659Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:48:34.662Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:48:34 PM [express] GET /api/unified-files/browse 200 in 29ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:48:35.479Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:48:35 PM [express] GET /api/health 200 in 10ms :: {"status":"ok","message":"Server is running","ti…
+🔍 WebSocket connection attempt:
+   Origin: https://panel.binarjoinanelytic.info
+   Host: panel.binarjoinanelytic.info
+   Has Token: false
+   User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Is Custom Domain: true
+   Is Development: true
+✅ WebSocket connection approved
+Client connected from: 31.31.178.226
+✅ WebSocket client connected:
+   Host: panel.binarjoinanelytic.info
+   Origin: https://panel.binarjoinanelytic.info
+   Has Token: false
+   Custom Domain: true
+🔌 WebSocket disconnected - IP: 31.31.178.226, Code: 1000, Reason: Test completed
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:54.908Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:55.703Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:55.751Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:55.955Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:56.144Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:56.213Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:56.234Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:56.236Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:56.570Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:56.577Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:56.833Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.013Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.026Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.278Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.292Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.311Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.321Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.346Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.388Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.517Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.541Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.564Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.570Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.575Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.620Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.749Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.818Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:57.868Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.087Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.097Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.119Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.351Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.376Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.382Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.609Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.638Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.663Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.918Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.922Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:58.933Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.183Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.187Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.208Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.698Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.710Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.714Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.958Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.984Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:50:59.993Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:00.210Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:00.248Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:00.470Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:00.736Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:00.919Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:00.994Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:01.258Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:01.291Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:01.295Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:01.520Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:01.569Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:01.587Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:01.793Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.471Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.543Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:51:02 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.558Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:51:02.560Z] [INFO] [system] بدء جلب إشعارات المستخدم
+[2025-09-29T18:51:02.569Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T18:51:02.570Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.572Z' }
+6:51:02 PM [express] GET /api/notifications 304 in 21ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:51:02 PM [express] POST /api/user-activities/batch 201 in 37ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.860Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.877Z' }
+6:51:02 PM [express] POST /api/user-activities/batch 201 in 22ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.880Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:51:02.883Z] [INFO] [system] بدء جلب إشعارات المستخدم
+6:51:02 PM [express] GET /api/user 304 in 22ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+[2025-09-29T18:51:02.904Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T18:51:02.905Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+6:51:02 PM [express] GET /api/notifications 304 in 46ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:02.923Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:03.123Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:51:03 PM [express] GET /api/user 304 in 13ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:03.193Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:03.375Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:51:03 PM [express] GET /api/user 304 in 10ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:03.679Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:51:03.682Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:51:03 PM [express] GET /api/unified-files/browse 200 in 36ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:03.788Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:51:05.291Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:51:05 PM [express] GET /api/health 200 in 15ms :: {"status":"ok","message":"Server is running","ti…
+🔍 WebSocket connection attempt:
+   Origin: https://panel.binarjoinanelytic.info
+   Host: panel.binarjoinanelytic.info
+   Has Token: false
+   User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Is Custom Domain: true
+   Is Development: true
+✅ WebSocket connection approved
+Client connected from: 31.31.178.226
+✅ WebSocket client connected:
+   Host: panel.binarjoinanelytic.info
+   Origin: https://panel.binarjoinanelytic.info
+   Has Token: false
+   Custom Domain: true
+🔌 WebSocket disconnected - IP: 31.31.178.226, Code: 1000, Reason: Test completed
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:07.932Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:58:07.953Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator/تجربة for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:58:07 PM [express] GET /api/unified-files/browse 200 in 80ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:16.228Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:58:16.230Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:58:16 PM [express] GET /api/unified-files/browse 200 in 36ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:28.491Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:58:28.494Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator/myenv for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:58:28 PM [express] GET /api/unified-files/browse 200 in 40ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:30.932Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:31.412Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:31.430Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:31.659Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:31.869Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:31.877Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:31.886Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:31.894Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.098Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.554Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.578Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.725Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.728Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.731Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.778Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.813Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.971Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.972Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.983Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:32.994Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.024Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.042Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.271Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.273Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.276Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.287Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.288Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.294Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.585Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.588Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.592Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.598Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.616Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.640Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.844Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.857Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.859Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.868Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:33.872Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.064Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.078Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.088Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.096Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.104Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.106Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.294Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.313Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.325Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.333Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.608Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.617Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.628Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:34.978Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.069Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.071Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.214Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.325Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.327Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.474Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.669Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.678Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:35.728Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:37.285Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:37.419Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:58:37 PM [express] GET /api/user 304 in 6ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:37.447Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:58:37.450Z] [INFO] [system] بدء جلب إشعارات المستخدم
+[2025-09-29T18:58:37.456Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T18:58:37.457Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+6:58:37 PM [express] GET /api/notifications 304 in 18ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:37.473Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:58:37 PM [express] POST /api/user-activities/batch 201 in 19ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:37.618Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:58:37 PM [express] POST /api/user-activities/batch 201 in 16ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:38.128Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:58:38 PM [express] GET /api/user 304 in 8ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:38.283Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:38.793Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:38.796Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:58:38.798Z] [INFO] [system] بدء جلب إشعارات المستخدم
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:38.800Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+[2025-09-29T18:58:38.808Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T18:58:38.809Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+6:58:38 PM [express] GET /api/user 304 in 22ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+6:58:38 PM [express] GET /api/notifications 304 in 31ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.053Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:58:39 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.283Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:58:39 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.350Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.351Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.688Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:58:39 PM [express] GET /api/user 304 in 6ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.898Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.916Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:58:39 PM [express] GET /api/system/dependencies 304 in 63ms :: [{"name":"nodejs","displayName":"No…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:39.973Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:58:40 PM [express] GET /api/user 304 in 133ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","use…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:40.112Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:40.114Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:58:40 PM [express] GET /api/system/dependencies 200 in 17ms :: [{"name":"nodejs","displayName":"No…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:40.203Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:58:40 PM [express] GET /api/health 200 in 14ms :: {"status":"ok","message":"Server is running","ti…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:40.472Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+6:58:40 PM [express] GET /api/user 304 in 24ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+🔍 WebSocket connection attempt:
+   Origin: https://panel.binarjoinanelytic.info
+   Host: panel.binarjoinanelytic.info
+   Has Token: false
+   User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Is Custom Domain: true
+   Is Development: true
+✅ WebSocket connection approved
+Client connected from: 31.31.178.226
+✅ WebSocket client connected:
+   Host: panel.binarjoinanelytic.info
+   Origin: https://panel.binarjoinanelytic.info
+   Has Token: false
+   Custom Domain: true
+🔌 WebSocket disconnected - IP: 31.31.178.226, Code: 1000, Reason: Test completed
+6:58:41 PM [express] GET /api/system/health-check 200 in 1527ms :: {"database":{"status":"healthy","…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:44.983Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:44.998Z' }
+6:58:44 PM [express] POST /api/frontend-errors/batch 201 in 19ms :: {"success":true,"count":2,"ids":…
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+6:58:45 PM [express] POST /api/frontend-errors/batch 201 in 15ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:46.069Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:46.070Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:46.308Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:58:46.585Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:58:46.588Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:58:46 PM [express] GET /api/unified-files/browse 200 in 34ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T18:59:27.494Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T18:59:27.514Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator/تجربة for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+6:59:27 PM [express] GET /api/unified-files/browse 200 in 76ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T19:00:05.886Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T19:00:05.905Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+7:00:05 PM [express] GET /api/unified-files/browse 200 in 71ms :: {"success":true,"data":{"path":"/h…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+7:33:58 PM [express] GET /api/user 401 in 4ms
+🔍 Auth Debug - GET /notifications:
+   Session exists: true
+   Session ID: HvXQCSErkW0P-FPy6Pe0c7yAItnT0LK9
+   Is authenticated: false
+   Has user: false
+   User agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Origin: none
+   Cookies: none
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: undefined,
+  isAuthenticated: false,
+  hasUser: false,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+❌ Auth failed - no valid session, token, or cookies found
+7:33:58 PM [express] GET /api/notifications 401 in 2ms :: {"message":"Authentication required","auth…
+7:33:58 PM [express] POST /api/user-activities/batch 201 in 40ms :: {"success":true,"count":2,"ids":…
+7:33:58 PM [express] POST /api/user-activities/batch 201 in 9ms :: {"success":true,"count":2,"ids":[…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+7:33:58 PM [express] GET /api/user 401 in 2ms
+7:33:58 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","message":"Server is running","tim…
+🔍 Auth Debug - GET /notifications:
+   Session exists: true
+   Session ID: m4fzrCg9Y7dcj30xafigAWgmnJS-u0aS
+   Is authenticated: false
+   Has user: false
+   User agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Origin: none
+   Cookies: none
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: undefined,
+  isAuthenticated: false,
+  hasUser: false,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+❌ Auth failed - no valid session, token, or cookies found
+7:33:58 PM [express] GET /api/notifications 401 in 2ms :: {"message":"Authentication required","auth…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+7:33:58 PM [express] GET /api/user 401 in 2ms
+7:33:58 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","message":"Server is running","tim…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+7:33:58 PM [express] GET /api/user 401 in 3ms
+7:33:58 PM [express] POST /api/frontend-errors/batch 201 in 104ms :: {"success":true,"count":10,"ids…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+7:33:59 PM [express] GET /api/user 401 in 2ms
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+7:33:59 PM [express] GET /api/user 401 in 2ms
+7:34:01 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","message":"Server is running","tim…
+7:34:05 PM [express] POST /api/frontend-errors/batch 201 in 25ms :: {"success":true,"count":4,"ids":…
+7:34:05 PM [express] POST /api/frontend-errors/batch 201 in 32ms :: {"success":true,"count":8,"ids":…
+7:51:47 PM [vite] page reload dist/client/index.html
+7:51:47 PM [vite] page reload dist/client/index.html
+7:54:42 PM [vite] page reload dist/client/index.html
+7:54:42 PM [vite] page reload dist/client/index.html
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+7:55:22 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+7:55:22 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+7:55:23 PM [express] Error: Not allowed by CORS
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:09:34 PM [express] GET /api/user 401 in 2ms
+🔍 Auth Debug - GET /notifications:
+   Session exists: true
+   Session ID: SG3rK1XPOHQxndm2rHrdOEeprhYvPMdI
+   Is authenticated: false
+   Has user: false
+   User agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Origin: none
+   Cookies: none
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: undefined,
+  isAuthenticated: false,
+  hasUser: false,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+❌ Auth failed - no valid session, token, or cookies found
+9:09:34 PM [express] GET /api/notifications 401 in 2ms :: {"message":"Authentication required","auth…
+9:09:34 PM [express] POST /api/user-activities/batch 201 in 43ms :: {"success":true,"count":2,"ids":…
+9:09:34 PM [express] POST /api/user-activities/batch 201 in 13ms :: {"success":true,"count":2,"ids":…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:09:34 PM [express] GET /api/user 401 in 3ms
+9:09:34 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","message":"Server is running","tim…
+🔍 Auth Debug - GET /notifications:
+   Session exists: true
+   Session ID: SJEvGBfmhArJb4hn3qgGNMwJwJvAV_8a
+   Is authenticated: false
+   Has user: false
+   User agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Origin: none
+   Cookies: none
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: undefined,
+  isAuthenticated: false,
+  hasUser: false,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+❌ Auth failed - no valid session, token, or cookies found
+9:09:34 PM [express] GET /api/notifications 401 in 3ms :: {"message":"Authentication required","auth…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:09:34 PM [express] GET /api/user 401 in 1ms
+9:09:34 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","message":"Server is running","tim…
+9:09:35 PM [express] POST /api/frontend-errors/batch 201 in 137ms :: {"success":true,"count":17,"ids…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:09:35 PM [express] GET /api/user 401 in 2ms
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:09:35 PM [express] GET /api/user 401 in 1ms
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:09:35 PM [express] GET /api/user 401 in 1ms
+9:09:37 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","message":"Server is running","tim…
+9:09:41 PM [express] POST /api/frontend-errors/batch 201 in 32ms :: {"success":true,"count":7,"ids":…
+9:09:41 PM [express] POST /api/frontend-errors/batch 201 in 25ms :: {"success":true,"count":8,"ids":…
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:10:01 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:10:01 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:10:02 PM [express] Error: Not allowed by CORS
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:19 PM [express] GET /api/user 401 in 1ms
+🔍 Auth Debug - GET /notifications:
+   Session exists: true
+   Session ID: yitb_LtyihKoS7lJW7fyXAFV1J3u8Fr0
+   Is authenticated: false
+   Has user: false
+   User agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Origin: none
+   Cookies: none
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: undefined,
+  isAuthenticated: false,
+  hasUser: false,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+❌ Auth failed - no valid session, token, or cookies found
+9:36:19 PM [express] GET /api/notifications 401 in 4ms :: {"message":"Authentication required","auth…
+9:36:19 PM [express] POST /api/user-activities/batch 201 in 41ms :: {"success":true,"count":2,"ids":…
+9:36:19 PM [express] POST /api/user-activities/batch 201 in 34ms :: {"success":true,"count":2,"ids":…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:19 PM [express] GET /api/user 401 in 1ms
+🔍 Auth Debug - GET /notifications:
+   Session exists: true
+   Session ID: t41uXLuyuG4umEOMuuccf2u_d2R00bsO
+   Is authenticated: false
+   Has user: false
+   User agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Origin: none
+   Cookies: none
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: undefined,
+  isAuthenticated: false,
+  hasUser: false,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+❌ Auth failed - no valid session, token, or cookies found
+9:36:19 PM [express] GET /api/notifications 401 in 1ms :: {"message":"Authentication required","auth…
+9:36:19 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","message":"Server is running","tim…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:19 PM [express] GET /api/user 401 in 1ms
+9:36:19 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","message":"Server is running","tim…
+9:36:20 PM [express] POST /api/frontend-errors/batch 201 in 116ms :: {"success":true,"count":17,"ids…
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:20 PM [express] GET /api/user 401 in 2ms
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:20 PM [express] GET /api/user 401 in 1ms
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: false,
+  hasUser: false,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:20 PM [express] GET /api/user 401 in 2ms
+9:36:22 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","message":"Server is running","tim…
+🔍 WebSocket connection attempt:
+   Origin: https://panel.binarjoinanelytic.info
+   Host: panel.binarjoinanelytic.info
+   Has Token: false
+   User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Is Custom Domain: true
+   Is Development: true
+✅ WebSocket connection approved
+Client connected from: 31.31.178.226
+✅ WebSocket client connected:
+   Host: panel.binarjoinanelytic.info
+   Origin: https://panel.binarjoinanelytic.info
+   Has Token: false
+   Custom Domain: true
+🔌 WebSocket disconnected - IP: 31.31.178.226, Code: 1000, Reason: Test completed
+Login attempt for user: bin***
+Login successful for user: bin***
+🍪 Enhanced Login Response Debug: {
+  sessionID: 'exists',
+  isAuthenticated: true,
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  isKiwiBrowser: true,
+  origin: 'https://panel.binarjoinanelytic.info',
+  host: '127.0.0.1:5000',
+  tokenGenerated: 'yes',
+  cookiesSet: 'enhanced-for-kiwi'
+}
+9:36:25 PM [express] POST /api/login 200 in 188ms :: {"success":true,"message":"تم تسجيل الدخول بنجا…
+9:36:26 PM [express] POST /api/frontend-errors/batch 201 in 37ms :: {"success":true,"count":8,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:26.061Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:36:26 PM [express] POST /api/frontend-errors/batch 201 in 20ms :: {"success":true,"count":7,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:47.991Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:48.659Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:48.665Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:48.697Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:48.974Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:49.260Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:49.278Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:49.424Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:49.675Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:49.689Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.135Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.199Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.313Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.399Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.548Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.794Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.803Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:50.804Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.059Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.066Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.124Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.309Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.318Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.393Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.664Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.666Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.693Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:51.928Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.008Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.098Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.378Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.454Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.663Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.719Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.723Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.924Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.979Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:52.987Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:53.201Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:53.219Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:53.443Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:53.709Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:53.748Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:53.988Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:53.994Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.099Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.233Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.253Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.400Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.504Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.789Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.803Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:54.813Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.063Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.113Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.193Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.203Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.204Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.209Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.318Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.402Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.589Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.598Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.884Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.903Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.910Z' }
+9:36:55 PM [express] GET /api/user 200 in 11ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T21:36:55.916Z] [INFO] [system] بدء جلب إشعارات المستخدم
+[2025-09-29T21:36:55.927Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T21:36:55.928Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.930Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:55.943Z' }
+9:36:55 PM [express] GET /api/notifications 304 in 37ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:36:55 PM [express] POST /api/user-activities/batch 201 in 54ms :: {"success":true,"count":2,"ids":…
+9:36:56 PM [express] POST /api/user-activities/batch 201 in 144ms :: {"success":true,"count":2,"ids"…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:56.128Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:56 PM [express] GET /api/user 304 in 6ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:56.184Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T21:36:56.187Z] [INFO] [system] بدء جلب إشعارات المستخدم
+[2025-09-29T21:36:56.192Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T21:36:56.193Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+9:36:56 PM [express] GET /api/notifications 304 in 18ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:56.393Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:56 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:56.589Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:56.654Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:56 PM [express] GET /api/user 304 in 16ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:56.960Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:56 PM [express] GET /api/user 304 in 14ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:57.264Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:57 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:57.523Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:57 PM [express] GET /api/user 304 in 6ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:57.808Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:57 PM [express] GET /api/user 304 in 6ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:57.979Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:57.999Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:58.081Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:58.138Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:58 PM [express] GET /api/dashboard/stats 200 in 164ms :: {"applications":{"total":2,"running":1…
+9:36:58 PM [express] GET /api/user 304 in 70ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+9:36:58 PM [express] GET /api/system/info 200 in 79ms :: {"hostname":"vps-fbaz","platform":"Linux","…
+✅ PM2 found at: pm2, version: 6.0.13
+✅ PM2 is available and working
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:58.373Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:36:58 PM [express] GET /api/user 304 in 8ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+✅ PM2 processes resurrected
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:58.790Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:36:58 PM [express] GET /api/health 200 in 51ms :: {"status":"ok","message":"Server is running","ti…
+9:36:58 PM [express] GET /api/applications 304 in 981ms :: [{"id":"c4b57d8c-ec93-4db8-910c-dd3209db4…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:59.004Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:59.254Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:36:59 PM [express] POST /api/frontend-errors/batch 201 in 243ms :: {"success":true,"count":17,"ids…
+🔍 WebSocket connection attempt:
+   Origin: https://panel.binarjoinanelytic.info
+   Host: panel.binarjoinanelytic.info
+   Has Token: false
+   User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...
+   Is Custom Domain: true
+   Is Development: true
+✅ WebSocket connection approved
+Client connected from: 31.31.178.226
+✅ WebSocket client connected:
+   Host: panel.binarjoinanelytic.info
+   Origin: https://panel.binarjoinanelytic.info
+   Has Token: false
+   Custom Domain: true
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:36:59.784Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔌 WebSocket disconnected - IP: 31.31.178.226, Code: 1000, Reason: Test completed
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:37:02.019Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:37:02.423Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T21:37:02.426Z] [INFO] [system] [UnifiedFiles] Browsing directory: /home/administrator for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+9:37:02 PM [express] GET /api/unified-files/browse 200 in 24ms :: {"success":true,"data":{"path":"/h…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:37:04.378Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:37:04 PM [express] POST /api/frontend-errors/batch 201 in 16ms :: {"success":true,"count":1,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:21.983Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:22.556Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:22.562Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:22.915Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:23.359Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:23.629Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:23.648Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:24.098Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:24.438Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:24.566Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:24.699Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:24.714Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:24.960Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.003Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.203Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.209Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.260Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.608Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.694Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.724Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:25.994Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.139Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.158Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.228Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.374Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.464Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.564Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.813Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.819Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:26.823Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.063Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.073Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.074Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.408Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.579Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.584Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.653Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.828Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.848Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:27.893Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.115Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.119Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.159Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.403Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.407Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.412Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.643Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.648Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:28.714Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:29.654Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:29.659Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:29.662Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:30.014Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:30.253Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:30.259Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:30.388Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:30.493Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:39:30.529Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:39:51 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:39:51 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:39:51 PM [express] Error: Not allowed by CORS
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:54.824Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:55.344Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:55.604Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:55.819Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:55.829Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:56.058Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:56.479Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:56.510Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:56.543Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:56.783Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:56.948Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.373Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.434Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.440Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.599Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.684Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.692Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.988Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:57.997Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.002Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.223Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.228Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.237Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.458Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.468Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.474Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.788Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.797Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:58.818Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.049Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.129Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.379Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.599Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.644Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.864Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.884Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:55:59.973Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.119Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.143Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.383Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.392Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.398Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.623Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.632Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.653Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.859Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.866Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:00.899Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.198Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.289Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.294Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.428Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.529Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.663Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.682Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.803Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.996Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:01.998Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:12.395Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:12.878Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:12.889Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:12.904Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:13.189Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:13.208Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:13.424Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:13.432Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:13.438Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:13.444Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:13.448Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.028Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.293Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.295Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.306Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.312Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.318Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.325Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.533Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.553Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.562Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.574Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.578Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.814Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.818Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.826Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.832Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:14.834Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.039Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.063Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.077Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.087Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.208Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.273Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.293Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.302Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.322Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.578Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.583Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.587Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.592Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.593Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.598Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.828Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.829Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.834Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.837Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.840Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:15.861Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:56:16 PM [express] Error: Not allowed by CORS
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.063Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.065Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.068Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.077Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.078Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.087Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:56:16 PM [express] Error: Not allowed by CORS
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.402Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.407Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.413Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.418Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.423Z' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.424Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:56:16 PM [express] Error: Not allowed by CORS
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.628Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:16.632Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.180Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.193Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:17 PM [express] GET /api/user 304 in 8ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.200Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T21:56:17.202Z] [INFO] [system] بدء جلب إشعارات المستخدم
+[2025-09-29T21:56:17.207Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T21:56:17.207Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.211Z' }
+9:56:17 PM [express] GET /api/notifications 304 in 14ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:56:17 PM [express] POST /api/user-activities/batch 201 in 16ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.249Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:56:17 PM [express] POST /api/user-activities/batch 201 in 12ms :: {"success":true,"count":2,"ids":…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.438Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:17 PM [express] GET /api/user 304 in 8ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.445Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+[2025-09-29T21:56:17.446Z] [INFO] [system] بدء جلب إشعارات المستخدم
+[2025-09-29T21:56:17.450Z] [INFO] [system] تم جلب إشعارات المستخدم
+[2025-09-29T21:56:17.450Z] [INFO] [system] تم إنجاز جلب إشعارات المستخدم بنجاح
+9:56:17 PM [express] GET /api/notifications 304 in 12ms :: [{"id":"ceb2c717-3bb3-4829-8566-005f659c2…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.673Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:17 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.708Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:17.991Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:17 PM [express] GET /api/user 304 in 8ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:18.253Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:18 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:18.509Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:18 PM [express] GET /api/user 304 in 6ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:18.828Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:18 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:19.163Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:19 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:19.173Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:19.195Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:19.260Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Enhanced Auth Middleware Check: {
+  sessionExists: true,
+  sessionID: 'exists',
+  sessionUserId: 'c1cf14d2-64fd-42f3-90bd-b648b4c35714',
+  isAuthenticated: true,
+  hasUser: true,
+  isKiwiBrowser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+✅ Auth via enhanced session for user: c1cf14d2-64fd-42f3-90bd-b648b4c35714
+9:56:19 PM [express] GET /api/system/info 200 in 89ms :: {"hostname":"vps-fbaz","platform":"Linux","…
+9:56:19 PM [express] GET /api/dashboard/stats 200 in 164ms :: {"applications":{"total":2,"running":1…
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:19.396Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:19 PM [express] GET /api/user 304 in 12ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","user…
+✅ PM2 found at: pm2, version: 6.0.13
+✅ PM2 is available and working
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:19.628Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+🔍 Auth Check - GET /user: {
+  sessionExists: true,
+  sessionID: 'exists',
+  isAuthenticated: true,
+  hasUser: true,
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537...',
+  origin: undefined,
+  cookies: 'present'
+}
+9:56:19 PM [express] GET /api/user 304 in 7ms :: {"id":"c1cf14d2-64fd-42f3-90bd-b648b4c35714","usern…
+✅ PM2 processes resurrected
+👤 Passport Deserialize User: { userID: 'provided', timestamp: '2025-09-29T21:56:20.007Z' }
+👤 User Retrieved: { userFound: true, userID: 'exists', username: 'bin***' }
+9:56:20 PM [express] GET /api/health 200 in 10ms :: {"status":"ok","message":"Server is running","ti…
+9:56:20 PM [express] GET /api/applications 200 in 966ms :: [{"id":"c4b57d8c-ec93-4db8-910c-dd3209db4…
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:56:28 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:56:28 PM [express] Error: Not allowed by CORS
+CORS: Blocked request from origin: http://93.127.142.144:5000
+CORS: Allowed origins: [
+  /^https:\/\/.*\.replit\.dev$/,
+  /^https:\/\/.*\.repl\.co$/,
+  /^http:\/\/.*\.replit\.dev$/,
+  /^http:\/\/.*\.repl\.co$/,
+  'https://replit.com',
+  'https://panel.binarjoinanelytic.info',
+  'http://panel.binarjoinanelytic.info',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5000'
+]
+9:56:28 PM [express] Error: Not allowed by CORS
